@@ -84,15 +84,16 @@ CREATE TABLE public.schema_node
 (
     node_id bigint NOT NULL DEFAULT nextval('schema_node_node_id_seq'::regclass),
     schema_id bigint,
-	version_id int,
+    version_id integer,
     parent_id bigint,
     node_name text COLLATE pg_catalog."default",
     node_datatype text COLLATE pg_catalog."default",
-    node_def_type text,
-	node_prefix text,
-	node_val text,
+    node_def_type text COLLATE pg_catalog."default",
+    node_prefix text COLLATE pg_catalog."default",
+    node_val text COLLATE pg_catalog."default",
     node_constraint bigint,
-	node_cardinality int,
+    node_cardinality integer,
+    node_dependency text COLLATE pg_catalog."default",
     CONSTRAINT schema_node_pkey PRIMARY KEY (node_id)
 )
 WITH (
@@ -239,6 +240,7 @@ $$ LANGUAGE 'plpgsql' VOLATILE;
 
 create or replace function makeSchemaDefNodes(int, int, text, json) RETURNS setof schema_def_row 
 AS $$
+
 DECLARE
 	sdr schema_def_row%ROWTYPE;
     snid bigint;
@@ -251,32 +253,31 @@ DECLARE
     
 BEGIN
 
-    IF $2 = 'new' THEN
+    IF $3 = 'new' THEN
 		-- check if dependent md records if overwriting
 		
-	ELSEIF $2 = 'update' THEN
+	ELSEIF $3 = 'update' THEN
 		-- nothing yet
 	END IF;
 	
     svid := $2;
 	
     FOR sdr IN
-		 select * from schema_def_jsontorow($1,$2,0,0,'s', $4::json) order by i,p
+		 select * from schema_def_jsontorow($1,0,0,'s',$4::json) order by i,p
 	LOOP
         snid := sdr.i;
         pid := sdr.p;
         sdname := sdr.n;
 		stype := sdr.stype;
-        IF sdr.stype = 'object' then
-           sdval := '{}';
-        ELSEIF sdr.stype = 'array' then
-            sdval := '[]';
-        ELSE
-            sdval := sdr.val;
-        END IF; 
+        sdval := '';  
+      
+        IF sdr.dtype = 'r' OR sdr.stype = 'attribute' or sdr.stype = 'string' THEN
+              sdval := sdr.val::text;      
+        END IF;
+
 		return NEXT sdr;
-        insert into schema_node (node_id, schema_id, parent_id, node_name, node_datatype, node_def_type, node_prefix, node_value) 
-            values (snid, svid, pid, sdname, stype, sdr.dtype, sdr.prefix, sdval);
+        insert into schema_node (node_id, schema_id, version_id, parent_id, node_name, node_datatype, node_def_type, node_prefix, node_val,node_constraint) 
+            values (snid, $1, svid, pid, sdname, stype, sdr.dtype, sdr.prefix, sdval, 0);
 	END LOOP;
     RETURN;
 END;

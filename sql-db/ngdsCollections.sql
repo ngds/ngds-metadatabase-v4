@@ -2,19 +2,16 @@
 /* Collection Master table */
 CREATE TABLE public.collections
 (
-	set_id bigint NOT NULL DEFAULT nextval('schemas_schema_id_seq'::regclass),
-	set_name text,
-	set_type text,
-	status text, 
-	create_date timestamp without time zone,
-	end_date timestamp without time zone,
-	user_id bigint,
-	activity_id bigint,
-	agent_id bigint,
-	parent_set_id bigint,
-	source_id bigint,
-	source_url text,
-	CONSTRAINT set_id_pkey PRIMARY KEY (set_id)
+    set_id bigint NOT NULL DEFAULT nextval('collections_id_seq'::regclass),
+    set_name text COLLATE pg_catalog."default",
+    set_type text COLLATE pg_catalog."default",
+    status text COLLATE pg_catalog."default",
+    create_date timestamp without time zone,
+    end_date timestamp without time zone,
+    user_id bigint,
+    activity_definition_id bigint,
+    source_url text COLLATE pg_catalog."default",
+    CONSTRAINT set_id_pkey PRIMARY KEY (set_id)
 )
 WITH (
     OIDS = FALSE
@@ -24,38 +21,42 @@ TABLESPACE pg_default;
 ALTER TABLE public.collections
     OWNER to postgres;
 
-/* Define processes and versions associate collection */	
-CREATE TABLE public.md_collections
+/* Associates collections with the processes run on those collections */
+CREATE TABLE public.collections_process
 (
-	mdc_id bigint NOT NULL DEFAULT nextval('schemas_schema_id_seq'::regclass),
-	set_id bigint,
-	activity_id bigint,
-	agent_id bigint,
-	create_date timestamp without time zone,
-	end_date timestamp without time zone,
-	status text, 
-	version_state text,
-	CONSTRAINT mdc_id_pkey PRIMARY KEY (mdc_id)
+    mdc_id bigint NOT NULL DEFAULT nextval('collections_process_id_seq'::regclass),
+    set_id bigint,
+    mdc_type text COLLATE pg_catalog."default",
+    create_date timestamp without time zone,
+    end_date timestamp without time zone,
+    activity_id bigint,
+    agent_id bigint,
+    parent_mdc_id bigint,
+    status text COLLATE pg_catalog."default",
+    version_state text COLLATE pg_catalog."default",
+    CONSTRAINT mdc_id_pkey PRIMARY KEY (mdc_id)
 )
 WITH (
     OIDS = FALSE
 )
 TABLESPACE pg_default;
 
-ALTER TABLE public.md_collections
+ALTER TABLE public.collections_process
     OWNER to postgres;
-	
-	
-/* Associate md_collections to md_records   */
-CREATE TABLE public.md_collection_records
+
+-- Defines the records that processed for a specific collection_process
+CREATE TABLE public.collection_process_records
 (
-	cr_id bigint NOT NULL DEFAULT nextval('schemas_schema_id_seq'::regclass),
-	mdc_id bigint,
-	mdv_id bigint,
-	CONSTRAINT mdcr_pkey PRIMARY KEY (cr_id)
+    cr_id bigint NOT NULL DEFAULT nextval('mdc_id_seq'::regclass),
+    mdc_id bigint,
+    mdv_id bigint,
+    CONSTRAINT mdcr_pkey PRIMARY KEY (cr_id)
 )
 WITH (
     OIDS = FALSE
 )
 TABLESPACE pg_default;
+
+ALTER TABLE public.collection_process_records
+    OWNER to postgres;
 	

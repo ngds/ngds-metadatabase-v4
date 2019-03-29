@@ -1,16 +1,22 @@
-/* - NGDS metadata tables
+/* - NGDS metadata tables and functions
      G. Hudman
 	 AZGS 
 	 3/12/2019
 
+	 
+	TABLES 
+	
+	md_record - top level entity - unique identifer for a record
+	md_version - version tracker for each record
+	mdvnode - recursive deconstructed data for each record/version
+	
+	
 	API
 
-	BUILD Functions
+	HARVEST Functions
 	
-	makeMdRecord - top level metadata record insert 
-	
+	makeMdRecord - top level metadata record insert
 	makeMdVersion - create a new metadata version 
-	
 	makeNodeJ - uses jtor and insert data into mdvnode
 	mdn_jtor - parses json object into rows
 
@@ -106,19 +112,24 @@ CREATE UNIQUE INDEX mdnode_idx ON mdvnode (node_id);
 --        2 - if it exists update info ?
 -- 
 
-create or replace function makemdrecord(text, int, text, text, int, json) RETURNS text
+create or replace function makemdrecord(text, int, text, text, int, json) RETURNS json
 AS $$
+
 DECLARE
 
 	md bigint;
 	mdstatus text;
 	mdebug text;
     mx text;
-
+    mdstate text[];
+    mdj json;
+    mdvstate json;
+    r record;
+        
 BEGIN
     md := 0;
 	mdstatus := 'start';
-	
+	mdstate := ARRAY['makeRecord','Init'];
     select into md md_id 
 		from md_record 
 		where guid = $1;
@@ -130,27 +141,39 @@ BEGIN
 			citation_id, 
 			citation_title ) 
 		values ($1, $2, $3, $4) returning md_id into md;
-		mdstatus := 'New Record ';
-        
+		mdstatus := 'NewRecordID'||md;
+        mdstate := array_cat(mdstate, ARRAY['recordID',md::text]);
+        --vstate := array_append(ARRAY['nodes',rc::text]);
 		if md is not null then
-			select * into mdstatus FROM makemdversion(md::int, $5, $6);
+			select * into mdvstate FROM makemdversion(md::int, $5, $6);
+            for r in (select key,value from json_each(mdvstate))
+            loop
+                mdstate :=array_cat(mdstate,ARRAY[r.key,r.value]);
+            end loop;
 	    else 
-			mdstatus := mdstatus||' Version Insert Error';
+			mdstatus := mdstatus||' Record Insert Error';
+            mdstate := array_cat(mdstate,ARRAY['RecordStatus','insert error']);
 		end if;
 		
 	ELSE 
         mx := $6::text;
         
 		--mdebug := 'Params: '||md||$5||'length- '||length(mx);
-	    select * into mdstatus FROM makemdversion(md::int, $5, $6);
+	    select * into mdvstate FROM makemdversion(md::int, $5, $6);
 		mdstatus := 'Add Version '||mdstatus;
+        
+        for r in (select key,value from json_each_text(mdvstate))
+        loop
+            mdstate :=array_cat(mdstate,ARRAY[r.key,r.value]);
+        end loop;
+       
 		
 	end if;
-	
-    RETURN mdstatus;
-END;
-$$ LANGUAGE 'plpgsql' VOLATILE;
-    RETURN mdstatus;
+	mdstatus := '{"status" : "'||mdstatus||'" }';
+    
+    mdj := json_object(mdstate);
+    
+    RETURN mdj;
 END;
 $$ LANGUAGE 'plpgsql' VOLATILE;
 
@@ -160,20 +183,28 @@ $$ LANGUAGE 'plpgsql' VOLATILE;
 -- $2 - schema_id 
 -- $3 - json object
 
-create or replace function makemdversion(int, int, json) RETURNS text
+create or replace function makemdversion(int, int, json) RETURNS json
 AS $$
+
 DECLARE
 
 	mv bigint;
+    mvi int;
     rc int;
 	vid bigint;
 	vstatus text;
     mxr mdnrow;
+    cdata json;
+    vstate text[];
+
 
 BEGIN
     mv  := 0;
 	vid := 0;
-	vstatus := 'init';
+	vstatus := 'Make Version '||$1||$2;
+    vstate := ARRAY['makeVersion','Init'];
+    --cdata := {};
+    
 	select into mv, vid 
         md_version.mdv_id, md_version.version_id
 		from md_version 
@@ -182,13 +213,16 @@ BEGIN
     
     if vid is not null then
 	   vid := vid + 1;
-       vstatus := 'Add Version '||vid::text;
+       vstatus := vstatus||' record exists - add version '||vid::text;
+
        update md_version set end_date = CURRENT_TIMESTAMP where mdv_id = mv;
     else
         vid := 1;
-        vstatus := 'New Record Version '||vid::text||' '||mv||' '||$3;
+        vstatus := vstatus||' new record - version '||vid::text;
+        
     end if;
-	
+	vstate := array_cat(vstate,ARRAY['Version',vid::text]);
+    
 	insert into md_version (md_id, 
 		version_id, 
 		parent_id, 
@@ -197,17 +231,25 @@ BEGIN
 		source_schema_id) 
     values ($1, vid, 0, 'NEW',CURRENT_TIMESTAMP, $2) returning mdv_id into mv;
     
-    vstatus := vstatus||' complete';
+    vstatus := vstatus||' complete '||mv;
+    vstate := array_cat(vstate,ARRAY['VersionID',mv::text]);
+    
     rc :=0;
+    
+    mvi := mv::int;
     for mxr in
-        select * from makeNodeJ(mv::int,$3::json)
+ 
+        select * from makeNodeJ(mvi,$3::json)
     LOOP
         rc := rc + 1;
     END LOOP;
+    vstate := array_cat(vstate,ARRAY['nodes',rc::text]);
+    cdata := json_object(vstate);
     
-    vstatus := vstatus||' Nodes added '||rc::text;
-    RETURN vstatus;
+    vstatus := vstatus||' node count '||rc::text;
+    RETURN cdata;
 END;
+
 $$ LANGUAGE 'plpgsql' VOLATILE;
 
 
@@ -430,7 +472,8 @@ BEGIN
                 else 
                     rav := rav||','||rda.nval;
                 end if;
-			end loop;		
+			end loop;
+			
             rd.nval := '['||rav||']';
 		END IF;	
 		IF rd.ntype = 'object' THEN
@@ -471,6 +514,7 @@ create function pathfilter(text) RETURNS text
 identificationInfo.MD_DataIdentification.citation.CI_Citation.title.CharacterString
 
 -- version without tree path
+
 CREATE OR REPLACE VIEW public.mdview AS
  WITH RECURSIVE c(node_id, version_id, parent_id, node_name, node_value, lvl, mpath) AS (
          SELECT m.node_id,
@@ -489,7 +533,7 @@ CREATE OR REPLACE VIEW public.mdview AS
             m.node_name,
             m.node_value,
             c_1.lvl + 1,
-            c_1.mpath || '.'||m.node_name AS mpath
+            (c_1.mpath || '.'::text) || m.node_name AS mpath
            FROM mdvnode m,
             c c_1
           WHERE m.parent_id = c_1.node_id AND m.version_id = c_1.version_id
@@ -506,11 +550,27 @@ CREATE OR REPLACE VIEW public.mdview AS
 
 ALTER TABLE public.mdview
     OWNER TO postgres;
-
-
 -- OBJECT tools for schema mapping
 -- $1 - version id, $2 - objectname
 -- returns list of objects
+
+/* Useful queries used in nodeJS application */
+
+-- Return a record with schema mapping
+
+select * from mdview, schema_map where version_id in 
+	(select mdv_id from md_version where md_id = 
+		(select md_id from md_record where guid = %1 ) and end_date is null) and 
+			mdview.mpath = schema_map.map_path and schema_map.schema_id = $2
+
+-- Record search
+
+ select * from md_record where md_id in 
+    (select md_id from md_version where mdv_id in 
+        (Select distinct(version_id) from mdview where node_value like %$1%))
+
+
+			
 
 create type mdnorow as ( i bigint, ver int, p bigint, n text, ntype text, nval text, mpath text );
 
@@ -547,7 +607,7 @@ END;
 $$ LANGUAGE 'plpgsql' VOLATILE;	
 
 
-
+/* Features below are not in use */
 
 -- find object 2 
 create or replace function mdn_find_cursor (refcursor, text) RETURNS setof mdnorow
@@ -815,7 +875,7 @@ BEGIN
 END;
 $$ LANGUAGE 'plpgsql' VOLATILE;	
 	
-	
+/* Obsolete mdview uses ltree - which is fussy with special characters */	
 CREATE OR REPLACE VIEW public.mdview AS
  WITH RECURSIVE c(node_id, version_id, parent_id, node_name, node_value, lvl, mpath) AS (
          SELECT m.node_id,
