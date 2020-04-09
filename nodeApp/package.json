@@ -1,8 +1,8 @@
 {
   "name": "NGDS",
   "version": "1.0.0",
-  "description": "NGDS database API",
-  "main": "ngds-db.js",
+  "description": "NGDS web application",
+  "main": "ngds-app.js",
   "repository": "",
   "license": "MIT",
   "dependencies": {
@@ -11,11 +11,14 @@
     "csw-client": "^0.18.2",
     "dotenv": "^4.0.0",
     "express": "^4.16.4",
+    "fs": "0.0.1-security",
     "node-json2html": "^1.2.0",
     "pg": "^7.8.1",
     "request": "^2.88.0",
     "url-exists": "^1.0.3",
-    "xml2js": "^0.4.19"
+    "xml": "^1.0.1",
+    "xml2js": "^0.4.19",
+    "xmldoc": "^1.1.2"
   },
   "devDependencies": {},
   "scripts": {

@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Search Cart</title>
+<script src='https://api.tiles.mapbox.com/mapbox.js/v2.2.4/mapbox.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox.js/v2.2.4/mapbox.css' rel='stylesheet' />
+<link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.3/leaflet.draw.css' rel='stylesheet' />
+<script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.3/leaflet.draw.js'></script>
+<style type="text/css">
+
+.aref-valid {
+   font-size: 12px;
+   color: #aaddaa;
+   font-family: Arial, sans-serif;
+}
+
+.aref-not {
+   font-size: 12px;
+   color: #ddaaaa;
+   font-family: Arial, sans-serif;
+}
+
+#q {
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    border:1px solid #BEBEBE;
+    padding: 7px;
+    width: 200px;
+    margin:0px;
+    -webkit-transition: all 0.30s ease-in-out;
+    -moz-transition: all 0.30s ease-in-out;
+    -ms-transition: all 0.30s ease-in-out;
+    -o-transition: all 0.30s ease-in-out;
+    outline: none;  
+}
+
+.link-button, .vote-button {
+  cursor:pointer;
+  background: #0971B2;
+  text-shadow: none;
+  border: none;
+  height: 12px;
+  line-height: 12px;
+  padding: 2px 2px;
+  font-weight: 160;
+  font-size: 9px;
+  color: #ffffff;
+  font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+  margin: 2px;
+  text-decoration: none;
+  text-align: center;
+  display: inline-block;
+   -webkit-border-radius: 2px;
+        -moz-border-radius: 2px;
+        -ms-border-radius: 2px;
+        -o-border-radius: 2px;
+        border-radius: 2px;    
+}
+
+
+.action-button
+{
+     cursor:pointer;
+        -webkit-border-radius: 3px;
+        -moz-border-radius: 3px;
+        -ms-border-radius: 3px;
+        -o-border-radius: 3px;
+        border-radius: 3px;   
+        -webkit-box-shadow: none;
+        -moz-box-shadow: none;
+        box-shadow: none;
+        -webkit-transition-property: background;
+        -moz-transition-property: background;
+        -o-transition-property: background;
+        transition-property: background;
+        -webkit-transition-duration: 0.3s;
+        -moz-transition-duration: 0.3s;
+        -o-transition-duration: 0.3s;
+        transition-duration: 0.3s;
+        color: #ffffff;
+        background: #0971B2;
+        text-shadow: none;
+        border: none;
+        height: 22px;
+        line-height: 22px;
+        padding: 4px 4px;
+        font-weight: 240;
+        font-size: 12px;
+        font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+        margin: 4px;
+        text-decoration: none;
+        text-align: center;
+        display: inline-block  
+}
+
+.arrow-button
+{
+        -webkit-border-radius: 2px;
+        -moz-border-radius: 2px;
+        -ms-border-radius: 2px;
+        -o-border-radius: 2px;
+        border-radius: 2px;   
+        -webkit-box-shadow: none;
+        -moz-box-shadow: none;
+        box-shadow: none;
+        -webkit-transition-property: background;
+        -moz-transition-property: background;
+        -o-transition-property: background;
+        transition-property: background;
+        -webkit-transition-duration: 0.3s;
+        -moz-transition-duration: 0.3s;
+        -o-transition-duration: 0.3s;
+        transition-duration: 0.3s;
+        color: #ffffff;
+        background: #0971B2;
+        text-shadow: none;
+        border: none;
+        height: 18px;
+        line-height: 18px;
+        padding: 0px 12px;
+        font-weight: 160;
+        font-size: 12px;
+        font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+        margin: 0;
+        text-decoration: none;
+        text-align: center;
+        display: inline-block  
+}
+
+.action-button:active
+{
+  transform: translate(0px,5px);
+  -webkit-transform: translate(0px,5px);
+  border-bottom: 1px solid;
+}
+
+#showMap {
+  position: absolute;
+  display: none;
+  background-color: #f2f2f2;
+  border-radius: 0px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  left: 10px;
+  min-width: 280px;
+  min-height: 360px;
+  opacity: 1.0;
+  border: 0px solid #d4d4d4;
+  z-index: -1;
+}
+
+.g-app {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	height: 60px;
+	 color:  #dcdcdc;
+  background-color: #196fa6;
+
+}
+
+.g-item-save {
+
+    font-family: "Avenir Next W01","Avenir Next","Avenir","Helvetica Neue","Helvetica","Arial","sans-serif";
+  
+}
+
+.g-item-save-xx {
+    padding-left: 2px;
+    padding-right: 2px;
+    padding-bottom: 2px;
+    padding-top: 2px;
+    margin-top: 2px;
+    color: #440000;
+    display: inline-block  
+    margin-left: 400px;
+    font-family: "Avenir Next W01","Avenir Next","Avenir","Helvetica Neue","Helvetica","Arial",sans-serif;
+    border:2px solid #dcdcdc;
+    background-color: #29fa6;
+
+}
+
+.navbar-nav, .navbar-brand, .navbar-btn, .navbar-text, .navbar-form, .navbar-form input, .navbar-form button, .navbar-nav .dropdown-menu {
+    font-weight: 400;
+    font-size: 16px;
+    letter-spacing: 0px;
+    list-style-type: none;
+    margin: 0;
+    padding-left: 0;
+    overflow: hidden;
+    display: table;
+    box-sizing: border-box;
+}
+
+.div-rb {
+  cursor:pointer;
+  display: block-inline;
+  margin-top: 2px;
+  margin-left: 5px;
+  padding: 2px;
+  border: 1px solid #cccccc;
+  max-height: 300px;
+  font-size: 12px;
+  font-family: calibri;
+  overflow-y: auto;
+  width: 300px;
+}
+
+.div-rbx{
+    float: left;
+    position: fixed;
+    display: inline;
+    line-height: 24px;
+    width: 600px;
+    left: 400px;
+    height: 100px;
+    overlflow-x: visible ;
+    overvflow-y: visible;
+    word-wrap: break-word;
+     box-sizing: border-box; 
+     border: 1px solid #cccccc;
+}
+
+.nav-item {
+    float: left;
+    display: inline;
+}
+
+.nav-item active  {
+    float: left;
+    position: relative;
+    display: inline;
+    line-height: 24px;
+}
+
+.nav-item hover  {
+    float: left;
+    position: relative;
+    display: inline;
+    line-height: 24px;
+}
+
+.nav-link {
+	display: block;
+    padding-top: 5px;
+    margin-top: 5px;
+     padding: 14px 16px;
+    color: #000000;
+    font-family: "Avenir Next W01","Avenir Next","Avenir","Helvetica Neue","Helvetica","Arial",sans-serif;
+ 
+}
+
+.nav-link:active {
+  display: block;
+  color:  #dcdcdc;
+   padding: 14px 16px;
+  background-color: #196fa6;
+}
+
+.nav-link:visited {
+  display: : block;
+  color:  #44aaaa;
+   padding: 14px 16px;
+  background-color:#196fa6;
+}
+
+
+.nav-link:hover {
+	display: block;
+  color: #000000;
+   padding: 14px 16px;
+  background-color:#196fa6;
+}
+
+.g-search-pane-left {
+	width: 20%;
+
+	min-width: 70px; 
+	float: left;
+
+}
+
+.g-search-pane-right {
+	width: 70%; 
+	float: right; 
+   font-size: 14px; 
+  font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.g-item-card .g-item-card-saved {
+  margin-top: 5px;
+  margin-left: 40px;
+  padding: 4px;
+  border-bottom: 1px solid #cccccc;
+  font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.g-item-card-saved {
+  background-color: #aaaaaa;
+  font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.g-item-card .g-item-title {
+  font-weight: bold;
+  font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.g-item-card .g-item-status {
+  margin-right: 0.5em;
+  font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.g-item-card .g-item-description, 
+.g-item-card .g-item-actions, 
+.g-item-card .g-item-owner-and-date {
+	margin-left: 20px;
+  font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.g-item-card .g-item-description, 
+.g-item-card .g-item-owner-and-date {
+  padding: 2px;
+  font-size: 10px;
+  width: 85%;
+  font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+.g-item-card .g-item-thumbnail {
+	width: 80px;
+	height: 60px;
+  font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.g-item-card .g-item-actions {
+  padding: 2px;
+  clear: both;
+}
+.g-item-card .g-item-actions > a, 
+.g-item-card .g-item-actions > .dropdown {
+  margin-right: 20px;
+  font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.g-item-card .g-item-actions > .dropdown > .dropdown-menu {
+	max-height: 200px;
+	overflow-y: auto;
+	padding-right: 20px;
+  font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.navbar-inverse {
+  background-color: #196fa6;
+}
+.navbar-inverse .navbar-nav > .active > a, 
+.navbar-inverse .navbar-nav > .active > a:hover, 
+.navbar-inverse .navbar-nav > .active > a:focus {
+  background-color: #478CB8;
+  color: #ffffff;
+}
+.navbar-inverse .navbar-nav > li > a {
+  color: #ffffff;
+}
+.navbar-inverse .glyphicon, .navbar-inverse .navbar-brand {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.wb-li-item {
+	width: 800px;
+	
+}
+
+.wb-li-cart {
+  display: inline;
+  box-sizing: border-box;
+  margin-top: 2px;
+  margin-left: 2px;
+  padding: 2px;
+  height: 40px;
+  width: 800px;
+  border: 1px solid #8888cc;
+  font-size: 14px;
+  font-family: calibri;
+  background-color: #ffffff;
+   -webkit-border-radius: 3px;
+        -moz-border-radius: 3px;
+        -ms-border-radius: 3px;
+        -o-border-radius: 3px;
+        border-radius: 3px;   
+}
+
+.wb-li-project {
+  margin-top: 6px;
+  margin-left: 6px;
+  padding: 6px;
+  border: 1px solid #cccccc;
+  font-size: 14px;
+  font-family: calibri;
+}
+
+#accordion {
+ width:100%;
+ margin: 0;
+ padding: 0;
+}
+
+#accordion p span {
+ cursor:pointer;
+ font-size: 12px;
+ font-family: calibri;
+ background-color: #ffffff;
+}
+
+.ac-content {
+  font-family: calibri;
+  text-align: justify;
+}
+
+.workbench-title, .prov-title {
+ color: #196fa6;
+ font: bold 16px calibri;
+ margin-bottom: 5px;
+ background-color: #fff88;
+ border:1px solid #dcdcdc;
+ padding: 5px 5px;
+ border-radius: 0px;
+}
+
+
+</style>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script>
+
+  var sSrchUrl = "";
+	var sPage = 0;
+	var sType ="";
+  var curID = "";
+	var gN = 180,
+		  gW = -180,
+		  gS = -180,
+		  gE = 180;
+
+    var baseRef="http://132.249.238.169:8080/geoportal/csw?service=CSW&request=GetRecords&f=json&size=20";
+    var baseRef="/cinergi?";
+    var baseEsri = "http://www.arcgis.com/sharing/rest/search?f=pjson&num=20";
+    var sR;
+
+    $(document).ready(function(){
+    	 $("#GetSrc").click(function() {
+    	 	sPage = 0;
+    	 	show_cinergi(0);
+
+    	 });
+
+    	  $("#GetEsri").click(function() {
+    	  	sPage = 0;
+    	 	show_esri(0);
+    	 });
+
+		 $(".g-item-save").click(function() {
+		 	console.log('www');
+    	 	alert('Save Button');
+    	 });
+
+		$("#SaveSrch").click(function() {
+
+      if ( sSrchUrl.length > 1 ) {
+
+    			var inp = $("#q").val();
+          var inJ = inp.split(" ").join('+');
+          var cval = sSrchUrl + "#-#" + inJ;
+
+    			var d = new Date();
+    			var cn = 'Search' + d.toUTCString();
+        	setCookie(cn,cval,1000);
+
+          seaSet();
+    	}
+    	 
+    });
+    $("#RunQ").click(function() {
+
+      var xUrl = $("#seaSel").find(":selected").val();
+      sSrchUrl = xUrl;
+      var zUrl = xUrl.replace(/-#-/g,'=');
+      var zS = zUrl.split('=');
+      var ss = zS[zS.length-1];
+
+      $("#q").val(ss.replace(/\+/g,' '));
+
+      show_cinergi(0,zUrl);
+
+    });
+
+    $("#wfCreate").click(function() {
+      var inp = $("#wfc").val();
+      var d = new Date();
+      var cn = 'Project' + d.toUTCString();
+        setCookie(cn,inp,1000);
+        listWB();
+       });
+
+
+		$("#pagePrev").click(function() {
+			if ( sPage > 0) {
+				sPage--;
+			}
+			$("#PageCnt").html("Page " + sPage);
+			if ( sType == "Cinergi" ) {
+				show_cinergi(sPage);
+			} else {
+				show_esri(sPage);
+			}
+
+    	 	console.log('prev' + sPage);
+
+    	 });
+
+		$("#pageNext").click(function() {
+				sPage++;
+				$("#PageCnt").html("Page " + sPage);
+				if ( sType == "Cinergi" ) {
+					show_cinergi(sPage);
+				} else {
+					show_esri(sPage);
+				}
+
+    	 	console.log('next' + sPage);
+    	 });
+
+		$("#clrWB").click(function() {
+    	 	clearCookies();
+    	 });
+
+    });
+
+   $('#accordion div').hide();
+
+  $('#wbds').click(function() {
+        console.log('thisss')
+      });
+
+   $('#accordion p span').click(function(){
+       console.log('what');
+               //$('#accordion div').slideUp();
+               //$(this).parent().next().slideDown();
+               //return false;
+       });
+
+
+    $(document).on('click', "button.g-item-save", function () {
+    	var id = this.id;
+    	console.log(id);
+    	var ca = id.split('#-#');
+    	if (ca.length > 1) {
+        var srID = saveSearch();
+        var d = new Date();
+        var cn = 'SearRec' + d.toUTCString();
+        var cVal = ca[1] +'#-#'+srID;
+    		var didI = setCookie(cn,cVal,1000);
+
+        if  ( didI ) {
+          $(this).parent().css( "background-color", "#aaaabb" );
+
+        }
+    		listWB();
+        //saveSearch();
+    	}
+
+	});
+
+
+  function saveSearch() {
+
+     if ( sSrchUrl.length > 1 ) {
+
+          // Check if search exists
+          var sF = true;
+          var sUrch = sSrchUrl.split('-#-');
+          var ursa = sUrch[sUrch.length-1];
+
+          var ca = document.cookie.split(';');
+          for(var i = 0; i <ca.length; i++) {
+              var c = ca[i];
+              while (c.charAt(0)==' ') {
+                  c = c.substring(1);
+              }
+              if ( c.indexOf('Search') == 0 && c.indexOf(ursa) > 0 ) {
+                  sF = false;
+                  console.log(' save search exists'+ ursa)
+                  return sSrchUrl
+                  //return c.substring(name.length,c.length);
+              }
+          }
+
+          if ( sF ) {
+
+            var inp = $("#q").val();
+            var inJ = inp.split(" ").join('+');
+            var cval = sSrchUrl + "#-#" + inJ;
+
+            var d = new Date();
+            var cn = 'Search' + d.toUTCString();
+            setCookie(cn,cval,1000);
+
+            seaSet();
+            return cval;
+
+          }
+         
+      }
+
+
+  }
+
+	function show_cinergi(sp, savedSearch ) {
+  // Show DDH records on search page
+	  sType = "Cinergi";
+    var aggUrl;
+	  var startP = sp*20;
+
+    if ( savedSearch ) {
+        aggUrl = savedSearch;
+    } else {
+  	  var inp = $("#q").val();
+  	  var inJ = inp.split(" ").join('+');
+  	  var inParams = '&from='+startP+'&q='+inJ;
+      var xSrchUrl = encodeURI(baseRef+inParams);
+      sSrchUrl = xSrchUrl.replace(/=/g,'-#-');
+      aggUrl = baseRef+inParams;
+    }
+
+   
+	  $.ajax({
+		    type: 'GET',
+		    url: aggUrl,
+		    dataType: "json",
+		    contentType: "application/json",
+		    success: function(data) {
+		      
+		      var pstack = '<b>Cinergi results found ' + data.hits.total + ' returned starting at ' +  startP + '</b></br>';
+	        
+	          var ha = []; 
+	          ha = data.hits.hits;
+	          var zc = '</br>';
+	        
+	          for (i = 0; i < ha.length; i++) {
+	          	var hid = ha[i]._id;
+              var setCard = "g-item-card";
+              var cHid = getCookie(hid);
+              if ( cHid != "" ) {
+                   var setCard = "g-item-card-saved";
+              }
+	          	var src_name = 'Data Source: ' + ha[i]._source.src_source_name_s;
+	          	var src_type = 'Data Source Type: ' + ha[i]._source.src_source_type_s;
+	          	var src_uri = 'Data Source URI: ' + ha[i]._source.src_uri_s;
+	          	var src_title = ha[i]._source.title;
+	          	var src_desc = ha[i]._source.description;
+
+	          	var lnk = ha[i]._source.links_s;
+	          	var sl = ' Links </br>';
+
+	          	if (Array.isArray(lnk) ) {
+	          		for (z= 0; z <lnk.length; z++) {
+	          			var ls = lnk[z];
+                 
+                  var zed = urlCheck(ls); 
+
+	          			sl = sl + '<a rel="external" class="aref-valid" target ="_blank" onclick="javascript:lbak(this);" href="' + ls + '">' + ls + '</a></br>';
+
+	          		 }
+	          		console.log(sl);
+	          	} else {
+	          		if ( typeof(lnk) !== "undefined") {
+                  var zed = urlCheck(ls);                  
+	          			sl = sl + '<a rel="external" class="aref-valid" target ="_blank" onclick="javascript:lbak(this);" href="' + lnk + '">' + lnk + '</a></br>';
+		
+	          		}
+	          	}  
+
+	          	zc = zc + '<div class="' + setCard +'"><button class="action-button g-item-save" id="ddh#-#' + hid + '#-#' + src_title + '" >Save</button>';     
+	          	//zc = zc + '<a id="saveBtn" class="g-item-save" title="saveBtn" target="_blank">Save</a>' ;
+	          	zc = zc + '<b>' + src_title + "</b></br> " + src_type + '</br>' + src_uri + '</br>' + src_desc + '</br>' + sl + '</div></br>';
+
+	          }
+              
+		        $("#cb").html(pstack + zc);
+
+		      }
+	  });
+	};
+
+	function lbak(obj) {
+		console.log('lbak');
+	}
+
+  var urlCheck = function( urlString ) {
+  // Readl time asynchronous check
+
+    var hurl = '/url_status?' + 'url='+urlString ;
+    console.log('start url check');
+      $.ajax({
+          type: 'GET',
+          url: hurl,
+          dataType: 'json',
+          contentType: "application/json",
+          success: function(data, status) {
+            if ( data ) {
+              console.log('url check - OK');
+              //$( 'a[href*="'+lnk+'"]"').class("aref-valid");
+              $('a[href*="'+urlString+'"]').attr('class','aref-valid');
+              
+            } else {
+              console.log('url check - BAD');
+              $('a[href*="'+urlString+'"]').attr('class','aref-not');
+            }
+        
+          }, 
+          error: function (jqXHR, status, err) {  
+            console.log('url check error');
+            cb('Nope');
+          }
+
+      });
+  }
+
+// ESRI Section
+
+  function tryme(urg) {
+    // Esri story map look up based on App id
+
+      if ( urg.indexOf("appid=") > 0 ) {
+
+        var mx = urg.split("=");
+        //var m = urg.match(/([^\?]*)\?appid=(\d*)/);
+        var baseUrl = mx[0].substring(0,mx[0].length-6);
+        var numx = mx[1];
+         if ( baseUrl.indexOf("/apps") > 0 ) {
+            baseUrl = baseUrl.substring(0, baseUrl.indexOf("/apps") + 1 );
+         }
+        var waUrl =  baseUrl + 'sharing/rest/content/items/';
+        var urg = baseUrl + 'sharing/rest/content/items/' + numx + '/data?f=json';
+
+        $.ajax({
+            type: 'GET',
+            url: '/lq?url='+urg,
+       
+            success: function(data) {
+              var irp = JSON.parse(data);
+              var weblinkId = irp.values.webmap;
+              var tital = irp.values.headerLinkText;
+              var subT = irp.values.subtitle;
+              var inUrl = waUrl + weblinkId + '/data?f=json';
+          
+              storyMap(inUrl);
+
+              console.log('story map done >>>>>>>>>>>>>');
+            },
+            error(xhr,status, err) { 
+              console.log(err) 
+            }
+          });
+
+        console.log('Story Map ' + numx);
+      } else {
+
+              $.ajax({
+                type: 'GET',
+                url: '/lq?url='+urg,
+              //  dataType: "html",
+              //  contentType: "application/html",
+                success: function(data) {
+                  var irp = data;
+                  var parser = new DOMParser();
+                  var myd = parser.parseFromString(irp, "text/html");
+
+                  coLinks(myd.links);
+                  //collectInternalLinks(myd.links);
+                   //var myDom = $.parseHTML ( irp );
+                  // var bbk = myDom.scripts;
+
+                 // var w = window.open();
+                //  $(w.document.body).html(data);
+                   console.log('done >>>>>>>>>>>>>' + irp);
+                },
+                error(xhr,status, err) { 
+                  console.log(err) 
+                }
+              });
+
+    }
+      //$.getJSON(urg, function(data) {
+
+      //data is the JSON string
+      //  console.log(data);
+     // });
+
+  }
+
+  function storyMap(url) {
+  // Assuming has a valid ID 
+  // drill into the story map layers and pop up the attribute names
+
+      var pia = "";
+
+      $.ajax({
+        type: 'GET',
+        url: '/lq?url='+url,
+        success: function(data) {
+           var irp = JSON.parse(data);
+           for (lyr in irp.operationalLayers ) {
+              var lx = irp.operationalLayers[lyr].featureCollection;
+              for ( fs in lx.layers ) {
+                var fx = lx.layers[fs].featureSet;
+                for (fsAttr in fx.features ) {
+                    var fsaDesc = fx.features[fsAttr].attributes.Description;
+                    var fsaName = fx.features[fsAttr].attributes.name;
+                    pia = pia + ' ' + fsaName  + ': ' + fsaDesc + '</br>';
+
+                    console.log(' story map ' + fsaName + ' ' + fsaDesc);
+
+                }
+              }
+            }
+            alert(pia);
+        }
+      });
+
+  }
+
+  function searchForWord($, word) {
+    // Not used
+
+    var bodyText = $('html > body').text();
+    if(bodyText.toLowerCase().indexOf(word.toLowerCase()) !== -1) {
+      return true;
+    }
+    return false;
+  }
+
+  function coLinks(lnk) {
+
+    for (var d in lnk) {
+    //lnk.forEach(function (d) {
+      var tlx = lnk[d].href;
+      console.log('Found ' + tlx );
+      
+    }
+
+  }
+
+  function collectInternalLinks($) {
+    var allRelativeLinks = [];
+    var allAbsoluteLinks = [];
+
+    var relativeLinks = $("a[href^='/']");
+    relativeLinks.each(function() {
+        allRelativeLinks.push($(this).attr('href'));
+
+    });
+
+    var absoluteLinks = $("a[href^='http']");
+    absoluteLinks.each(function() {
+        allAbsoluteLinks.push($(this).attr('href'));
+    });
+
+    console.log("Found " + allRelativeLinks.length + " relative links");
+    console.log("Found " + allAbsoluteLinks.length + " absolute links");
+  }
+
+
+  function show_esri(sp) {
+    	sType = "ESRI";
+
+    	var startP = sp*20;
+    	var preInp = $("#q").val();
+    	var inp = preInp.split(' ').join('+');
+    	var inParams = '&bbox=' + gW +',' + gS + ',' + gE + ',' + gN + '&start='+startP+'&q='+inp;
+
+      sSrchUrl = encodeURI(baseEsri+inParams);
+      sSrchUrl.replace(/=/g,'^*');
+
+    	var jqxhr = $.get( baseEsri+inParams, function() {
+		  console.log( "success - 1" );
+		})
+		  .done(function(data) {
+		  	var pd = JSON.parse(data);
+
+		  	var pstack = '<b>ESRI ArcOnline found ' + pd.total + ' records</b></br>';
+
+		  	var ha = pd.results;
+		  	 var zc = '</br>';
+
+		  	for (i = 0; i < ha.length; i++) {
+		  		var hid = ha[i].id;
+		  		var src_name = 'Data Source: ' + ha[i].owner;
+	          	var src_type = 'Data Source Type: ' + ha[i].type;
+	          	
+	          	var src_title = ha[i].title;
+	          	var src_desc = 'Abstract: ' + ha[i].description;
+	          	var src_uri = 'URL: ' + '<a rel="external" target ="_blank" href="' + ha[i].url + '">' + ha[i].url + '</a></br>' ;
+              var scrape_uri = 'Scrape: ' + '<a onclick=javascript:tryme("' + ha[i].url + '")>getJSON</a></br>' ;
+
+              zc = zc + '<button class="action-button" id=esr#-#"' + hid + '#-#' + src_title + '" >Save</button>';     
+	          	zc = zc + '<div class="g-item-card"><b>' + src_title + "</b></br> " + src_type + '</br>' + src_name + '</br>' + src_desc + '</br>' + src_uri + '-----' +  scrape_uri + '</div></br></br>';
+
+		  	}
+
+		  	 $("#cb").html(pstack + zc);
+		    console.log( "second success" );
+		  })
+		  .fail(function() {
+		    console.log( "error" );
+		  })
+		  .always(function() {
+		    console.log( "finished" );
+		  });
+		 
+		// Perform other work here ...
+		 
+		// Set another completion function for the request above
+		jqxhr.always(function() {
+		  console.log( "second finished" );
+		});
+
+    }
+
+// ************** End ESRI
+
+
+    function showWB() {
+    //
+
+    	$('#workbench').toggle();
+    	$('#wbNav').toggle();
+
+		  $("#Lx25").toggle();    	
+    	$("#cb").toggle();
+
+    	listWB();
+    	
+    }
+
+    function showSearch(moi) {
+      var nid = moi.id;
+      var np = nid.split('-');
+      var nSrc = np[1];
+      var hid = np[2];
+
+      var gs = getCookie(np[1]);
+
+      var sName = gs.split('=');
+
+       $("#workbench").html('');
+       var pstack = '<b>Saved Searches</b></br>';
+       var zc= sName[1] + "</br>";
+
+       $("#workbench").append(
+          $('<button>')
+            .attr('class','action-button')
+            .attr('id','abx-'+hid)
+            .attr('docid','mdrem-'+hid)
+            .attr('onclick','javascript:removeItem(this);').append('Del'),
+          $('<button>')
+            .attr('class','action-button')
+            .attr('id','rb-note-'+hid)
+            .attr('docid','rbnote-' + hid)
+            .attr('onclick','javascript:annotateItem(this);').append('Annotate'),
+          $('<button>')
+            .attr('class','action-button')
+            .attr('id','pax-'+hid)
+            .attr('docid','projadd-' + hid)
+            .attr('onclick','javascript:projectItem(this);').append('Add to Project'),
+          $('<div>')
+          .attr('class', 'g-item-card')
+          .append( pstack + zc), 
+          $('<div>')
+            .attr('id','SrchRec')
+            .attr('class', 'g-item-card')
+            .append('Saved Records</br>')
+              .append('<ul>')
+              .attr('id',"ulSrchRec")
+              .attr('class',"nav navbar-nav") );
+
+      var ca = document.cookie.split(';');
+      var indx = 0;
+      var bldLst = "";
+
+      for(var i = 0; i < ca.length; i++) {
+            var cRec = ca[i];
+            var nx = cRec.split('=');
+            indx++;
+            console.log(' cookie ' + indx);
+            var bldLst = "";
+
+            if (nx[0].indexOf("SearRec" ) != -1 ) {
+              var vx=nx[1];
+              var vs = vx.split('#-#');
+              if  ( vs[0] == nSrc ) {
+                var rcd = getCookie(vs[1]);
+                var nxVal = rcd.split('#-#');
+                console.log(nxVal);
+                var napalm = nxVal[2];
+                var nSrc = "";
+                if ( nxVal[0] == 'ddh') { nSrc = "Cinergi";  } else { nSrc = "ESRI"; }
+                indx++;
+
+                $('#ulSrchRec').append(
+                  $('<li>').attr('id','lpx-'+indx)
+                  .attr('class','wb-li-item')
+                  .attr('docid',nx[0].trim())
+                  .append(
+                      $('<div>').attr('class','div-rb')
+                      .attr('id','rbx-'+nSrc + '-' + nx[0].trim())
+                      .attr('onclick','javascript:showItem(this);')
+                      .append('<b>' + nSrc + ': ' + napalm + '</b>')                       
+                  ));
+              }
+            }
+      }
+
+    }
+
+    function showProject(moi) {
+      var nid = moi.id;
+     // var pid = moi.docid;
+      var np = nid.split('-');
+      var nSrc = np[1];
+      var hid = np[2];
+
+      $("#workbench").html('');
+      var pstack = '<b>Project: ' + hid + ' </b></br>';
+      var zc="Description</br></br>Related Searches</br></br>";
+
+      $("#workbench").append(
+          $('<button>')
+            .attr('class','action-button')
+            .attr('id','abx-'+hid)
+            .attr('docid','mdrem-'+hid)
+            .attr('onclick','javascript:removeItem(this);').append('Del'),
+          $('<button>')
+            .attr('class','action-button')
+            .attr('id','rb-note-'+hid)
+            .attr('docid','rbnote-' + hid)
+            .attr('onclick','javascript:annotateItem(this);').append('Annotate'),
+          $('<button>')
+            .attr('class','action-button')
+            .attr('id','pax-'+hid)
+            .attr('docid','projadd-' + hid)
+            .attr('onclick','javascript:shareItem(this);').append('Share'),
+          $('<div>')
+            .attr('class', 'g-item-card')
+            .append(pstack),
+          $('<div>')
+            .attr('id','PrjSearch')
+            .attr('class', 'g-item-card')
+            .append('Related Searches</br>')
+              .append('<ul>')
+              .attr('id',"ulPrjSrch")
+              .attr('class',"nav navbar-nav"),
+          $('<div>')
+            .attr('id','PrjRecords')
+            .attr('class', 'g-item-card')
+            .append('Related Datasets</br>')
+            .append('<ul>')
+              .attr('id',"ulPrjRec")
+              .attr('class',"nav navbar-nav") );
+
+
+      
+      var ca = document.cookie.split(';');
+      var indx = 0;
+      var bldLst = "";
+
+      for(var i = 0; i < ca.length; i++) {
+            var cRec = ca[i];
+            var nx = cRec.split('=');
+            indx++;
+            console.log(' cookie ' + indx);
+            var bldLst = "";
+
+            if (nx[0].indexOf("RecProj" ) != -1 ) {
+              var vx=nx[1];
+              var vs = vx.split('#-#');
+              if  ( vs[0] == hid ) {
+                var rcd = getCookie(vs[1]);
+                var nxVal = rcd.split('#-#');
+                console.log(nxVal);
+                var napalm = nxVal[2];
+                var nSrc = "";
+                if ( nxVal[0] == 'ddh') { nSrc = "Cinergi";  } else { nSrc = "ESRI"; }
+                indx++;
+
+                $('#ulPrjRec').append(
+                  $('<li>').attr('id','lpx-'+indx)
+                  .attr('class','wb-li-item')
+                  .attr('docid',nx[0].trim())
+                  .css({left: 300})
+                  .append(
+                      $('<div>').attr('class','div-rb')
+                      .attr('id','rbx-'+nSrc + '-' + nx[0].trim())
+                      .css({left: 300})
+                      .attr('onclick','javascript:showItem(this);')
+                      .append('<b>' + nSrc + ': ' + napalm + '</b>')                       
+                  ));
+              }
+            }
+      }
+  
+    }
+
+    var lVote = function (bid) {
+          //$(bid).css(' background: '#0971B2'); 
+        var clx = bid.style.background;
+        var vC =  $(bid).html();
+        // var clr = $(bid).css('background');
+        if ( vC == "Vote" ) {
+          $(bid).html("Good");
+          $(bid).css('background','#72b802');
+        
+        }  else if ( vC == "Good" ) {
+          $(bid).html("Bad");
+          $(bid).css('background','#b97182'); 
+        }  else if ( vC == "Bad" ) {
+          $(bid).html("Good-NR");
+          $(bid).css('background','#a9a172'); 
+        }  else if ( vC == "Good-NR" ) {
+          $(bid).html("Vote");
+          $(bid).css('background','#0971b2'); 
+        }  else {
+          $(bid).html("Vote");
+          $(bid).css('background','#0971B2'); 
+        }
+    }
+
+    var lNotes = function (bid) {
+        var ld = bid.id; 
+        var ls = ld.substring(ld.indexOf('-') +1);
+        var did = 'ln-'+ls;
+        var why = document.getElementById(did);
+       
+        if ( $(why).is(":visible") ) {
+            $(why).hide();   
+        } else {
+          var dval = "Test Value";
+          var editStr = '<b>Edit:</b><input class="text1" name="note" type="text" placeholder="Rate the Link .." value="' + dval + '">';
+
+          $(why).html(editStr);   
+          $(why).show();  
+
+        }
+        
+    }
+
+    var lInspect = function(fid) {
+      var ld = fid.id;
+      var ls = ld.substring(ld.indexOf('-') +1);
+
+
+      // First try header check
+
+      var rip = "/url_header?url=" + ls;
+        $.ajax({
+          type: 'GET',
+          url: rip,
+          dataType: "json",
+          contentType: "application/json",
+          success: function(data) {
+
+              if ( data == "ERROR") {
+                $(ld).css('background','#b27102');
+                console.log('err');
+              } else {
+                var sCode = data.statusCode;
+                var hdr = data.headers;
+                var rsp = data.request;
+
+                var csize = hdr["content-length"];
+                var ctype = hdr["content-type"];
+                var href = rsp.uri.href;
+                var bg = '#aaaaaa';
+                if (sCode) {
+                    if (sCode == "400" || sCode == "401" || sCode == "402" ||sCode == "404" || sCode == "403" ) { bg = "#bb8840" }
+                    if (sCode == "301" || sCode == "302" || sCode == "302" ) { bg = "#ff6600" }
+                    if (sCode == "200" || sCode == "201" || sCode == "203" ) { bg = "#44bb22" }
+
+                }
+                $(fid).css('background',bg);
+                $(fid).html(ctype);
+                console.log('Header Check ' + sCode + ' ' + ctype + ' ' + csize + ' ' + href);
+                
+              }
+
+              
+          },
+          error: function(err) {
+            console.log('err');
+              $(ld).css('background','#b27102');            
+          }
+        });
+
+
+    }
+
+    function showItem(moi) {
+
+      var nid = moi.id;
+      var np = nid.split('-');
+      var nSrc = np[1];
+      var nId = np[2];
+      curID = nId;
+
+       $("#workbench").html('');
+
+      if ( nSrc == 'Cinergi' ) {
+        var rip = "/cin1rec?id=" + nId;
+        $.ajax({
+          type: 'GET',
+          url: rip,
+          dataType: "json",
+          contentType: "application/json",
+          success: function(data) {
+             
+              var pd = data._source;
+              var pstack = '<b>Cinergi Record: ';
+
+              //var ha = pd.results;
+               var zc = '</br>';
+
+              //for (i = 0; i < ha.length; i++) {
+                //var hid = pd.apiso_Identifier_s;
+                var hid = data._id; 
+
+                var src_name = 'Data Source: ' + pd.apiso_Abstract_txt;
+                var src_type = 'Data Source Type: ' + pd.src_source_type_s;
+                
+                pstack = pstack + pd.title + '</b>';
+
+                var src_title = pd.title;
+                var src_desc = 'Abstract: ' + pd.apiso_Abstract_txt;
+                var zed = urlCheck(pd.src_uri_s);
+
+                var src_uri = 'source URI: ' + '<a  class="aref-valid" rel="external" target ="_blank" href="' + pd.src_uri_s + '">' + pd.src_uri_s + '</a></br>' ;
+                var scrape_uri = 'Scrape: ' + '<a onclick=javascript:tryme("' + pd.src_uri_s + '")>getJSON</a></br>' ;
+
+              var lnk = pd.links_s;
+              var sl = '<b>Links</b></br>';
+
+              if (Array.isArray(lnk) ) {
+                for (z= 0; z <lnk.length; z++) {
+                  var ls = lnk[z];
+                  var zed = urlCheck(ls);
+                  var lbVote = '<a class="vote-button" id="vote'+ls+'" onclick="javascript:lVote(this);" >Vote</a>';
+                  var lbInspect = '<a class="link-button" id="inspect-'+ls+'" onclick="javascript:lInspect(this);" >Inspect</a>';
+                  var lbNote = '<a class="link-button" id="note-'+ls+'" onclick="javascript:lNotes(this);">Notes</a>';
+                  var alnk = '<a rel="external" class="aref-valid" target ="_blank" onclick="javascript:lbak(this);" href="' + ls + '">' + ls + '</a>';
+                  var cDiv = '<div id="ln-'+ls+'" style="display:none;"></div>';
+                  sl = sl + lbVote + lbInspect + lbNote + alnk + cDiv + '</br>';
+
+                }
+                console.log(sl);
+              } else {
+                if ( typeof(lnk) !== "undefined") {
+                  var zed = urlCheck(ls);                  
+                  sl = sl + '<a rel="external" class="aref-valid" target ="_blank" onclick="javascript:lbak(this);" href="' + lnk + '">' + lnk + '</a></br>';
+                }
+              }
+
+              zc = zc +  "</br> " + src_type + '</br>' + src_uri + '</br>' + src_desc + '</br>' + sl + '</br>';
+
+              $("#workbench").append(
+                $('<button>')
+                  .attr('class','action-button')
+                  .attr('id','abx-'+hid)
+                  .attr('docid','mdrem-'+hid)
+                  .attr('onclick','javascript:removeItem(this);').append('Del'),
+                $('<a>')
+                 .attr('class','action-button')
+                 .attr('href','http://mdeditor.usgin.org/?docId='+hid)
+                  .attr('target','_blank')
+                  .append('Metadata Editor'),
+                $('<button>')
+                  .attr('class','action-button')
+                  .attr('id','dsv-'+hid)
+                  .attr('docid','dsv-' + hid)
+                  .attr('onclick','javascript:lVote(this);').append('Vote'),
+                $('<button>')
+                  .attr('class','action-button')
+                  .attr('id','rbnote-'+hid)
+                  .attr('docid','rbnote-' + hid)
+                  .attr('onclick','javascript:editItem(this);').append('Annotate'),
+                $('<button>')
+                  .attr('class','action-button')
+                  .attr('id','pax-'+hid)
+                  .attr('docid','projadd-' + hid)
+                  .attr('onclick','javascript:item2project(this);').append('Add to Project'),
+                $('<div>')
+                  .attr('id','dshn-'+hid)
+                  .attr('style','display:none'),
+                $('<div>')
+                .attr('class', 'g-item-card')
+                .append( pstack + zc)
+                );
+          }
+        });
+
+
+        console.log(moi.id);
+      } else {
+        // ESRI record
+
+
+      }
+    }
+
+    function item2project(itm) {
+        var nid = itm.id.split('-');
+        var iid = nid[1];
+
+        var ndiv = 'dshn-'+iid;
+        var why = document.getElementById(ndiv);
+      
+         if ( $(why).is(":visible") ) {
+            $(why).hide();   
+          } else {
+
+            // Build the project select list
+
+            var ca = document.cookie.split(';');
+            var indx = 0;
+
+            var selStr = '<select id="prjSel" >';
+
+            for(var i = 0; i < ca.length; i++) {
+                  var cRec = ca[i];
+                  var nx = cRec.split('=');
+                  indx++;
+                  console.log(' cookie ' + indx);
+                  
+                  if (nx[0].indexOf("Project") != -1 ) {
+                    selStr = selStr + '<option value="'+nx[0]+'">'+nx[1] + '</option>';
+                  }
+            }
+
+            var selStr = selStr + '</select><button class="action-button" id="svp-'+ iid + '" onclick=javascript:savePR(this); >Save</button>';
+            $(why).html(selStr);
+            $(why).show();   
+          
+          }
+
+    
+    }
+
+    function savePR(pb) {
+
+        var nid = pb.id.split('-');
+        var recid = nid[1];
+
+        var ndiv = 'dshn-'+recid;
+        var why = document.getElementById(ndiv);
+
+        var projID = $("#prjSel").find(":selected").val();
+        // set a cookie and exit
+
+        var d = new Date();
+        var cn = "RecProj" + d.toUTCString();
+
+        var cVal = projID + '#-#' + curID;
+        setCookie(cn,cVal,1000);
+            
+         $(why).hide();
+
+    }
+
+
+    function editItem(md) {
+      console.log('ui');
+      
+      var nid = md.id.split('-');
+      var iid = nid[1];
+
+      var ndiv = 'dshn-'+iid;
+      var why = document.getElementById(ndiv);
+     
+      if ( $(why).is(":visible") ) {
+        $(why).hide();   
+      } else {
+
+         var dval = "Test Value";
+         var editStr = '<b>Edit:</b><input class="text1" name="note" type="text" placeholder="Rate the Link .." value="' + dval + '">';
+
+         $(why).html(editStr);   
+         $(why).show();   
+        
+      }
+     
+
+        /*
+      var la = md.attributes[2].value;
+      var ls = la.split('-');
+      var lnk = 'http://mdeditor.usgin.org/?docId='+ls[1];
+      var w = window.open();
+      $(w.document.body).html(lnk);
+      */
+
+    }
+
+
+    function clearRightPanel(mol) {
+       $("#workbench").html('');
+    }
+
+    function toggleSaved(kix) {
+
+      // $('#wbSaved').hide();
+      // $('#wbSrch').hide();
+     //  $('#prjRecords').hide();
+
+      if ( kix.id == "showSD") {
+         $('#wbSaved').toggle();
+      }
+      if ( kix.id == "showSS") {
+        $('#SrchRec').toggle();
+      }
+      if ( kix.id == "showPR") {
+         $('#prjRecords').toggle();
+      }
+
+    }
+
+    function listWB() {
+
+    	$('#wbCart').empty();
+      $('#wbSrch').empty();  
+    	$('#wbProject').empty();
+
+    	var ca = document.cookie.split(';');
+    	var indx = 0;
+
+      	for(var i = 0; i < ca.length; i++) {
+          	var cRec = ca[i];
+          	var nx = cRec.split('=');
+          	indx++;
+          	console.log(' cookie ' + indx);
+
+            if (nx[0].indexOf("Project") != -1 ) {
+    				  $('#wbProject').append(
+    					 $('<li>').attr('id','lix-'+indx)
+    					   .attr('class','wb-li-item')
+    					   .attr('docid',nx[0].trim())
+    					   .append($('<div>').attr('class','div-rb')
+                                  .attr('id','rb-'+nSrc + '-' + nx[0].trim())
+                                  .attr('onclick','javascript:showProject(this);')
+                                  .append('<b>' +nx[1] + '</b>') 
+                )
+                );           		
+
+          	} else if (nx[0].indexOf("Search") != -1 ) {
+               var xVal = nx[1].split('#-#');
+               var nxVal = xVal[1].replace(/-#-/g,'=');
+
+                $('#wbSrch').append(
+                  $('<li>').attr('id','lix-'+indx)
+                      .attr('class','wb-li-item')
+                      .attr('docid',nx[0].trim())
+                      .append($('<div>').attr('class','div-rb')
+                            .attr('id','si-' + nx[0].trim())
+                            .attr('onclick','javascript:showSearch(this);')
+                            .append('<b>' +nxVal + '</b>')                        
+                      )
+                    ); 
+            } else {
+
+          		var nxVal = nx[1].split('#-#');
+              console.log(nxVal);
+          		var napalm = nxVal[2];
+          		var nSrc = "";
+          		if ( nxVal[0] == 'ddh') { nSrc = "Cinergi";  } else { nSrc = "ESRI"; }
+          		indx++;
+
+          		$('#wbCart').append(
+	            	$('<li>').attr('id','lix-'+indx)
+	            	.attr('class','wb-li-item')
+                   	.attr('docid',nx[0].trim())
+                   	.append(
+                $('<div>').attr('class','div-rb')
+                          .attr('id','rb-'+nSrc + '-' + nx[0].trim())
+                          .attr('onclick','javascript:showItem(this);')
+                          .append('<b>' + nSrc + ': ' + napalm + '</b>')                       
+                ));     
+          }
+        }
+    }
+
+    function getCookie(cname) {
+	    var name = cname + "=";
+	    var ca = document.cookie.split(';');
+	    for(var i = 0; i <ca.length; i++) {
+	        var c = ca[i];
+	        while (c.charAt(0)==' ') {
+	            c = c.substring(1);
+	        }
+	        if (c.indexOf(name) == 0) {
+	            return c.substring(name.length,c.length);
+	        }
+	    }
+	    return "";
+	}
+
+    function setCookie(cname, cvalue, exdays) {
+	    var d = new Date();
+	    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+	    var expires = "expires="+d.toUTCString();
+	  
+	    if ( cname == "Project" ) {
+	    	document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        return true;
+	    } else {
+	    	var coCheck = getCookie(cname);
+	    	if ( typeof(coCheck) == "undefined" || coCheck.length == 0 ) {
+	        	document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+            return true;
+	     	} else {
+	      		alert('Already saved this one');
+            return false
+	     	}
+	     	
+	    }
+	     
+	}
+
+	function clearCookies() {
+	      var ca = document.cookie.split(';');
+	      for(var i = 0; i <ca.length; i++) { 
+	          var nx = ca[i].split('=');
+	          removeItem(nx[0]);
+	         
+	      }
+	      listWB();
+	}
+
+
+	function removeItem( sKey ) {
+	   
+	    if ( typeof(sKey) == "object" ) {
+
+	      var nk = sKey.attributes['docid'].value;
+        var nko = nk.split('-');
+        var cid = nko[1];
+
+        var mc = getCookie(cid);
+        if ( mc.length > 0 ) {
+            document.cookie = cid + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT";  
+            clearRightPanel();
+            listWB();
+        } else {
+          console.log('cant find me ' + cid);
+        }
+	      //document.cookie = cid + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+	      //var undo = '#' + cid; //sKey.id;
+	      //$(undo).remove();
+       
+
+
+	    } else {
+
+	       document.cookie = sKey + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+         clearRightPanel();
+         listWB();
+
+	    }
+	 
+
+	}
+
+
+  function seaSet() {
+
+
+     $('#seaSel')
+    .find('option')
+    .remove()
+    .end();
+
+    var ca = document.cookie.split(';');
+   
+    for(var i = 0; i < ca.length; i++) {
+        var cRec = ca[i];
+        var nx = cRec.split('=');
+       
+        if (nx[0].indexOf("Search") != -1 ) {
+          var vx = nx[1].split('#-#');
+          $('#seaSel').append($('<option/>', { 
+              value: vx[0],
+              text : vx[1] 
+          }));
+        }
+    }
+  }
+
+
+	var initFlic = function()	 {
+
+		  var eb = Number(-80.0);
+      var wb = Number(-110.0);
+      var nb = Number(45.0);
+      var sb = Number(28.0);
+
+      var nbx = nb+0.2*nb;
+    	var sbx = sb-0.2*sb;
+      var ebx = eb-0.2*eb;
+    	var wbx = wb+0.2*wb;
+
+
+      var initExtent = L.latLngBounds([nbx, wbx], [sbx , ebx]);
+	    var rectExtent = L.latLngBounds([nb, wb], [sb , eb]);
+        var center = new L.LatLng(sbx + (nbx - sbx)/2 ,ebx + (wbx - ebx)/2);
+
+		 $("#showMap").show(); 
+		 var drawnItems,
+		 	 drawControl;
+
+		 L.mapbox.accessToken = 'pk.eyJ1IjoiZ2FyeWh1ZG1hbiIsImEiOiJjaW14dnV2ZzAwM2s5dXJrazlka2Q2djhjIn0.NOrl8g_NpUG0TEa6SD-MhQ';
+	        map = L.mapbox.map('showMap', 'mapbox.streets', 
+                {   infoControl: false,
+                    legendControl: false,
+                    zoomControl: false, 
+                    trackResize: true,
+                    opacity: .50,
+                    tileSize: 128,  
+                    animate: false })
+                .setView(center, 6)
+                .on('ready',function() { 
+                    setTimeout(function(){ 
+                        map.invalidateSize();
+                        //map.fitBounds(initExtent);
+
+                        //drawnItems = L.rectangle(rectExtent, {color: "#ff7800", weight: 4});
+                        //drawnItems.addTo(map);
+                        //L.rectangle(rectExtent, {color: "#ff7800", weight: 1}).addTo(map);
+                        drawnItems = L.featureGroup().addTo(map);
+
+                        map.addLayer(drawnItems);
+                       // drawnItems.setZIndex(99);
+                       map.fitBounds(rectExtent);
+
+		                drawControl = new L.Control.Draw({
+	                        edit: {
+	                            featureGroup: drawnItems
+	                        },
+	                        draw: {
+	                            polygon: false,
+	                            polyline: false,
+	                            rectangle: true,
+	                            circle: false,
+	                            marker: false
+	                          }
+	                    });
+
+		                map.addControl(drawControl);
+		                map.on('draw:created', showRectArea);
+		                map.on('draw:edited', showRectEdited);
+                       
+
+                    }, 200);
+                    //MapReady =1;
+                    console.log('ready map')})
+                .on('resize',function() { console.log('resize map')});
+
+              
+
+                function showRectEdited(e) {
+                  e.layers.eachLayer(function(layer) {
+                    showRectArea({ layer: layer });
+                  });
+                }
+                function showRectArea(e) {
+                  drawnItems.clearLayers();
+                  drawnItems.addLayer(e.layer);
+                  sR = e.layer.getLatLngs();
+                  gN = sR[1].lat;
+                  gW = sR[0].lng;
+                  gE = sR[2].lng;
+                  gS = sR[0].lat;
+
+                }
+
+
+     seaSet();
+
+	}
+
+</script>
+
+</head>
+<body  onload="initFlic()">
+
+    <div class="g-app" id="app">
+    <nav class="navbar navbar-inverse">
+    <!-- <div class="navbar-header"><a class="navbar-brand" href="#">Cinergi</a></div>-->
+	  <ul class="nav navbar-nav">
+		<li class="nav-item">
+		  <img src="/img/logo_earthcube_cube-rev_75.png" height="48px">
+		</li>
+		 
+	    <li class="nav-item">
+	      <a class="nav-link" href="#searchPanel" onclick="showWB();" >Search </a>
+	    </li>
+
+		  <li class="nav-item">
+			  <a class="nav-link" href="#workbenchPanel" onclick="showWB();" >Cart</a>
+		  </li>
+	  </ul> 
+
+	</nav>
+	</div>
+
+	<div id="Lx25" class="g-search-pane-left">Search</br>
+		<input id="q" name="q" ></br>
+		<button class="action-button" id="GetSrc" >DDH</button>
+    <button class="action-button" id="GetEsri" >Esri</button></br>
+    <button class="action-button" id="SaveSrch" >Save Search</button></br>
+    <select id="seaSel" name="seaSel" ></select>
+    <button class="action-button" id="RunQ" >Run</button></br>
+    <button class="arrow-button" id="pagePrev" > < </button>
+    <span id="PageCnt">Page 0</span>
+    <button class="arrow-button" id="pageNext" > > </button>
+    <div id="showMap" style="display: none;"></div>
+  </div>
+
+  <div id="cb" class="g-search-pane-right">
+    Results
+  </div>
+
+  <div id="wbNav" class="g-search-pane-left" style="display: none;">
+		<button class="arrow-button" id="clrRecords" onclick="clearRightPanel(this);" >Clear</button></br>
+    <button class="arrow-button" id="showSD" onclick="toggleSaved(this);" >Saved Datasets</button></br>
+    <div id="wbSaved" style="display:none">
+        <ul id="wbCart" class="nav navbar-nav">
+        </ul>
+    </div>
+
+   <button class="arrow-button" id="showSS" onclick="toggleSaved(this);" >Saved Searches</button></br>
+    <div id="SrchRec" style="display:none">
+        <ul id="wbSrch" class="nav navbar-nav">
+        </ul>
+      </div>
+
+   <button class="arrow-button" id="showPR" onclick="toggleSaved(this);" >Projects</button></br>
+    <div id="prjRecords" style="display:none">
+        <button class="action-button" id="wfCreate" >New</button><input id="wfc" name="wfc" >
+        <ul id="wbProject" class="nav navbar-nav">
+        </ul>
+      </div>
+    </div>  
+	</div>
+
+	<div id="workbench" class="g-search-pane-right" style="display: none;">
+	
+    <table>
+    <tr><td>
+      <div id="wbPrSrch"></div>
+
+    </td><td>
+       <div id="wbPrData"></div>    
+    </td>
+    <td>
+       <div id="wbPrProc"></div>   
+    </td>
+    </table>
+	</div>
+
+
+  <div id="widget-box" class="g-search-pane-right" style="display: none;">
+  </div>
+
+
+
+</body>
+</html>
+

@@ -1,0 +1,59 @@
+{ 
+  "usginContentModel": {
+    "ExternalReference":"http://test.geothermaldata.org/api/3/action/package_search",
+    "Params": { "id" : "value",
+                "start" : "value"  }
+  },
+  "ListNumber2": {
+    "DisplayValue21":"RealValue1",
+    "DisplayValue22":"RealValue2",
+    "DisplayValue23":"RealValue3"
+  },
+  "gmd:topicCategory": [
+    {"name": "biota", "value": "biota" },
+    {"name": "boundaries", "value": "boundaries" },
+    {"name": "climatologyMeteorologyAtmosphere", "value": "climatologyMeteorologyAtmosphere" },
+    {"name": "economy", "value": "economy" },
+    {"name": "EarthCover", "value": "EarthCover" },
+    {"name": "elevation", "value": "elevation" },
+    {"name": "environment", "value": "environment" },
+    {"name": "geoscientificInformation", "value": "geoscientificInformation" },
+    {"name": "hydrology", "value": "hydrology" },
+    {"name": "Imagery and Base Maps", "value": "Imagery and Base Maps" },
+    {"name": "imageryBaseMapsEarthCover", "value": "imageryBaseMapsEarthCover" },
+    {"name": "inlandWaters", "value": "inlandWaters" },
+    {"name": "oceans", "value": "oceans" },
+    {"name": "oceans and coastal", "value": "oceans and coastal" },
+    {"name": "oceans and estuaries", "value": "oceans and estuaries" },
+    {"name": "society", "value": "society" },
+    {"name": "structure", "value": "structure" },
+    {"name": "transportation", "value": "transportation" }
+  ],
+  "LanguageCode": [
+    {"name": "English", "value":"eng USA"},
+    {"name":"French", "value":"fre"},
+    {"name":"Spanish", "value":"spe"}
+  ],
+
+  "agentRole": [{"name": "Author", "value":"Author"},
+                {"name": "Curator", "value":"Curator"},
+                {"name": "custodian", "value":"custodian"},
+                {"name": "distributor", "value":"distributor"},
+                {"name": "Originator", "value":"originator"},
+                {"name": "Owner", "value":"owner"},
+                {"name": "MetaData Contact", "value":"metadataContact"},
+                {"name": "pointOfContact", "value":"pointOfContact"},
+                {"name": "principalInvestigator", "value":"principalInvestigator"},
+                {"name": "processor", "value":"processor"},
+                {"name": "publisher", "value":"publisher"}, 
+                {"name": "resourceProvider", "value":"resourceProvider"},
+                {"name": "user", "value":"user"} ],
+  "gmd:type" : [    {"name": "dataCenter", "value": "dataCenter"},
+                    {"name": "Discipline", "value": "Discipline"},
+                    {"name": "Instrument", "value": "Instrument"},
+                    {"name": "Place", "value": "Place"},
+                    {"name": "Stratum", "value": "Stratum" },
+                    {"name": "Theme", "value": "Theme"},
+                    {"name": "Temporal", "value": "Temporal" }
+                ]
+}
