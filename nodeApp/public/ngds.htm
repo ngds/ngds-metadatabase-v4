@@ -6,18 +6,12 @@
 <link href='https://api.tiles.mapbox.com/mapbox.js/v2.2.4/mapbox.css' rel='stylesheet' />
 <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.3/leaflet.draw.css' rel='stylesheet' />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://kit-free.fontawesome.com/releases/latest/css/free.min.css" media="all">
 <link rel="stylesheet" href="/css/ngds.css" />
 <link rel="stylesheet" href="/css/dds.css" />
 <link rel="shortcut icon" href="/img/nico.ico" />
-<!--script  src="https://unpkg.com/leaflet@1.0.3/dist/leaflet-src.js"></!--script-->
-<script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.3/leaflet.draw.js'></script>
-<!--script src="https://unpkg.com/esri-leaflet@2.0.7"></!--script-->
 
-<!--script src="https://unpkg.com/esri-leaflet@2.3.3/dist/esri-leaflet.js"
-    integrity="sha512-cMQ5e58BDuu1pr9BQ/eGRn6HaR6Olh0ofcHFWe5XesdCITVuSBiBZZbhCijBe5ya238f/zMMRYIMIIg1jxv4sQ=="
-    crossorigin=""></!--script-->
-    
-<!--script src="http://cdn-geoweb.s3.amazonaws.com/esri-leaflet/1.0.0-rc.4/esri-leaflet.js"></!--scrip-->
+<script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.3/leaflet.draw.js'></script>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -66,6 +60,7 @@
     var gFeatureGroup;
     var gBounds;
     var gExtents=[];
+    var gMdRecord=false;
     var gSearchHistory=[];
     var gSavedGuids=[];
 	var sType ="";
@@ -113,9 +108,22 @@
     var gTAK=0;
 
     function appInit() {
-        //showCategories(15);
-        //showAuthors();
-
+        
+        var guid;
+		var query = window.location.href.split('?')[1]; 
+		if (query) {
+			var params = query.split('&');
+			var pairs = {};
+			for (var i = 0, len = params.length; i < len; i++) {
+			  var pair = params[i].split('=');
+			  pairs[pair[0]] = pair[1];
+			  if ( pair[0] == "guid" ) {
+			    guid = pair[1];
+				console.log('incoming guid - ' + pair[1] );
+			  }
+			}
+        }
+        
         var sh = localStorage.getItem("SearchHistory");
 
         if ( sh ) {
@@ -125,30 +133,40 @@
         $("#sortBtn").text("Modified Date");
 
         mapInit();
-        findRecords(0);
+        if ( guid ) {
+			var o = { "id": guid };
+			gMdRecord=true;
+			mdView(o);
+		} else {
+			findRecords(0);
+		}
 
         $("#app").on('mouseover',function(){
             console.log('cb mouse over');
             $("#SearchHistory").css("display","none");      
         });
 
+        $("#userLoginBtn").click(function() {
+           logmein(this, userMenu);
+        });
+
         $("#cb").on('mouseover',function(){
-            console.log('cb mouse over');
+            
             $("#SearchHistory").css("display","none");      
         });
 
         $("#widget-box").on('mouseover',function(){
-            console.log('cb mouse over');
+            
             $("#SearchHistory").css("display","none");      
         });
 
         $("#searchTool").on('mouseover',function(){
-            console.log('tool mouse over');
+            
             $("#SearchHistory").css("display","none");      
         });
 
         $("#searchMap").on('mouseover',function(){
-            console.log('map mouse over');
+           
             $("#SearchHistory").css("display","none");      
         });
 
@@ -184,7 +202,7 @@
                     showSeaHis();
                 }
             }
-            console.log(' pre len ' + gTApre.length);
+            //console.log(' pre len ' + gTApre.length);
             if ( gTApre.length > 2 ) {
                 console.log(' pre len ' + gTApre.length);
                 if ( e.keyCode > 47 && e.keyCode < 91 ) {
@@ -201,7 +219,7 @@
                 if ( gTAK > 0 ) { gTAK--; }
 
                 $(".sh-item").each(function() {
-                    console.log( ' id ' +  $(this).attr("id") );
+                    //console.log( ' id ' +  $(this).attr("id") );
 
                     if ( $(this).attr("id") == 'sh-'+gTAK ) {
                         $(this).css("font-weight","bold");
@@ -297,20 +315,8 @@
     function  mapInit() {
        
 		$("#showMap").show(); 
-        map = L.map('showMap'); //.setView([42, -100.09], 6);
+        map = L.map('showMap', { minZoom: 1 }); //.setView([42, -100.09], 6);
         L.esri.basemapLayer('Streets').addTo(map);
-        /*
-		L.mapbox.accessToken = 'pk.eyJ1IjoiZ2FyeWh1ZG1hbiIsImEiOiJjaW14dnV2ZzAwM2s5dXJrazlka2Q2djhjIn0.NOrl8g_NpUG0TEa6SD-MhQ';
-        var Lurl = 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token='+L.mapbox.accessToken;
-        L.tileLayer(Lurl, {
-           // maxZoom: 18,
-            infoControl: false,
-            legendControl: false,
-            zoomControl: true, 
-            trackResize: true,
-            id: 'mapbox.streets'
-        }).addTo(map);
-        */
 
         map.on('ready',function() { 
             setTimeout(function(){ 
@@ -356,7 +362,7 @@
                     </span>
                    
                      <span class="nav navbar-nav"> 
-                        <a class="navbar-text" id="loginBtn" href="#loginPanel" style="color:#dcdcdc" onclick="showLogin();" >Login</a> 
+                        <a class="navbar-text" id="loginBtn" href="#loginPanel" style="color:#dcdcdc" onclick="toggleLogin(this, userMenu);" >Login</a>  
                         <span class="nav navbar-nav" id="laname"></span>
                     </span>
                 </div>
@@ -433,8 +439,10 @@
              
         <div id="widget-box" class="g-search-pane-right" style="display: none;">
             <a href="http://geothermaldata.org" ><i class="fa fa-home" style="font-size: 20px; color: #196fa6"></i></a>
-            <span id="widget-title" class="dijitTitlePaneTextNode"  style="margin:2px; font-size: 16px; f"> / Dataset</span>
-            <button id="goSearchBtn" class="arrow-button" onclick="bactoSearch(this)">Return to Search</button></br>
+            <span id="widget-title" class="dijitTitlePaneTextNode"  style="margin:2px; font-size: 16px;"> / Dataset</span>
+            <button id="goSearchBtn" class="arrow-button" onclick="bactoSearch(this)">Return to Search</button>
+            <button id="mdEditBtn" class="arrow-button" onclick="edState(this)" style="display:none;">Edit</button>
+			<button id="mdCancelBtn" class="arrow-button" onclick="edCancel(this)" style="display:none;">Cancel</button></br>
             <div id="widget-view"></div>
         </div>
         
@@ -463,6 +471,13 @@
                 <div id="dataMap" style="background-color: white; margin:5px; width: 900px; height: 650px;" ></div>
 
          </div>
+
+        <div id="leftMDRecord" class="g-search-pane-left" style="margin:5px; display: none;" >
+         <span id="edit-l-title" style="margin:5px; font-size: 14px; 
+                 font-family: Helvetica Neue Light, Helvetica Neue, Helvetica, Arial; 
+                 font-weight: normal">Metadata Record Versions</span>
+                <div id="lr-widget" style="margin-left:10px;"></div>
+         </div>
          
         <div id="leftEdit" class="g-search-pane-left" style="margin:5px; display: none;" >
             <span id="edit-l-title" style="margin:5px; font-size: 14px; font-weight: bold">Select Edit Mode</span>
@@ -475,25 +490,22 @@
             <div id="editFrame" style="background-color: white; margin:5px; width: 800px; height: 600px;" ></div>
         </div>
 
-        <div id="loginDiv" style="position: absolute; top: 75px; left: 600px; margin: 10px; height: 180px; width: 220px; background-color: #c2d2e0; border-radius: 5px; display: none;">
+        <div id="loginDiv" style="position: absolute; top: 75px; left: 800px; margin: 6px; height: 140px; width: 200px; background-color: #005e95; border-radius: 3px; display: none;">
             <div style="margin:5px;"> 
-            <span style="margin:10px; font-family: Helvetica Neue Light, Helvetica Neue, Helvetica, Arial; font-size: 14px; font-weight: bold">Login</span>
+            <span style="margin:5px 15px; font-family: Helvetica Neue Light, Helvetica Neue, Helvetica, Arial; color: white; font-size: 14px; font-weight: bold">Login</span>
             </div>
-            <div style="margin:15px 15px;">
+            <div style="margin:5px 15px;">
             <input class="form-control" placeholder="Username" id="luser"></br>
             <input  id="lpass" class="form-control" placeholder="Password" type="password">
             </br>
             <label class="checkbox" for="field-remember">
-            <input id="field-remember" type="checkbox" name="remember" value="63072000" checked="" style="margin:8px; font-family: Arial, Helvetica">
+            <input id="field-remember" type="checkbox" name="remember" value="63072000" checked="" style="margin:4px;  font-family: Arial, Helvetica">
                 Remember me
             </label>
         </div>
-        <div style="margin:15px 15px;">
-        
-            <a class="tag" type="submit"  onclick="logmein(this)"  style="margin:8px;">Login</a>
-            <a class="tag" type="submit"  onclick="toggleLogin();"  style="margin:8px;">Cancel</a>
-            <!--button class="tag" type="submit" style="margin:8px;">Forgot Password</button>
-            <button class="tag" type="submit"  style="margin:8px;">Register</button-->
+        <div style="margin:5px 15px;">
+            <a id="userLoginBtn" class="tag" type="submit" style="margin:4px;">Login</a>
+            <a class="tag" type="submit"  onclick="toggleLogin();"  style="margin:4px;">Cancel</a>
         </div>
         </div>
           

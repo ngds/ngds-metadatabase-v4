@@ -11,8 +11,7 @@ var  fs = require("fs");
 var  Path = process.env.NODE_PATH;
 const pg = require('pg'),
 	xmldoc = require('xmldoc');
-//const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/GEOTHERMAL';
-const connectionString = 'postgres://ngdsdb:geonewton@localhost:5432/geothermal'; 
+const connectionString = ''; 
 
  var iXml = fs.readFileSync(Path+'/transact-insert-template.xml', 'utf8');
  

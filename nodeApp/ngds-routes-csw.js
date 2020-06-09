@@ -1,3 +1,10 @@
+/*
+  test.geothermaldata 
+  pyCSW interface
+  May 14, 2020
+
+*/
+
 var express = require('express');
 var router = express.Router();
 
@@ -10,9 +17,9 @@ var  fs = require("fs");
 var  Path = process.env.NODE_PATH;
 const pg = require('pg'),
 	xmldoc = require('xmldoc');
-//const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/GEOTHERMAL';
-const connectionString = 'postgres://ngdsdb:geonewton@localhost:5432/geothermal'; 
-const pyUrl = 'http://10.208.11.160:8000/';
+
+const connectionString = ''; 
+const pyUrl = '';
 let afMap = new Map();
 class autoFunction {
   constructor(n) {
@@ -32,6 +39,40 @@ var autoFinder = function(n){
   return null;
 }
 
+function routelog(req,lp, ore) {
+	var ip = req.headers['x-forwarded-for'] || 
+	req.connection.remoteAddress || 
+	req.socket.remoteAddress ||
+	(req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+	if (ip.substr(0, 7) == "::ffff:") {
+	   ip = ip.substr(7)
+	}
+	var qs = '';
+	if ( req.query ) {
+		qs = '?';
+		for (var key in req.query) {
+			qs = qs + '&' + key + '=' + req.query[key];
+		  }
+	}
+	
+	var rm = req.method;
+	if ( !ore || ore == 'err') {
+		console.error(ip + ' ' + rd() + ' ' + rm  + ' ' + lp + qs);
+	} else {
+		console.log(ip + ' ' + rd() + ' ' + rm  + ' ' + lp + qs);
+	}	
+}
+
+function rd() {
+	var d = new Date();
+	d = '['+d.getFullYear() + "-" + ('0' + (d.getMonth() + 1)).slice(-2) 
+		+ "-" + ('0' + d.getDate()).slice(-2) + " " + ('0' + d.getHours()).slice(-2) 
+		+ ":" + ('0' + d.getMinutes()).slice(-2) + ":" + ('0' 
+		+ d.getSeconds()).slice(-2).slice(-2)+'.'+d.getMilliseconds()+']';
+	return d;
+}
+
 
 function XMLtoJ(data) {
 	var aj = {};
@@ -42,7 +83,6 @@ function XMLtoJ(data) {
     });
 	 return aj;
 }
-
 
 var grbi = new autoFunction('getRecordById');
 grbi.exec = async function(o,r) {
@@ -85,16 +125,19 @@ grbi.exec = async function(o,r) {
             	if (typeof(oiw) !== "undefined") {
             		var jBody =  XMLtoJ( oiw.toString({compressed:true}) );
             		var mBody = JSON.stringify(jBody);
-            		mBody = mBody.replace(/'/g, "\''");
+					mBody = mBody.replace(/'/g, "\''");
+					gTitle = gTitle.replace(/'/g, "\''");
+				
+
             		// makemd - upserts as necessary 
             		var sqlStr = 'select * from makemdrecord(\''+rGuid+'\','+setid+',\''+rGuid+'\',\''+ gTitle + '\',6,\'' + mBody + '\'::json)';
-            		console.log('makemd function call '+rGuid); 
+            		//console.log('makemd function call '+ sqlStr); 
 					client.query(sqlStr, (err, res) => {						 	
 						if ( typeof(res) !== "undefined" ) {		  
                   			pyPost(oiw);                  
 							r.json(res);                                                                     					  	
 						} else {
-						  	console.log('write q errored '+JSON.stringify(err));
+						  	//console.log('write q errored '+JSON.stringify(err));
 						  	r.json(err);							
 						  	}
 						});   
@@ -110,17 +153,39 @@ grbi.exec = async function(o,r) {
 // pyPost - sends xml to pyCSW api for insert during harvest - r is the request object
 
 var pyPost = async function(xml,r) {
-     
+	 
+	var xa = xml.attr;
+
+	if ( !xa["xmlns:xsi"]) {
+		xa["xmlns:xsi"] = "http://www.w3.org/2001/XMLSchema-instance";
+	}
+
+	if ( !xa["xmlns:gmd"]) {
+		xa["xmlns:gmd"] ="http://www.isotc211.org/2005/gmd" ;
+	}
+
+	if ( !xa["xmlns:gco"]) {
+		xa["xmlns:gco"] ="http://www.isotc211.org/2005/gco";
+	}
+
+	if ( !xa["xmlns:xlink"]) {
+		xa["xmlns:xlink"] ="http://www.w3.org/1999/xlink";
+	}
+
+	if ( !xa["xmlns:gml"]) {
+		xa["xmlns:gml"] ="http://www.opengis.net/gml";
+	}
+
      var xTemplate = fs.readFileSync(Path+'/transact-insert-template.xml', 'utf8');
      var xmlBody = xTemplate.replace('##EMBED##',xml);
      
-     console.log('pypost '); //+ xmlBody);
+     //console.log('pypost '); //+ xmlBody);
      pyRequest = require('request');
      var hurl = pyUrl+'?service=CSW&version=2.0.2&request=Transaction&TransactionSchemas=';
      hurl = hurl + 'http://www.isotc211.org/2005/gmi';
     
      var bl = xmlBody.length;
-
+    
       var options = {url: hurl, 
          method: "POST",
          body : xmlBody,
@@ -130,15 +195,16 @@ var pyPost = async function(xml,r) {
            contentLength: bl
          }
        };
-     
+     //console.log(' pypost ' + hurl);
      var pyResponse = function(err, httpResponse, body) {
         if (err) {
-            stuff = {"result": "Save error : " + err};
-            console.error('upload failed:', err);
+			stuff = {"result": "Save error : " + err};
+			routelog(request,lp+' '+err, 'err');
+            //console.error('upload failed:', err);
             if ( r ) { r.send(stuff) };
         } else {
             stuff = {"result": "Upload response: " + body};
-            console.log('Upload response ' + httpResponse + ' body:', body);
+            //console.log('Upload response ' + httpResponse + ' body:', body);
             if ( r ) {
               r.set('Content-Type', 'text/xml');
               r.send(body);
@@ -154,7 +220,7 @@ var pyPost = async function(xml,r) {
 
         mBody = mBody.replace(/'/g, "\''");
 		var sqlStr = 'select * from makemdrecord(\''+mGuid+'\',1,\''+mCid+'\',\''+mTitle+'\',6,\'' + mBody + '\'::json)';
-		console.log('create record  '+mGuid)
+		//console.log('create record  '+mGuid)
 		return new Promise(function(resolve, reject){
 
 			client.query(sqlStr, (err, res) => {
@@ -209,6 +275,7 @@ var cswRBId = async function (o) {
             	if (typeof(oiw) !== "undefined") {
             		resolve(oiw.toString({compressed:true}) );
             	} else {
+
             	    reject("error")
             	}
           	
@@ -267,7 +334,7 @@ function cswGetRecords(url){
 	//options.constraintlanguage='Filter';
 	options.outputFormat='text/xml';
 	options.outputSchema='http://www.isotc211.org/2005/gmd';
-	console.log( JSON.stringify(options));
+	//console.log( JSON.stringify(options));
 
 	cswClient = csw(hurl, options);
 	cswClient.harvest(options)
@@ -284,7 +351,10 @@ function cswGetRecords(url){
 // This routes to the pyCsw services and passes any parameters without modification
 router.get('/', (request, response) => { 
 
-  console.log(JSON.stringify(request.query));
+	var lp = '/';
+	routelog(request, lp);
+
+  //console.log(JSON.stringify(request.query));
   var params = request.query;
   
   var pStr = '';
@@ -292,14 +362,16 @@ router.get('/', (request, response) => {
     pStr = pStr + '&' + k + '=' + params[k];
   }
   
-  var purl = 'http://10.208.11.160:8000/?' + pStr
-  console.log(purl);
+  var purl = 'http://10.208.3.122:8000/?' + pStr
+  //console.log(purl);
   
    var pyRequest = require('request');
    var pyResponse = function(err, httpResponse, body) {
      if (err) {
-       stuff = {"result" : "pyCSW error - " + err};
-        response.send(stuff);
+	   stuff = {"result" : "pyCSW error - " + err};
+	   routelog(request,lp+' pyCSW '+err, 'err');
+	   response.send(stuff);
+		
      } else {
         stuff = {"result": "Upload response: " + body};
         //console.log('Upload response ' + httpResponse + ' body:', body);
@@ -317,16 +389,17 @@ router.get('/', (request, response) => {
 
 // test post with auto function
 router.post('/', (request, response) => { 
-  var xmlBody = request.body;
-  pyPost(xmlBody,response);
-
+	var lp = '/';
+	routelog(request, lp);
+  	var xmlBody = request.body;
+  	pyPost(xmlBody,response);
 });
 
 // This support transctions - to change pyCsw metadata 
 // The incoming XML must conform to the csw-t temtplate
 
 router.post('/pypost-old', (request, response) => { 
-
+  
   var xmlBody = request.body;
   //console.log('>>> CSW request object ' + JSON.stringify(request));
   //var xml = fs.readFileSync(Path+'/transaction-insert.xml', 'utf8');
@@ -366,8 +439,9 @@ router.post('/pypost-old', (request, response) => {
 // currrenty this bypasses creating new job with newcollectionActivity
 
 router.get('/harvestRecord', (request, response) => { 
-
-    console.log('nca '+JSON.stringify(request.query) );
+	var lp = '/harvestRecord';
+	routelog(request, lp);
+    //console.log('nca '+JSON.stringify(request.query) );
 	var z= { "guid" : "o"};
     z.guid = request.query.guid;
 	z.action = request.query.action;
@@ -385,7 +459,8 @@ router.get('/harvestRecord', (request, response) => {
 
 // This handles json or xml - always makes xml req tho
 router.get('/getRecordById', async function(request, response) {
-    
+    var lp = '/getRecordById';
+	routelog(request, lp);
   	var rGuid = request.query.guid;
 	var hAction = request.query.action;
 	var hFormat = request.query.outputFormat;
@@ -400,7 +475,7 @@ router.get('/getRecordById', async function(request, response) {
 
 	var hr = require('request');
 	var body = '';
-	console.log('remote call ' + hUrl);
+	//console.log('remote call ' + hUrl);
 	
 	hr.get(hUrl)
        .on ('response',function(response) {           		
@@ -439,11 +514,13 @@ router.get('/getRecordById', async function(request, response) {
 
 
 router.get('/getRecords', async function(req, res) {
+	var lp = '/getRecords';
+	routelog(request, lp);
   var cid = req.query.collid;
   var pAction = req.query.action;
   var cSql = 'select * from collections where set_id = ' + cid;
   var hRec = await dbquery(cSql);
-  console.log('DB ' + JSON.stringify(hRec));
+  //console.log('DB ' + JSON.stringify(hRec));
   var hurl = hRec.rows[0].source_url;
    
   cswGetRecords(hurl);
@@ -452,41 +529,50 @@ router.get('/getRecords', async function(req, res) {
 });
 
 router.get('/record_search', async function(req, res) {
+	var lp = '/record_search';
+	routelog(request, lp);
 	var qry = req.query.qry;
 	if ( typeof(req.query.start) !== "undefined")  { var offset = req.query.start; } else { var offset = 0;  } 
 	if ( typeof(req.query.page) !== "undefined") {  var lim = req.query.page; } else { var lim = 25; } 
-	console.log(' >>> record search '+qry)
+	//console.log(' >>> record search '+qry)
  
     if ( qry.length ) {
     	var rcd = await find_records(qry,offset, lim);
-    	console.log(' search >>'+qry+' '+rcd.rows.length);
+    	//console.log(' search >>'+qry+' '+rcd.rows.length);
     	
     	res.send(rcd);	
     } else {
+		routelog(request,lp+' Missing query', 'err');
     	res.send('Missing  query');	
     }  	
 });
 
 router.get('/record_show', async function(req, res) {
+	var lp = '/record_show';
+	routelog(request, lp);
 	var rid = req.query.id;
-	console.log(' >>> record show '+rid)
+	//console.log(' >>> record show '+rid)
  
     if ( rid.length ) {
     	var rcd = await record_show(rid);
     	res.send(rcd);	
     } else {
+		routelog(request,lp+' ID', 'err');
     	res.send('Enter a record id');	
     }  	
 });
 
 router.get('/getCategories', async function(req, res) {
+	var lp = '/getCategories';
+	routelog(request, lp);
 	var lid = req.query.lid;
-	console.log(' >>> categoruesrecord show '+lid)
+	//console.log(' >>> categoruesrecord show '+lid)
     var cats = await categories(lid);
     if ( cats ) {
     	//var rcd = await record_show(rid);
     	res.send(cats);	
     } else {
+		routelog(request,lp+' Missing categories', 'err');
     	res.send('Not Categories');	
     }  	
 });
@@ -494,7 +580,8 @@ router.get('/getCategories', async function(req, res) {
 
 // generic debuggin tool
 router.get('/getData', (request, response) => {
-	
+	var lp = '/getData';
+	routelog(request, lp);
 	var tbn = request.query.tbn;
 	var qfld = request.query.qfld;
 	var qv = request.query.qv;
@@ -527,17 +614,21 @@ router.get('/getData', (request, response) => {
 
 // Start a HJ - setup tables and initiate server
 router.get('/harvestJob', (request, response) => {
+	var lp = '/harvestJob';
+	routelog(request, lp);
+
 	var setid = request.query.setid;
 	var action = 'standard harvest';
 	var directive = 'now';
 
 	var sqlStr = 'Select * from new_collection_activity(' + setid + ',\'' + action + '\',\'' + directive + '\',null)';
-	console.log('new hj ' + sqlStr);
+	//console.log('new hj ' + sqlStr);
 	
 	client.query(sqlStr, (err, res) => {
 		 if ( typeof(res) !== "undefined" ) {
 		 	response.json(res); 
 		 } else {
+			routelog(request,lp+' '+err, 'err');
 		 	response.json(err); 
 		 }
 	});
@@ -584,7 +675,7 @@ router.get('/harvest', (request, response) => {
            	 
        }
 
-       console.log( ' return json --> ', JSON.stringify(rsp) );
+       //console.log( ' return json --> ', JSON.stringify(rsp) );
 
 	}
 
@@ -594,7 +685,8 @@ router.get('/harvest', (request, response) => {
 });
 
 router.get('/harvestSourceInfo', (request, response) => {
-   
+   var lp = '/harvestSourceInfo';
+	routelog(request, lp);
     var hsid = request.query.hsid;
   
     var sqlStr = 'select set_id, set_name, c.status, c.user_id, c.create_date, '  
@@ -611,13 +703,14 @@ router.get('/harvestSourceInfo', (request, response) => {
 							+ '		c.set_type = \'harvest\' and' 
 							+ '		c.status = \'active\' and c.set_id = ' + hsid;
 
-    console.log('sql ' + sqlStr);
+    //console.log('sql ' + sqlStr);
 
     client.query(sqlStr, (err, res) => {
 
 	  if ( typeof(res) !== "undefined" ) {
 	  	response.json(res);  	  
 	  } else {
+		routelog(request,lp+' Not ready', 'err');
 		response.json('Not Ready'); 
 	  }
 
@@ -627,7 +720,9 @@ router.get('/harvestSourceInfo', (request, response) => {
  });
 
 router.get('/harvestSourceList', (request, response) => {
-    // retrie list of harvest sources
+	// retrie list of harvest sources
+	var lp = '/harvestSourceList';
+	routelog(request, lp);
     var sqlStr = 'Select set_id, set_name, source_url from collections where status = \'active\' and set_type = \'harvest\'';
 
     client.query(sqlStr, (err, res) => {
@@ -635,6 +730,7 @@ router.get('/harvestSourceList', (request, response) => {
 	  	response.json(res);  
 	  	
 	  } else {
+		routelog(request,lp+' Error', 'err');
 		response.json('Error'); 
 	  }
 
@@ -642,69 +738,5 @@ router.get('/harvestSourceList', (request, response) => {
 
  });
 
-/*
-router.post('/create_schema', function(request,response) {
-	// DDH - added 4/6 - the object and the diff are saved so ...
-	// When user changes schema page, but is staying on the same record
-	// the edited record from the client is applied to the schema request. Sends the same
-	// record back along with the updated d3 object.
-
-
-    console.log(' New Schema ' + typeof(request.body)  );
-    var pbody = request;
-    //var sname = JSON.stringify(pbody);
-     console.log(' New Schema name ');
-    var resp= { 'result': pbody };
-    response.send(resp); 
-    /*Str 
-    var pbody = request;
-
-  	//var schemafile = pbody.schema; //'50578a99e4b01ad7e0281d9b'; //unescape(req.query.pid);
-  	
-  	var schemaName = pbody.name;
-  	var sVersion = pbody.version;
-  	var sSource = pbody.source;
-  	var sFedId = pbody.FedId;
-  	var schemabody = pbody.mdbody;
-
-  	 var sqlStr = 'Select * from  makeSchemaDef(' + schemaName + ',"json",' +  sVersion + ',' + sSource + ',0,' + schemabody + '::json)';
-  	//var d3file = JSON.parse(fs.readFileSync(Path+'/public/jsonSchemas/' + schemafile, 'utf8'));
-  	//var d3proc = md_api.altmap(d3file, rootRec);	
-
-  	client.query(sqlStr, (err, res) => {
-  		if ( typeof(res) !== "unedfined" ) {
-		 
-		  console.log(err, res);
-		  response.json("Data :" + res);  
-		  /*
-		  if ( res.hasOwnProperty('rows') ) {
-			var rta = res.rows;
-			var stack = "Data Returned: ";
-			  for ( var k in rta) {
-				  var nx = rta[k];
-				  Object.keys(nx).forEach(function(key) {
-					  stack = stack + 'Key : ' + key + ', Value : ' + nx[key];
-				  })
-				  //stack = stack + ' ' + nx;
-			  }
-			  response.json("Data :" + stack);  
-		  } else {
-			 response.json('No Data Found');  
-		  }
-		  
-	  } else {
-	  	console.log('no response ' + err);
-		response.json('Not Ready '+err); 
-	  }
-
-  	});
-*/
-
-//});
-
-
-
 module.exports = router;
-
-//module.exports = { Router: router, create_record: create_record } ;
  

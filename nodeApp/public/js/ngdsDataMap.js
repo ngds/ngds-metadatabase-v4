@@ -21,18 +21,18 @@ var gDxMap,
                     "marker-icon-orange.png", "marker-icon-black.png", "marker-icon-yellow.png" ];
 
 var dataMapView = function (o) {
+    gMenuSel = 'm';
+    $("#leftSearch").hide();
+    $("#cb").hide();
 
-        $("#leftSearch").hide();
-        $("#cb").hide();
+    $("#leftEdit").hide();
+    $("#rightEdit").hide();
 
-        $("#leftEdit").hide();
-        $("#rightEdit").hide();
+    $("#leftCollection").show();
+    $("#rightCollection").show();
 
-        $("#leftCollection").show();
-        $("#rightCollection").show();
-
-        mapLeftTemplate();
-        dmInit();
+    mapLeftTemplate();
+    dmInit();
                 
     if (o) {
         showQryParams(o);
@@ -51,13 +51,13 @@ var  mapLeftTemplate = function() {
     var lMT = $('<datalist id="mapType">');
     var dF = $('<option class="map-selopt"  value="WFS">');
     var dM = $('<option class="map-selopt" value="WMS">');
-    var dE = $('<option class="map-selopt" value="ESRI">');
-    var dC = $('<option class="map-selopt" value="CSV">');
+    var dE = $('<option class="map-selopt" value="ESRI WFS">');
+    var dC = $('<option class="map-selopt" value="ESRI WMS">');
 
     lMT.append(dF);
     lMT.append(dM);
     lMT.append(dE);
-    //lMT.append(dC);
+    lMT.append(dC);
 
     var selMT = $('<input class="map-select" list="mapType" size="35" name="mapDataType">');
 
@@ -65,7 +65,6 @@ var  mapLeftTemplate = function() {
      var lbCM  = $('<label class="lablX" for="ContentModType">Content Model</label>')
      var lCM = $('<datalist id="cmType">');
      
-
 
      var selCM = $('<input class="map-select" list="cmType"  size="35"  name="ContentModType">');
 
@@ -194,8 +193,7 @@ var dmInit = function() {
 
     if ( !gDxMap ) {
 
-
-        gDxMap = L.map('dataMap').setView([41, -100.09], 6);   
+        gDxMap = L.map('dataMap', {minZoom: 1 }).setView([41, -100.09], 6);   
         L.esri.basemapLayer('Streets').addTo(gDxMap);
         /*
         L.mapbox.accessToken = 'pk.eyJ1IjoiZ2FyeWh1ZG1hbiIsImEiOiJjaW14dnV2ZzAwM2s5dXJrazlka2Q2djhjIn0.NOrl8g_NpUG0TEa6SD-MhQ';
@@ -217,13 +215,13 @@ var dmInit = function() {
             }, 200);
             console.log('ready map')
         }).on('zoomend', function() {
-            var gx = gDxMap.getBounds();
-            console.log(' data map zoom '+ JSON.stringify(gx));
-            localStorage.setItem("gDataMapBounds", JSON.stringify(gx));  
+            savdBound = gDxMap.getBounds();
+            console.log(' data map zoom '+ JSON.stringify(savdBound));
+            localStorage.setItem("gDataMapBounds", JSON.stringify(savdBound));  
         }).on('moveend', function() {
-            var gx = gDxMap.getBounds();
-            console.log(' data map move '+ JSON.stringify(gx));
-            localStorage.setItem("gDataMapBounds", JSON.stringify(gx));    
+            savdBound = gDxMap.getBounds();
+            console.log(' data map move '+ JSON.stringify(savdBound));
+            localStorage.setItem("gDataMapBounds", JSON.stringify(savdBound));    
         });
 
         if ( savdBound ) {
@@ -235,11 +233,8 @@ var dmInit = function() {
         if ( !gDxFGroup ) {
             gDxFGroup = new L.FeatureGroup();
             gDxFGroup.addTo(gDxMap);
-        }
-            
-    } 
-   
-
+        }        
+    }    
 }
 
 var showQryParams = function(z) {
@@ -277,7 +272,7 @@ var showQryParams = function(z) {
         //}
 
     } else if ( bmi ) {
-        // for saved maps
+        // for saved maps bypass other params
         //showTile();
         var smutile =  $('<a id="exampleWMS" >SMU Well Log WMS</a>')
         .css("font-size", "11px")
@@ -297,154 +292,251 @@ var showQryParams = function(z) {
         $("#dmServList").append('</br>');
         $("#dmServList").append(smuwfs);
 
-
-        
-    } else if ( dti == 'ESRI') {
+   
+    } else if ( dti == 'ESRI WFS') {
        
-        var rUrl = '/spatial/getResourceList?type=ESRI';
-        sc = '&';
+        var rUrl = '/spatial/getResourceList?type=ESRI-F';
+        
+    } else if ( dti == 'ESRI WMS') {
+
+        var rUrl = '/spatial/getResourceList?type=ESRI-M';
+
+    } else  if ( dti == 'WFS') {   
+        //geoserver
+
+        var rUrl = '/spatial/getResourceList?type=WFS';
+
+    } else if ( dti == 'WMS' ) {
+        //geoserver
+        var rUrl = '/spatial/getResourceList?type=WMS'; 
+
+    }
+
+    if ( rUrl ) {
         if ( cmi ) { 
-            rUrl = rUrl  + '&cm='+cmi ;
+            rUrl = rUrl + '&cm='+cmi ;    
         }
+
         if ( rpi ) { 
-            rUrl = rUrl + '&r='+rpi ;
-        }
-
-    } else {
-
-        //var c, r, b;
-
-        var sc = '';
-        var rUrl = '/spatial/getResourceList?'; //type=link'
-        if ( dti ) { 
-            rUrl = rUrl + 'type='+dti ;
-            sc = '&';
-        }
-        if ( cmi ) { 
-            rUrl = rUrl + sc + 'cm='+cmi ;
-            sc = '&';
-        }
-        if ( rpi ) { 
-            rUrl = rUrl + sc + 'r='+rpi ;
-            sc ='&'; 
+            rUrl = rUrl + '&r='+rpi ;     
         }
     }
 
-        /*
-        var cm = $("input[name=ContentModType]").val();
-        if ( cm ) {   
-            c = '&cm=' + cm.slice(0,cm.indexOf('(')-1); 
-            console.log(' cm selected ' + c );
-        }    
-    
-        var repo = $("input[name=RepoList]").val();
-        if ( repo ) {  
-            r = '&r=' + repo.slice(0,repo.indexOf('(')-1); 
-        }
-       */
     if ( gUseMapExtent ) {
         var bounds = gDxMap.getBounds();
-        var northEast = bounds.getNorthEast(),
-            southWest = bounds.getSouthWest();
+        var northEast = bounds.getNorthEast().wrap(),
+            southWest = bounds.getSouthWest().wrap();
 
-        var b = sc + 'bbox='+ southWest.lng + ',' + southWest.lat + ',' + northEast.lng + ',' + northEast.lat;
+        var b = '&bbox='+ southWest.lng + ',' + southWest.lat + ',' + northEast.lng + ',' + northEast.lat;
         rUrl = rUrl + b + '&filter='+gUseMapExtent;
     }
 
     console.log(' Rurl ' + rUrl);
 
-    //rUrl = rUrl + c + r + b + '&filter';
     gResourceList.length = 0;
 
-    var jqxhr = $.get(rUrl, 
-        {dataType : "jsonp",
-            crossDomain: true,
-            xhrFields: { withCredentials: true }, 
-        }, function() {
-            console.log( "success - data layer" );
-        }).done( function(data) {
-            if (typeof(data) == "object" ) {  var dres = data;} 
-            else {   var dres = JSON.parse(data); }
-            console.log(data);
+    if (rUrl) {  
+        var jqxhr = $.get(rUrl, 
+            {dataType : "jsonp",
+                crossDomain: true,
+                xhrFields: { withCredentials: true }, 
+            }, function() {
+                console.log( "success - data layer" );
+            }).done( function(data) {
+                if (typeof(data) == "object" ) {  var dres = data;} 
+                else {   var dres = JSON.parse(data); }
+                console.log(data);
 
-            var dx = dres.rows;
-            var lid = '';
-            for (var i in dx) {
+                var dx = dres.rows;
+                var lid = '';
+                for (var i in dx) {
 
-                var rlo = {};
+                    var rlo = {};
 
-                rlo.id = i;
-                rlo.identifier =  dx[i].identifier;
-                rlo.title = dx[i].title;
-                rlo.link = dx[i].lurl;
-                rlo.ldesc =  dx[i].ldesc;
-                rlo.lparams = dx[i].lparams;
-                rlo.geom = dx[i].wkt_geometry;
-                gResourceList.push(rlo);
-                if ( lid == rlo.id ) {
-                    var tholder = '>>>  ' + ' ' + rlo.link.substring(0,40);
-                } else {
-                    lid = rlo.id;
-                    var tholder = rlo.title;
-                }
+                    rlo.id = i;
+                    rlo.identifier =  dx[i].identifier;
+                    rlo.title = dx[i].title;
+                    rlo.link = dx[i].lurl;
+                    rlo.ldesc =  dx[i].ldesc;
+                    rlo.lparams = dx[i].lparams;
+                    rlo.stype = dti;
+                    rlo.geom = dx[i].wkt_geometry;
+                    gResourceList.push(rlo);
 
-                if ( rlo.link.toLowerCase().indexOf("geoserver") > 4 ) {
-                    if ( rlo.link.toLowerCase().indexOf("wfs") > 4 ) {
-                        var idType = 'GS';
-                    } else {
-                        var idType = 'GSM';
+                    if ( rlo.lparams.startsWith("parameter") ) {
+                        //var baslink =  rlo.link.substr(0,rlo.link.indexOf("?"));
+                        //var parx = rlo.lparams.substr(11,rlo.lparams.length-1).split(',');
+                        console.log(' params  ' + rlo.lparams );
+
+                        if ( dti.substr(0,4) == 'ESRI' ) {
+                            bldEsriSubLayers(rlo);
+
+                        } else {
+                            bldGeoServerSubLayers(rlo)
+                        }
+
                     }
-                   
-                } else {
-                    var idType = 'MS';
-                }
+                        /*
+                  
+                        if ( parx.length == 1 ) {
+                            var ptype = parx[0].split(':');
+                            switch(dti) {
 
-                if ( rlo.link.toLowerCase().indexOf("wms") > 4 ) {
-                    var wmstile =  $('<a id="rli-' + idType + '-' + rlo.id + '" >' + tholder + '.. (WMS)</a>')
-                    .css("font-size", "11px")
-                    .css("font-weight", "normal")
-                    .css("margin", "5px 5px")
-                    .css("padding","2px 2px")
-                    .attr('onclick','showTile(this);')
-                    .attr('onmouseover','preLax(this);')
-                    .attr('onmouseout','postLax(this);');
-                                    
-                    $("#dmServList").append(wmstile);
-                    $("#dmServList").append('</br>');
+                                case 'ESRI-M':
+                                   // var lb = rlo.link.indexOf("?")
+                                    rlo.link = baslink;
+                                    if ( ptype[0] == 'layers') {
+                                        rlo.link = baslink;
+                                        rlo.layer = ptype[1];
+                                        rlo.title =  rlo.title + ':' + ptype[1];
+                                        rlo.lparams = { layers: '0',
+                                                width: 800, height: 600, transparent: true, 
+                                                srs: 'EPSG%3A4326', format: 'image/png' };
 
-                } else if ( rlo.link.toLowerCase().indexOf("wfs") > 4 ) {
+                                    }
+                                   
+                                   
+                                    break;
+                                case 'ESRI-F':
+                                   // var lb = rlo.link.indexOf("?")
+                                    rlo.link = baslink + '/0';
+                                    if ( ptype[0] == 'typeName') {
+                                        rlo.typeName = ptype[1];
+                                        rlo.title =  rlo.title + ':' + ptype[1];
+                                    }
 
-                    var wfsl  =  $('<a id="rli-'  + idType + '-'+ rlo.id + '" >' + tholder + '.. (WFS)</a>')
-                    .css("font-size", "11px")
-                    .css("font-weight", "normal")
-                    .css("margin", "5px 5px")
-                    .css("padding","2px 2px")
-                    .attr('onclick','showGeoserverLayer(this);')
-                    .attr('onmouseover','preLax(this);')
-                    .attr('onmouseout','postLax(this);');
+                                    break;
+                                case 'WMS':
 
-                    $("#dmServList").append(wfsl);
-                    $("#dmServList").append('</br>');
-                } else {
-                    var esrl  =  $('<a id="rli-' + idType + '-' + rlo.id + '" >' + tholder + '.. (ESRI)</a>')
-                    .css("font-size", "11px")
-                    .css("font-weight", "normal")
-                    .css("margin", "5px 5px")
-                    .css("padding","2px 2px")
-                    .attr('onclick','showEsri(this);')
-                    .attr('onmouseover','preLax(this);')
-                    .attr('onmouseout','postLax(this);');
+                                    break;
+                                case 'WFS':
+                                    break;    
+                            }
 
-                    $("#dmServList").append(esrl);
-                    $("#dmServList").append('</br>');   
-                }
-    
-            } 
-            rlExtentView(); 
-    });
+                        } else {
 
+                            var subLayers = { id: rlo.id, viewstate: 'off',  subLayerA: [] };
+                        }   
+
+
+                    }
+                    */
+                    if ( lid == rlo.id ) {
+                        var tholder = '>>>  ' + ' ' + rlo.link.substring(0,40);
+                    } else {
+                        lid = rlo.id;
+                        var tholder = rlo.title;
+                    }
+
+                    var mf = 'showTile(this)';
+                    if ( rlo.link.toLowerCase().indexOf("geoserver") > 4 ) {
+                        if ( rlo.link.toLowerCase().indexOf("wfs") > 4 ) {
+                            var idType = 'GFS';
+                            var mf = 'showGeoserverLayer(this);';
+                        } else {
+                            var idType = 'GMS';
+                        }
+                        
+                    } else {
+                        if ( rlo.link.toLowerCase().indexOf("wfs") > 4 ) {
+                            var idType = 'EFS';
+                            var mf = 'showEsri(this)';
+                        } else {
+                            var idType = 'EMS';
+                        }
+                    }
+
+                    if ( rlo.link.toLowerCase().indexOf("wms") > 4 ) {
+                        var wmstile =  $('<a id="rli-' + idType + '-' + rlo.id + '" >' + tholder + '.. (WMS)</a>')
+                        .css("font-size", "11px")
+                        .css("font-weight", "normal")
+                        .css("margin", "5px 5px")
+                        .css("padding","2px 2px")
+                        //.attr('onclick','showTile(this);')
+                        .attr('onclick',mf)
+                        .attr('onmouseover','preLax(this);')
+                        .attr('onmouseout','postLax(this);');
+                                        
+                        $("#dmServList").append(wmstile);
+                        $("#dmServList").append('</br>');
+
+                    
+                    } else if ( rlo.link.toLowerCase().indexOf("wfs") > 4 ) {
+
+                        var wfsl  =  $('<a id="rli-'  + idType + '-'+ rlo.id + '" >' + tholder + '.. (WFS)</a>')
+                        .css("font-size", "11px")
+                        .css("font-weight", "normal")
+                        .css("margin", "5px 5px")
+                        .css("padding","2px 2px")
+                        .attr('onclick',mf)
+                        //.attr('onclick','showGeoserverLayer(this);')
+                        .attr('onmouseover','preLax(this);')
+                        .attr('onmouseout','postLax(this);');
+
+                        $("#dmServList").append(wfsl);
+                        $("#dmServList").append('</br>');
+                    } /*else {
+                        var esrl  =  $('<a id="rli-' + idType + '-' + rlo.id + '" >' + tholder + '.. (ESRI)</a>')
+                        .css("font-size", "11px")
+                        .css("font-weight", "normal")
+                        .css("margin", "5px 5px")
+                        .css("padding","2px 2px")
+                        .attr('onclick','showEsri(this);')
+                        .attr('onmouseover','preLax(this);')
+                        .attr('onmouseout','postLax(this);');
+
+                        $("#dmServList").append(esrl);
+                        $("#dmServList").append('</br>');   
+                    }
+                    */
+
+                } 
+                rlExtentView(); 
+        });
+    }
     
 }
+
+var bldEsriSubLayers = function(o) {
+    // if its in the db as resource link
+    
+    if ( o.id ) {
+       var baslink =  o.link.substr(0,o.link.indexOf("?"));
+
+       if ( baslink.indexOf('/services/') > 1 && baslink.indexOf('/rest') < 1 ) {
+           if ( o.stype == 'ESRI WFS') {
+              baslink = baslink.replace('\/services\/','\/rest\/services\/');
+           }
+       }
+       
+       if ( baslink.indexOf('WFSServer') > 1 ) {
+        baslink = baslink.replace('\/WFSServer','');
+       }
+
+       /* KEEP service name form WMS
+       if ( baslink.indexOf('WMSServer') > 1 ) {
+        baslink = baslink.replace('\/WMSServer','');
+       }
+       */
+
+       var subLayers = { id: o.id, viewstate: 'off',  subLayerA: [] };
+       var paramsList = o.lparams.substr(12,o.lparams.length-2).split(',');
+       for (var i in paramsList) {
+            if ( o.stype == 'ESRI WFS') {
+                var subLyrUrl = baslink + '/' + i;
+            } else {
+                var subLyrUrl = baslink;
+            }
+           var ps = paramsList[i].split(':');
+           var pn = ps[1].replace(/"/g,"");
+           pn = pn.replace('}','');
+           var layerObj = { "subId" : i, "url": subLyrUrl, "ptype": ps[0], "name": pn };
+           subLayers.subLayerA.push(layerObj);
+       }
+       gSubLayer[o.id] = subLayers;
+    }
+}	
+
 
 var rlExtentView = function() {
 
@@ -534,13 +626,13 @@ var preLax = function(o) {
     }
 
     if ( zid ) { 
-        if ( gSubLayer[zid] ) { 
+        if ( gSubLayer[zid] && lType != 'EMS'  ) { 
             // its cached
             subLayerListView(o);
             
         } else {
             // go get it
-            if ( lType == 'MS' ) {
+            if ( lType == 'EMS' ||  lType == 'EFS'  ) {
                 getEsriLayerList(o);
             } else {
                 getGeoserverLayerList(o);
@@ -569,18 +661,12 @@ var OldpreLax = function(o) {
 
     var zid = o.id.substr(4);
 
-
     if (  $(o).css("color") !== "2222ff" ) {
         $(o).css("font-size", "12px")
         .css("font-weight", "bold")
         .css("color","#aaaa44");
 
     
-    /*
-    $(o).css("font-size", "12px")
-        .css("font-weight", "bold")
-        .css("color","aaaa44");
-    */
         var zid = o.id.substr(4);
         if ( zid ) { 
             var mob = gResourceList[zid];
@@ -594,9 +680,7 @@ var OldpreLax = function(o) {
                     .css("font-size", "10px")
                     .css("font-family", "calibri")
                     .css("display", "block")
-                    //  .css("left",  $(o).position().left +80 )
-                    //   .css("top",  $(o).position().top )
-                    //   .css("position","absolute")
+
                     .css("padding","2px 2px")
                     //.css("border","solid")
                     .css("background-color", "white" )
@@ -623,33 +707,7 @@ var OldpreLax = function(o) {
         }
 
     }
-        /*
-        if ( poly ) {
-            var geoPairs = poly.split(',');
-            var sw = geoPairs[0].trim().split(' ');
-            var ne = geoPairs[2].trim().split(' ');
-            var n = parseFloat(ne[1]);
-            var s = parseFloat(sw[1]);
-            var e = parseFloat(ne[0]);
-            var w = parseFloat(sw[0]);
-            //var rectExtent = L.latLngBounds([s, w], [n, e]);
-
-            var center = new L.LatLng(s + (n - s)/2 ,e + (w - e)/2);
-            //gDxMap.panTo(center);
-            var bounds = [[ s, w], [ n, e ]];
-            gFGExtents = new L.featureGroup(bounds);
        
-            var rect = L.rectangle(bounds, {color: 'slateblue', weight: 1}).on('click', function (e) {
-    
-             console.info(e);
-            }); //.addTo(gDxMap);
-            gLayerExtents.push(rect);
-
-        }
-        */
-
-
-        
 }
 
 var postLax = function(o) {
@@ -719,7 +777,6 @@ var showTile = function(o) {
     var mlO = $('<option id="tlo-'+ zid + '" value="' + zid + '-' + $(o).text() + '" selected="selected">' + $(o).text() + '</option>');
     $("#map-lyr-select").append(mlO);
 
-
 }
 
 var subLayerListView = function(o) { 
@@ -730,13 +787,19 @@ var subLayerListView = function(o) {
 
     //var zid = o.id.substr(4);
     var gSL = gSubLayer[zid];
+    var gRes = gResourceList[zid];
+
     $(".subLayerItem").remove();
     $("#slDivList").remove();
 
-    if  (  lType == "MS" ) {
-        var sbf = "onclick=esriSubLayer(this)";
-    } else {
-        var sbf = "onclick=geoserverSubLayer(this)";
+    if ( gRes.stype == 'ESRI WFS' ) {
+        var sbf = "onclick=esriShowWFS(this)";
+    } else if ( gRes.stype == 'ESRI WMS' ) {
+        var sbf = "onclick=esriShowTile(this)";
+    } else if ( gRes.stype == 'WFS' ) {
+        var sbf = "onclick=geoserverShowWFS(this)";
+    } else if ( gRes.stype == 'WMS' ) {  
+        var sbf = "onclick=geoserverShowTile(this)";
     }
 
     if ( gSL.viewstate == 'off' ) {
@@ -869,7 +932,6 @@ var getGeoserverLayerList = function(o) {
                 }
 
                   console.log(dres);
-
                       
               });
      
@@ -886,75 +948,114 @@ var getEsriLayerList = function(o) {
     if ( zid ) {
         var subLayers = { id: zid, viewstate: 'off',  subLayerA: [] };
         var mob = gResourceList[zid];
-        var urlx =  mob.link ;
-        var domA = urlx.split('/');
-        var dom = domA[0]+'//'+ domA[2];
+        var urlx =  mob.link;
 
-        var settings = {
-            'cache': false,
-            'dataType': "jsonp",
-            "async": true,
-            "crossOrigin": true,
-            "crossDomain": true,
-            "url": urlx  + '?f=pjson',
-            "method": "GET",
-            "headers": {
-                "accept": "application/json",
-                "Access-Control-Allow-Origin":"*",
-                "Access-Control-Allow-Origin": dom
-            }, 
-            xhrFields: { withCredentials: true },
-            beforeSend: function(xhr){
-                xhr.withCredentials = true;
+        if ( lType == 'EFS' && mob.lparams.substr(0,10) == 'parameters' ) {
+            var urlBase=urlx.substr(0,urlx.indexOf('?'));
+			
+			var lpStr = mob.lparams.substr(11, mob.lparams.length-1);
+			var pA = lpStr.split(',');
+			for (var i in pA) {
+				var prx = pA[k].split(':');
+				var ux = urlBase + '/' + i;
+				var layerObj = { "subId" : i, "url": urlDx, "name": prx[1] };
+				subLayers.subLayerA.push(layerObj);        
+			}
+		    gSubLayer[zid] = subLayers;
+        
+        }  else {
+            var domA = urlx.split('/');
+            var dom = domA[0]+'//'+ domA[2];
+
+            var settings = {
+                'cache': false,
+                'dataType': "jsonp",
+                "async": true,
+                "crossOrigin": true,
+                "crossDomain": true,
+                "url": urlx,
+                "method": "GET",
+                "headers": {
+                    "accept": "application/json",
+                    "Access-Control-Allow-Origin":"*",
+                    "Access-Control-Allow-Origin": dom,
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Allow-Methods": "*",
+                    "Access-Control-Request-Headers": "origin, content-type, accept"
+                }, 
+                xhrFields: { withCredentials: true },
+                beforeSend: function(xhr) {
+                    xhr.withCredentials = true;
+                    xhr.overrideMimeType( "application/json; charset=x-user-defined" );
+                }
             }
+
+            var jx = $.ajax(settings)
+                .always(function (data, status, err) {
+                    //var q = data.getResponseHeader();
+                    console.log('always '+ JSON.stringify(data) );
+                    //console.log(' x ' + data + err + status);
+                })
+                .fail(function (x,s,e) {
+                    console.log(' fail  ' + JSON.stringify(e));
+                    //console.log(' done  ' + JSON.stringify(s));
+                   // console.log(' done  ' + JSON.stringify(x));
+                })
+                .done(function (d,s,x) {
+                    console.log(' done  ' + JSON.stringify(d));
+                    console.log(' done  ' + JSON.stringify(s));
+                    console.log(' done  ' + JSON.stringify(x));
+                });
+            /*
+            $.ajax(settings).done(function (data) {
+                if (typeof(data) == "object" ) {  var dres = data;} 
+                else {   var dres = JSON.parse(data); }
+                
+                if ( data.error ) {
+                    console.log('Map Service not accessible Error Code: ' + data.error.code + ' ' + data.error.message);
+                    $(".subLayerItem").remove();
+                    $("#slDivList").remove();
+                    var tp = $("#dmServList").position().top;
+                    var otp = $(o).position().top;
+            
+                    var sldiv = $('<div class="subLayerDiv" id="slDivList"></div>')
+                        .css("margin", "2px" )
+                        .css("border", "1px" )
+                        .css("display", "block")
+                        .css("position","absolute")
+                        .css("opacity", .9)
+                        .css("background","white")
+                        .css("left",  $(o).position().left + 40 )
+                        .css("top",  tp + zid*20);
+                    var bStr =  '<p class="subLayerItem" >Error -' + data.error.code + ' :</br> ' + data.error.message + '</p>';        
+                    var gX = $(bStr)
+                        .css("margin", "2px" )
+                        .css("border", "1px" )
+                        .css("font-size", "10px")
+                        .css("font-family", "calibri")
+                        .css("padding","2px 2px")
+                        .css("background-color", "white" );
+                        $(sldiv).append(gX);
+                        $("#map-l-widget").append(sldiv);
+
+                } else {
+                    var dx = dres.layers;
+                    if ( dx && dx.length > 0 ) {  
+                        for (var i in dx) {
+                            var urlDx = urlx + '/' + dx[i].id;
+                            var layerObj = { "subId" : i, "url": urlDx, "name":  dx[i].name };
+                            subLayers.subLayerA.push(layerObj);        
+                        }
+                        gSubLayer[zid] = subLayers;
+                    }
+                    subLayerListView(o); 
+
+                }
+                
+            });  
+            */
         }
 
-        $.ajax(settings).done(function (data) {
-            if (typeof(data) == "object" ) {  var dres = data;} 
-            else {   var dres = JSON.parse(data); }
-            
-            if ( data.error ) {
-                console.log('Map Service not accessible Error Code: ' + data.error.code + ' ' + data.error.message);
-                $(".subLayerItem").remove();
-                $("#slDivList").remove();
-                var tp = $("#dmServList").position().top;
-                var otp = $(o).position().top;
-        
-                var sldiv = $('<div class="subLayerDiv" id="slDivList"></div>')
-                    .css("margin", "2px" )
-                    .css("border", "1px" )
-                    .css("display", "block")
-                    .css("position","absolute")
-                    .css("opacity", .9)
-                    .css("background","white")
-                    .css("left",  $(o).position().left + 40 )
-                    .css("top",  tp + zid*20);
-                var bStr =  '<p class="subLayerItem" >Error -' + data.error.code + ' :</br> ' + data.error.message + '</p>';        
-                var gX = $(bStr)
-                    .css("margin", "2px" )
-                    .css("border", "1px" )
-                    .css("font-size", "10px")
-                    .css("font-family", "calibri")
-                    .css("padding","2px 2px")
-                    .css("background-color", "white" );
-                    $(sldiv).append(gX);
-                    $("#map-l-widget").append(sldiv);
-
-            } else {
-                var dx = dres.layers;
-                if ( dx && dx.length > 0 ) {  
-                    for (var i in dx) {
-                        var urlDx = urlx + '/' + dx[i].id;
-                        var layerObj = { "subId" : i, "url": urlDx, "name":  dx[i].name };
-                        subLayers.subLayerA.push(layerObj);        
-                    }
-                    gSubLayer[zid] = subLayers;
-                }
-                subLayerListView(o); 
-
-            }
-            
-        });       
     }
 }
 
@@ -972,7 +1073,7 @@ var showEsri = function(o) {
             "async": true,
             "crossOrigin": true,
             "crossDomain": true,
-            "url": urlx  + '?f=pjson',
+            "url": urlx  + '&f=pjson',
             "method": "GET",
             "headers": {
                 "accept": "application/json",
@@ -1170,7 +1271,61 @@ var geoserverSubLayer = function(o) {
     }
 }
 
-var esriSubLayer = function(o) {
+
+var esriShowTile = function(o) {
+
+    var idArr = o.id.split('-')
+    var zid = idArr[1];
+    var zUrl = idArr[2];
+    var slname = o.text;
+
+    if ( gResourceList[zid] ) {
+        var rlo = gResourceList[zid];
+        var subl  = gSubLayer[zid];
+    }
+
+    if ( rlo.title ) {
+        var kf = rlo.title  + '-' + $(o).text();
+        var mf = '<strong>' + rlo.title  + ' ' + $(o).text() + '</strong></br>';
+    } else {
+        kf =  $(o).text();
+        var mf = $(o).text() + '</br>';
+    }
+
+    var mlO = $('<option id="tlo-'+ zid + '" value="' + zid + '-' + $(o).text() + '" selected="selected">' + kf +  ' ( 0 )</option>');
+    $("#map-lyr-status").text("Loading");
+    $("#map-lyr-status").css("background","#88bb88");
+    $("#map-lyr-select").append(mlO);
+
+    if ( zUrl ) {
+  
+        var bounds = gDxMap.getBounds();
+        var northEast = bounds.getNorthEast(),
+            southWest = bounds.getSouthWest();
+
+        var zbox = southWest.lng + ',' + southWest.lat + ',' + northEast.lng + ',' + northEast.lat;
+        zUrl = zUrl;
+    
+        var mo = { width: 250,
+             layers: slname,
+             height: 250, 
+             //bbox: zbox,
+             transparent: true, 
+             srs: 'EPSG%3A4326', 
+             format: 'image/gif' 
+            };
+
+        gWmsLayer = L.tileLayer.wms(zUrl, mo ).addTo(gDxMap);
+        // gWmsLayer = L.esri.TiledMapLayer(zUrl, mo ).addTo(gDxMap);
+
+        var mlO = $('<option id="tlo-'+ zid + '" value="' + zid + '-' + $(o).text() + '" selected="selected">' + $(o).text() + '</option>');
+        $("#map-lyr-select").append(mlO);
+    }
+
+}
+
+var esriShowWFS = function(o) {
+//var esriSubLayer = function(o) {
 // Retrieves actual data ..
     var nk = o.id.split('-');
     var zid = nk[1];
@@ -1208,7 +1363,12 @@ var esriSubLayer = function(o) {
         else { gMapLayerCount = 0;}
         var icnImg = gMarkerIcon[gMapLayerCount];
         var df, fc, gt, pDesc, fldArray=[];
-        var tl = L.esri.featureLayer({ url: zUrl, useCors: false, cacheLayers: true,  simplifyFactor: 1 })
+        var tl = L.esri.featureLayer({ url: zUrl, useCors: false, cacheLayers: true,  simplifyFactor: 1,
+                onEachFeature: function (feature, layer) {
+                    var fx = feature;
+                    console.log('F');
+
+                } })
         .metadata(function(err,metadata) {
             var ix = metadata;
             if ( metadata ) {

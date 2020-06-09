@@ -1,33 +1,33 @@
-/* NGDS Front End  App V1.4
+/* NGDS Front End  App V1.2
    G. Hudman
+	Test system
 	UI services for end user search and admin functions
-   July 22, 2019
+    MAy 14 2020
 
-   Additional routes
-   - ngds-routes-db - postgres sql api
-   - ngds-routes-csw - pycsw interface
-   - ngds-routes-map - for spatial map page
+   Added pycsw transaction api
    
 */  
 
 require('dotenv').config();
 var  Path = process.env.NODE_PATH;
+const port = process.env.PORT;
 var  fs = require("fs");
-console.log('Startup at ' + Date.now() + ' ' + Path);
+
 
 // Load pycsw xml transaction template
  var iXml = fs.readFileSync(Path+'/transact-insert-template.xml', 'utf8');
  
 const pg = require('pg');
-const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/GEOTHERMAL';
 
-console.log(' connection ', connectionString );
+const connectionString = '';
+//console.log(' connection ', connectionString );
 const xml2js = require('xml2js');
 
 var csw = require('csw-client');
 var options = { "outputSchema" :"http://www.isotc211.org/2005/gmd" };
 
-
+//options.schema = 'iso';
+//options.compat
 options.typeName = 'gmd:MD_Metadata';
 options.outputSchema = 'http://www.isotc211.org/2005/gmd';
 options.outputFormat = 'application/xml';
@@ -36,7 +36,7 @@ options.startPosition = 21;
 options.elementSetName = 'full';
 var cswClient = csw('http://catalog.usgin.org/geothermal/csw', options);
 
-const port = process.env.PORT;
+
 var express = require('express'),
     app = express(),
 	fs = require("fs"),
@@ -76,47 +76,99 @@ client.connect();
 
 function XMLtoJ(data) {
 	var aj = {};
-	 var parser = new xml2js.Parser({explicitArray: false, ignoreAttrs: false, mergeAttrs: false });	
+	 var parser = new xml2js.Parser({explicitArray: false, ignoreAttrs: false, mergeAttrs: false });
+	 
 	 parser.parseString(data, function (err, result) {
         aj = result;
+       
     });
 	 return aj;
 }
 
-app.get('/' , function(req,res) {
-	 var ip = req.headers['x-forwarded-for'] || 
-     req.connection.remoteAddress || 
-     req.socket.remoteAddress ||
-     (req.connection.socket ? req.connection.socket.remoteAddress : null);
+function routelog(req,lp, ore) {
+	var ip = req.headers['x-forwarded-for'] || 
+	req.connection.remoteAddress || 
+	req.socket.remoteAddress ||
+	(req.connection.socket ? req.connection.socket.remoteAddress : null);
 
-	 console.log('Remote IP ' + ip + ' ' + Path );
+	if (ip.substr(0, 7) == "::ffff:") {
+	   ip = ip.substr(7)
+	}
+	var qs = '';
+	if ( req.query ) {
+		qs = '?';
+		for (var key in req.query) {
+			qs = qs + '&' + key + '=' + req.query[key];
+		  }
+	}
+	
+	var rm = req.method;
+	var nw = rd();
+
+	if ( typeof(ore) !== 'undefined' ) {
+		console.error(ip + ' ' + nw + ' ' + rm  + ' ' + lp + ' ' + qs + ' : ' + ore);
+	} else {
+		console.log(ip + ' ' + nw + ' ' + rm  + ' ' + lp + qs);
+	}		
+
+}
+
+
+
+function rd() {
+	var d = new Date();
+	d = '['+d.getFullYear() + "-" + ('0' + (d.getMonth() + 1)).slice(-2) 
+		+ "-" + ('0' + d.getDate()).slice(-2) + " " + ('0' + d.getHours()).slice(-2) 
+		+ ":" + ('0' + d.getMinutes()).slice(-2) + ":" + ('0' 
+		+ d.getSeconds()).slice(-2).slice(-2)+'.'+d.getMilliseconds()+']';
+	return d;
+}
+
+app.get('/' , function(req,res) {
+
+	 var lp = '/public/ngds.htm';
+	 routelog(req, lp);
 	 res.header('Access-Control-Allow-Origin', '*');
 	 res.header('Access-Control-Allow-Headers', '*');
 	 res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-     res.sendFile(Path+'/public/ngds.htm');
+     res.sendFile(Path+lp);
 } );
 
+app.get('/maptest' , function(req,res) {
+	var lp = '/public/maptest.htm';
+	routelog(req, lp);
+	res.sendFile(Path+lp);
+} );
 
 app.get('/admin' , function(req,res) {
-	 var ip = req.headers['x-forwarded-for'] || 
-     req.connection.remoteAddress || 
-     req.socket.remoteAddress ||
-     (req.connection.socket ? req.connection.socket.remoteAddress : null);
+	 
+	var lp = '/public/ngds-admin.htm';
+	routelog(req, lp);
+	res.sendFile(Path+lp);
 
-	 console.log('Remote IP ' + ip + ' ' + Path );
-     res.sendFile(Path+'/public/ngds-admin.htm');
 } );
 
+
+app.get('/schema' , function(req,res) {
+	 
+    var lp = '/public/schema-builder.htm';
+	routelog(req, lp);
+	res.sendFile(Path+lp);
+
+} );
 
 // generic sql request
 app.get('/getData', (request, response) => {
 	
+	var lp = '/getData';
+	routelog(request, lp);
+
 	var tbn = request.query.tbn;
 	var qfld = request.query.qfld;
 	var qv = request.query.qv;
 	var fmt = request.query.fmt;
 	var sqlStr = 'Select * from ' + tbn + ' where ' + qfld + ' = ' + qv;
-	console.log ( sqlStr );
+	//console.log ( sqlStr );
 	client.query(sqlStr, (err, res) => {
 	  if ( typeof(res) !== "undefined" ) {
 		 
@@ -129,7 +181,7 @@ app.get('/getData', (request, response) => {
 				  Object.keys(nx).forEach(function(key) {
 					  stack = stack + 'Key : ' + key + ', Value : ' + nx[key];
 				  })
-				 
+				  //stack = stack + ' ' + nx;
 			  	}
 			  	response.json("Data :" + stack); 
 
@@ -146,19 +198,22 @@ app.get('/getData', (request, response) => {
 	  } else {
 		response.json('Not Ready'); 
 	  }
-	  
+	  //client.end()
 	})
 });
 	
 app.get('/get_json', (request, response) => {
-	
+
 	var qid = request.query.qid;
-	
+
+	var lp = '/get_json';
+	routelog(request, lp);
+
 	var sqlStr = 'Select * from mdn_jsonout('+ qid +')';
 	console.log ( sqlStr );
 	client.query(sqlStr, (err, res) => {
 	  if ( typeof(res) !== "unedfined" ) {
-		 
+
 		  if ( res.hasOwnProperty('rows') ) {
 			var rta = res.rows;
 			  var stack = "<html><body>DATA RESPONSE<pre>";
@@ -167,32 +222,34 @@ app.get('/get_json', (request, response) => {
 				  
 				  Object.keys(nx).forEach(function(key) {
 					  var jd = JSON.parse(nx[key]);
-					  
 					  stack = stack + JSON.stringify(jd);
 				  })
-				 
 			  }
 			  stack = stack + '</pre></body></html>';
 			  response.json(stack);  
 		  } else {
-			 response.json('No Data Found');  
+			 
+			 lp = lp + ' No Data Found';
+			 routelog(request,lp, 'err');
+			 response.json(lp);  
 		  }
 	  } else {
-		response.json('Not Ready'); 
+		lp = lp + ' Not Ready';
+		routelog(request,lp, 'err');
+		response.json(lp); 
 	  }
-
 	})
 });
 
 app.get('/getXML', (request, response) => {
 	
 	var qid = request.query.qid;
-	
+	var lp = '/getXML';
+	routelog(request, lp);
 	var sqlStr = 'Select * from mdn_jsonout('+ qid +')';
 	console.log ( sqlStr );
 	client.query(sqlStr, (err, res) => {
 	  if ( typeof(res) !== "undefined" ) {
-		 
 		  if ( res.hasOwnProperty('rows') ) {
 			var rta = res.rows;
 			  var stack = "<html><body>DATA RESPONSE<pre>";
@@ -201,25 +258,26 @@ app.get('/getXML', (request, response) => {
 				  
 				  Object.keys(nx).forEach(function(key) {
 					  var jd = JSON.parse(nx[key]);
-					 
 					  stack = stack + JSON.stringify(jd);
-				  })
-				 
+				  }) 
 			  }
 			  stack = stack + '</pre></body></html>';
 			  response.json(stack);  
 		  } else {
-			 response.json('No Data Found');  
+			lp = lp + ' No Data Found';
+			routelog(request,lp, 'err');
+			 response.json(lp);  
 		  }
 	  } else {
-		response.json('Not Ready'); 
+		lp = lp + ' Not Ready';
+		routelog(request,lp, 'err');
+		response.json(lp); 
 	  }
-
+	
 	})
 });
 
 app.get('/previewMap',(req, res) => {
-	
 	var offset = req.query.offset;
 	var tn = req.query.typeName;
 	var mf = req.query.maxFeature;
@@ -228,8 +286,14 @@ app.get('/previewMap',(req, res) => {
 	var bb = req.query.bbox;
 	var srs = req.query.srs;
 
-	var hurl = request.query.hurl;
+	var lp = '/previewMap';
+	routelog(request, lp);
 
+	var hurl = 'http://geothermal.smu.edu:9000/geoserver/gtda/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=gtda:wells&maxFeatures=50&outputFormat=application%2Fjson';
+	
+	hurl = 'http://search.geothermaldata.org/geoserver-srv/WaterQuality-REWJ/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=WaterQuality-REWJ:WaterQuality&maxFeatures=50&outputFormat=application/json';
+	
+	hurl = 'http://search.geothermaldata.org/geoserver-srv/WaterQuality-REWJ/ows?service=WFS&version=1.0.0&request=GetFeature';
 	hurl= hurl + tn+mf+srs+bb+opf;
 
 	var r = require('request');
@@ -242,13 +306,14 @@ app.get('/previewMap',(req, res) => {
           body += chunk;
         })
         .on ('end', function() {
-
             res.send(body); 			    
      });
 	
 });
 
 app.get('/preview', (request, response) => {
+	var lp = '/preview';
+	routelog(request, lp);
 
     var offset = request.query.offset;
 	var hurl = request.query.hurl;
@@ -275,8 +340,7 @@ app.get('/preview', (request, response) => {
 	
     var rc = 0;
 	var rsp = { "results" : [] };
-	console.log('PREVIEW URL B4 ' + hurl );
-
+	//console.log('PREVIEW URL B4 ' + hurl );
 
 	async function url_params(hid,o) {
 		sqlStr = "select * from collections where set_id = " + hid;
@@ -293,36 +357,36 @@ app.get('/preview', (request, response) => {
 								o[k] = o[k] + params[k];
 							}
 						}
-						console.log('>>>>>ADDED PARAMS  '+hid);
+						//console.log('>>>>>ADDED PARAMS  '+hid);
 						sslPreview(hurl,o)	
 					} else {
-						console.log('>>>>>NO URL PARAMS FOR '+hid);
+						//console.log('>>>>>NO URL PARAMS FOR '+hid);
 						sslPreview(hurl,o)	
 					}
 
 				}						
 			} else {
-				console.log('no params for '+hid);
+				//console.log('no params for '+hid);
 				sslPreview(hurl,o)				
 			}			
 		})
 	}
 
     async function fw() {
-       console.log(' options '+ hurl + ' ' + JSON.stringify(o));
+       //console.log(' options '+ hurl + ' ' + JSON.stringify(o));
 	   var rp = await cswPC.records(o);
 	  
 	   var ret = rp.returned;
 	   var mat = rp.matched;
 	   
-       console.log(' returned '+ ret + ' matched ' + mat);
-	   console.log(JSON.stringify(rp));
+       //console.log(' returned '+ ret + ' matched ' + mat);
+	   //console.log(JSON.stringify(rp));
 	   
        var guids = [];
        for (var k in rp.records) {
-		   console.log(' record ' + k);
+		   //console.log(' record ' + k);
 		   var mx = rp.records[k];
-		
+		  
            var mTitle = mx.title;
            var mGuid = mx.originalId;
            guids.push(mGuid);
@@ -330,7 +394,7 @@ app.get('/preview', (request, response) => {
            var mCid = mx.id;
            var mDate = mx.modified;
            var mBody = JSON.stringify(mx.body);
-           
+           //var rbg = { "Guid" : mGuid, "Title" : mTitle };
            var rbg = JSON.stringify(mx);
            rsp.results.push(rbg);
 
@@ -340,12 +404,12 @@ app.get('/preview', (request, response) => {
           	    	var sqlStr = 'select r.md_id, v.mdv_id, r.guid, v.version_id, v.create_date '
           	    				+ ' from md_record r, md_version v '
           	    				+ ' where r.md_id = v.md_id and v.end_date is null and guid in (\''+ guids.join("\',\'") + '\')';
-          	    	console.log(' query ' + sqlStr);
+          	    	//console.log(' query ' + sqlStr);
           	    	client.query(sqlStr, (err, res) => {
             	    	if ( typeof(res) !== "undefined" ) {
 							if ( res.hasOwnProperty('rows') ) {
 								var rta = res.rows;
-                                console.log(' db has returned ' + JSON.stringify(rta));
+                                //console.log(' db has returned ' + JSON.stringify(rta));
 								rsp.lv = rta;
 								response.json(rsp);
 	  							return;
@@ -353,6 +417,7 @@ app.get('/preview', (request, response) => {
 						}
 					});
           	    } else {
+					routelog(request, lp+' No records found', 'err');
           	    	response.json(rsp);
 	  				return;
           	    	
@@ -366,7 +431,7 @@ app.get('/preview', (request, response) => {
 
 	async function sslPreview(hurl,o) {
 
-		console.log('sslP 1 ' + hurl );
+		//console.log('sslP 1 ' + hurl );
 
 		var burl = hurl+'?';
 		var s = '';
@@ -383,30 +448,35 @@ app.get('/preview', (request, response) => {
 	
 		var r = require('request');
 		var body = '';
-		console.log('ssl preview ' + burl );
+		//console.log('ssl preview ' + burl );
 		var timFix = false;
 
 		r.get(burl)
 		.on ('response',function(res) {  
-				console.log('preview responded');       		
+				//console.log('preview responded');       		
 			})
 			.on ('data', function(chunk) {
 				
 				body += chunk;
 			})
+			.on ('error', function(e){
+				//console.log('csw preview error ' + e.message);
+				response.json('{ "data" : "error"}');
+			})
 			.on ('end', function() {
-				console.log('returned ')
+				//console.log('returned ')
 				var mxr = o.maxRecords;
     			var rc = 0;
 				var xlj = XMLtoJ(body);
 
+				/*
 				fs.writeFile( __dirname +'/log/test.log', body,  function(e) {
 					if (e) {
 						console.log(e);
 					}
 					console.log('wrote'); 
 				} );
-
+				*/
 
 				if ( xlj["ows:ExceptionReport"] ) {
 					console.log('exception!!!');
@@ -447,12 +517,12 @@ app.get('/preview', (request, response) => {
 								var sqlStr = 'select r.md_id, v.mdv_id, r.guid, v.version_id, v.create_date '
 											+ ' from md_record r, md_version v '
 											+ ' where r.md_id = v.md_id and v.end_date is null and guid in (\''+ guids.join("\',\'") + '\')';
-								console.log(' query ' + sqlStr);
+								//console.log(' query ' + sqlStr);
 								client.query(sqlStr, (err, res) => {
 								if ( typeof(res) !== "undefined" ) {
 									if ( res.hasOwnProperty('rows') ) {
 										var rta = res.rows;
-										console.log(' db has returned ' + JSON.stringify(rta));
+										//console.log(' db has returned ' + JSON.stringify(rta));
 										data.lv = rta;
 										response.json(data);
 										return;
@@ -460,7 +530,8 @@ app.get('/preview', (request, response) => {
 								}
 							});
 							} else {
-								console.log('NO GUIDS found ');
+								//console.log('NO GUIDS found ');
+								routelog(request, lp+' No records found', 'err');
 								response.json(data);
 								return;
 								
@@ -480,11 +551,11 @@ app.get('/preview', (request, response) => {
 	}
 
 
-
 });
 
 app.get('/harvestCompat', (request, response) => {
-
+	var lp = '/harvestCompat';
+	routelog(request, lp);
     var offset = request.query.offset;
     var hurl = request.query.hurl;
 
@@ -504,10 +575,8 @@ app.get('/harvestCompat', (request, response) => {
     	options.constraintlanguage='Filter';
     	options.outputFormat='text/xml';
     	options.outputSchema='http://www.isotc211.org/2005/gmd';
-
-
     	options.Constraint='q=%Texas%';
-    	    
+
     	var cswC = csw('http://catalog.usgin.org/geothermal/csw', options);
     	var qry = {'sortby':'apiso:Modified', 'q':'usgin'};
     	var rp = await cswC.records(options);
@@ -530,25 +599,33 @@ app.get('/harvestCompat', (request, response) => {
 
 });
 
+app.get('/getActDef', (request, response) => {
+
+
+
+});
+
+// collectionClear?setid='+so+'&action=1
 app.get('/collectionClear', (request, response) => {
+
+	var lp = '/collectionClear';
+	routelog(request, lp);
+
 	var setid = request.query.setid;
     var cAction = 'clear-harvest';
     var directive = 'now';
 
     var sqlStr = 'Select * from new_collection_activity(' + setid + ',\'' + cAction + '\',\'' + directive + '\',null)';
-    console.log(sqlStr);
+    //console.log(sqlStr);
 
   	client.query(sqlStr, (err, res) => {
-  		if ( typeof(res) !== "undefined" ) {
- 
-		  console.log(err, res);
+  		if ( typeof(res) !== "undefined" ) {		 
+		  //console.log(err, res);
 		  response.send(res); 
-		 
-
 	  } else {
-	  	console.log('no response ' + err);
+		//console.log('no response ' + err);
+		routelog(request, lp+' '+err, 'err');
 	  	response.send({"Not Ready" : + err});  
-	
 	  }
 
   	});
@@ -558,7 +635,9 @@ app.get('/collectionClear', (request, response) => {
 
 // Active api
 app.get('/harvest', (request, response) => {
-   
+   	var lp = '/harvest';
+	routelog(request, lp);
+
     var offset = request.query.offset;
     var hurl = request.query.hurl;
     var htype = request.query.htype;
@@ -582,12 +661,12 @@ app.get('/harvest', (request, response) => {
            var mCid = mx.id;
            var mDate = mx.modified;
            var mBody = JSON.stringify(mx.body);
-           console.log('Writing  ', mGuid, mTitle);
+           //console.log('Writing  ', mGuid, mTitle);
 
            var rcd = await create_record(mGuid, mCid, mTitle, mBody).catch(err=>console.log('create record err '+err));
  
            var rbg = JSON.stringify(mx);
-           console.log('rb '+rbg);
+           //console.log('rb '+rbg);
            rsp.results.push(rbg);
 
            if ( (mxr - 1) == rc ) {
@@ -598,7 +677,7 @@ app.get('/harvest', (request, response) => {
           	 
        }
 
-       console.log( ' return json --> ', JSON.stringify(rsp) );
+       //console.log( ' return json --> ', JSON.stringify(rsp) );
 
 	}
 
@@ -609,12 +688,11 @@ app.get('/harvest', (request, response) => {
 		return new Promise(function(resolve, reject){
 
 			client.query(sqlStr, (err, res) => {
-				 console.log('Write query return '+res);
+				 //console.log('Write query return '+res);
 				  if ( typeof(res) !== "undefined" ) {
-				  	
-				  	resolve(res);
-				  
+				  	resolve(res);				  
 				  } else {
+					routelog(request, lp+' '+err, 'err');
 					reject("create_record error ");	  	
 				  }
 			});
@@ -622,15 +700,92 @@ app.get('/harvest', (request, response) => {
 		});
 	}
 
-
 	fw();
+
+
+});
+
+//obsolete
+
+app.get('/cswRBId', (request, response) => { 
+	// retrieves a single record for inspection
+	var lp = '/cswRBId';
+	routelog(request, lp);
+	var rGuid = request.query.guid;
+	var hAction = request.query.action;
+	var hFormat = request.query.outputFormat;
+
+	var burl = 'http://catalog.usgin.org/geothermal/csw';
+	var bServ = '?service=CSW&version=2.0.2&request=GetRecordById';
+	var bOpts = '&outputFormat=' + hFormat + '&elementsetname=' + hAction + '&outputschema=http://www.isotc211.org/2005/gmd';
+	var bId  = '&id='+rGuid;
+	var hUrl = burl+bServ+bId+bOpts;
+
+	var hr = require('request');
+	var body = '';
+
+	hr.get(hUrl)
+       .on ('response',function(response) {           		
+      	})
+        .on ('data', function(chunk) {
+          body += chunk;
+        })
+        .on ('end', function() {
+
+            var xd = new xmldoc.XmlDocument(body);
+            var oiw;
+            xd.eachChild(function(d){
+            	if ( oiw ) {
+            		return;
+            	}
+            	oiw = d;
+            })
+            var babyXd = xd.firstChild;
+
+            response.header('Content-Type', 'text/xml');
+            response.type('text/xml');
+            response.send(oiw.toString({compressed:true}));		    
+     });
+
+});
+
+app.get('/cswTemp', (req, res) => { 
+
+	var lp = '/cswTemp';
+	routelog(req, lp);
+	// retrieves a single record for inspection
+
+	var hurl = 'http://catalog.usgin.org/geothermal/csw?service=CSW&version=2.0.2&&typeNames=gmd:&request=GetRecordById&id=98ddf901b9782a25982e01af3b0bda50&elementsetname=full&outputschema=http://www.isotc211.org/2005/gmd';
+
+    var r = require('request');
+ 
+     var body = '';
+     
+     console.log('Remote IP ' + req.connection.remoteAddress);
+     
+     r.get(hurl)
+       .on ('response',function(response) {           		
+      	})
+        .on ('data', function(chunk) {
+          body += chunk;
+        })
+        .on ('end', function() {
+    		
+             var xlj = XMLtoJ(body);
+            res.send(xlj); 
+    		    
+     });
 
 
 });
 
 
 app.get('/get_schema' , function(req,res) {
-	 var sid = req.query.schema_id;
+
+	var lp = '/get_schema';
+	routelog(req, lp);
+
+	var sid = req.query.schema_id;
 
 	async function getSchema(qStr) {
 		return new Promise(function(resolve, reject){
@@ -656,18 +811,17 @@ app.get('/get_schema' , function(req,res) {
 				+ '\'\' as node_val,\'object\' as node_datatype,\'s\' as node_def_type,0 as lvl,\'MD_Metadata\' as mpath';
 
 			 var sqlStr = t + ' union select * from schemanodesrview where schema_id = '+sid;
-			 
-			 //var sqlStr = 'select * from schemanodesrview where schema_id = '+sid;
+
 	    	 var sdefStr = 'select * from schemanodedefview where schema_id = '+sid;
 	    	 var smStr = 'select * from schema_map where schema_id = '+sid;
 	    } else {
 	    	// get them all
 	   		 var sqlStr = 'select * from schemas where status = \'active\''; 	
 	    }
-         console.log('get schema ' +sqlStr); 
+        //console.log('get schema ' +sqlStr); 
    		var rq = await getSchema(sqlStr);
    		scO.schema = rq;
-    	console.log(' query return '); //+JSON.stringify(rq) ) ;
+    	//console.log(' query return '); 
     	// Get the map
         
     	if ( typeof(smStr) !== "undefined" ) {
@@ -683,7 +837,7 @@ app.get('/get_schema' , function(req,res) {
     	res.send(scO); 	
     }
    
-    console.log('get schema ' +sid);
+    //console.log('get schema ' +sid);
     sender();
 
     
@@ -691,7 +845,8 @@ app.get('/get_schema' , function(req,res) {
 
   
 app.post('/create_schema', function(request,response) {
-
+	var lp = '/create_schema';
+	routelog(request, lp);
 	const inspect = obj => {
 	  var cob = {};
 	  for (const prop in obj) {
@@ -700,13 +855,13 @@ app.post('/create_schema', function(request,response) {
 	      var pr = prop;
 	      var pval = obj[prop];
 	      cob[prop] = pval;
-	      console.log(' got a property ' + pr + ' ' + pval);
+	      //console.log(' got a property ' + pr + ' ' + pval);
 	    }
 	  }
 	  return cob;
 	}
 
-    console.log(' New Schema start' );
+    //console.log(' New Schema start' );
     var pbody = request.body;
     var cc = inspect(pbody);
     var sname = JSON.stringify(pbody);
@@ -726,23 +881,23 @@ app.post('/create_schema', function(request,response) {
 
   	client.query(sqlStr, (err, res) => {
   		if ( typeof(res) !== "unedfined" ) {
-		 
-		  console.log(err, res);
 		  response.send({"Data" : + res});  
 
-	  } else {
-	  	console.log('no response ' + err);
-	  	response.send({"Not Ready" : + err});  
-	
-	  }
+	  	} else {
+			routelog(request, lp+' '+err, 'err');
+	  		//console.log('no response ' + err);
+	  		response.send({"Not Ready" : + err});  
+	  	}
 
   	});
-      
+    //response.send(resp); 
+    
 
 });
 
 app.post('/createHarvestSource', function(request,response) {
-
+	var lp = '/createHarvestSource';
+	routelog(request, lp);
 	const inspect = obj => {
 	  var cob = {};
 	  for (const prop in obj) {
@@ -751,13 +906,13 @@ app.post('/createHarvestSource', function(request,response) {
 	      var pr = prop;
 	      var pval = obj[prop];
 	      cob[prop] = pval;
-	      console.log(' got a property ' + pr + ' ' + pval);
+	      //console.log(' got a property ' + pr + ' ' + pval);
 	    }
 	  }
 	  return cob;
 	}
 
-    console.log(' create harvest start' );
+    //console.log(' create harvest start' );
     var pbody = request.body;
     var cc = inspect(pbody);
 
@@ -773,15 +928,16 @@ app.post('/createHarvestSource', function(request,response) {
     			+ 'values (\''+hName+'\',\'harvest\',\'active\','
     			+ 'current_timestamp,null,1,1,\''+hsUrl+'\',\''+sDesc+'\','+sid+')';
 
-    console.log(sqlStr);
+    //console.log(sqlStr);
 
   	client.query(sqlStr, (err, res) => {
   		if ( typeof(res) !== "unedfined" ) {	 
-		  console.log(' RESULT ' + JSON.stringify(res));
+		  //console.log(' RESULT ' + JSON.stringify(res));
 		  response.send({"Data" : "success" });  
 	
 	  } else {
-	  	console.log('no response ' + err);
+		// console.log('no response ' + err);
+		routelog(request, lp+' '+err, 'err');
 	  	response.send({"Not Ready" : + err});  
 	
 	  }
@@ -790,17 +946,18 @@ app.post('/createHarvestSource', function(request,response) {
    
 });
 
-
 app.get('/url_status', function(req, res){
+	var lp = '/url_status';
+	routelog(req, lp);
 	 var urlToCheck = req.query.url;
 	 	urlExists(urlToCheck, function(err,exists) {
 	 		res.send(exists);
 	 	});
-    
+   
 });
 
-
 app.listen(port, () => {
-  console.log('App running on port ${port}.')
+  //console.log('App running on port ${port}.')
+  console.log('Startup  ' + rd() + ' ' + Path + ':' + port);
 });
 

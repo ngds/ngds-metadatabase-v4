@@ -1,33 +1,78 @@
 /* G. Hudman - Search and MD record view UI tools
-
+   dev on test.geothermaldata.org
 */
-
-// Need to make this template structure data driven by schema ....
-
-var gUItemplate = { "title": "Title", 
-                    "abstract" : "", 
-                    "resource" : [ ],
-                    "resourceUrl" : [  ],
-                    "resourceType" : [  ],
-                    "resourceName" : [  ],
+  var gTemplate = { "title": { "value": "Title", "path" : "", "nodeid": "" }, 
+                    "abstract" : { "value": "", "path" : "", "nodeid": "" }, 
+                    "resource" : [],
                     "keywords" : [],
-                    "contact" : { "name" :"", "position" : "", "org" : "", "email" : ""},
-                    "extent" : {"north" : "0", "south" : "0" , "east" : "0" , "west" : "0"},
+                    "contact" : { "name" : { "value": "", "path" : "", "nodeid": "" }, 
+					                        "position" : { "value": "", "path" : "", "nodeid": ""}, 
+								                  "org" : { "value": "", "path" : "", "nodeid": "" },
+								                  "datestamp" : { "value": "", "path" : "", "nodeid": "" },
+								                  "email" : { "value": "", "path" : "", "nodeid": "" } 
+								                },
+                    "extent" : {"north" : { "value": "", "path" : "", "nodeid": "" }, 
+                              "south" : { "value": "", "path" : "", "nodeid": "" }, 
+                              "east" : { "value": "", "path" : "", "nodeid": "" }, 
+                              "west" : { "value": "", "path" : "", "nodeid": "" } 
+                                },
                     "guid" : "0000",
+					          "mdversion" : "",
                     "datestamp" : "01/01/1999",
                     "format" : "ISO-USGIN",
                     "source" : "USGIN",
                     "version" : "1.2" };
+					
+	var gResource = { "resourceUrl" : { "value": "", "path" : "", "nodeid": "" }, 
+	              "resourceName" : { "value": "", "path" : "", "nodeid": "" }, 
+				        "resourceType" : { "value": "", "path" : "", "nodeid": "" } };
+					
+  var gMD, 
+      gMP,
+	    gT,
+	    gMDEdStack={ "guid" : "", "eda" : [] },
+      gCWR={},
+	    gCMP={};
 
   var gMarkers = [];
   var gSortOrder = 0;
   var gSavedGuids=[];
-  
+  var gDt = [{val : 'CSV', text: 'CSV'},
+			{val : 'DOC', text: 'DOC'},
+			{val : 'GIF', text: 'GIF'},
+			{val : 'HTM', text: 'HTM'},
+			{val : 'JPG', text: 'JPG'},
+			{val : 'MAPSERVER', text: 'MAPSERVER'},
+			{val : 'MAT', text: 'MAT'},
+			{val : 'PDF', text: 'PDF'},
+			{val : 'PPT', text: 'PPT'},
+			{val : 'RTF', text: 'RTF'},
+			{val : 'SHP', text: 'SHP'},
+			{val : 'TIF', text: 'TIF'},
+			{val : 'WFS', text: 'WFS'},
+			{val : 'XLS', text: 'XLS'},
+			{val : 'ZIP', text: 'ZIP'}];
+			
+  var  gPos = [{val: 'resourceProvider',text: 'resourceProvider'},
+				 {val: 'custodian',text: 'custodian'},
+				 {val: 'owner',text: 'owner'},
+				 {val: 'user',text: 'user'},
+				 {val: 'distributor',text: 'distributor'},
+				 {val: 'originator',text: 'originator'},
+				 {val: 'pointOfContact',text: 'pointOfContact'},
+				 {val: 'principalInvestigator',text: 'principalInvestigator'},
+				 {val: 'processor',text: 'processor'},
+				 {val: 'publisher',text: 'publisher'},
+				 {val: 'author',text: 'author'} ];
+				 
   var gSortTypes = ["Modified Date","Name Ascending","Name Descending","Relevance"];
   var gKey = {"a":"b"};
-  var gAuth = { "uid" : "token"};
-
-
+  var gAuth = { "loginBtn" : "userLogin" };
+  var gMenuSel = 's';
+  var gVersions = [];
+  var gEdState = 'off';
+  var gkwid=-1;
+  
   function showSeaHis() {
 
     $("#sHistoryItems").empty();
@@ -43,8 +88,63 @@ var gUItemplate = { "title": "Title",
     $("#SearchHistory").css("display","block");
   }
  
+  function kmu(o) {
+	   for (var k in o) {
+		 if (o[k] == k) {
+		   return k;
+		 }
+	   }
+	   return null;
+	}
+
+  function userMenu() {
+	
+	if ( kmu(gKey) && gKey.agentRole == "1"  ) {
+		$("#Cex").show();
+		if ( gMenuSel == 's' ) {
+			$("#Cex").show();
+			$("#leftMDRecord").hide();
+		} else if ( gMenuSel == 'r' ) {
+			$("#widget-view").empty();
+			$("#leftMDRecord").show();
+			recordTemplate(gT, gKey);
+		} else if ( gMenuSel == 'm' ) {
+			console.log('logged in whlie viewing map');
+			$("#leftMDRecord").hide();
+			
+		}
+		
+	} else if ( kmu(gKey) && gKey.agentRole == "4"  ) {
+		if ( gMenuSel == 's' ) {
+			$("#Cex").hide();
+			$("#leftMDRecord").hide();
+		} else if ( gMenuSel == 'r' ) {
+			$("#widget-view").empty();
+			$("#leftMDRecord").show();
+			recordTemplate(gT, gKey);
+		} else if ( gMenuSel == 'm' ) {
+			$("#leftMDRecord").hide();
+			console.log('logged in while viewing map');
+			
+		}
+	} else {
+		// logging out
+		if ( gMenuSel == 's' ) {
+			$("#Cex").hide();
+			$("#leftMDRecord").hide();
+		} else if ( gMenuSel == 'r' ) {
+			 $("#widget-view").empty();
+			 $("#leftMDRecord").show();
+			recordTemplate(gT, gKey);
+		} else if ( gMenuSel == 'm' ) {
+			$("#leftMDRecord").hide();
+			console.log('logged in whie viewing map');	
+		}
+	}
+	
+}
+
   function selectHistoryItem(o) {
-   
     // if its typeahead append, if its search history replace
     if (o.id.substr(0,2) == 'ta') {
       var tbx = o.text;
@@ -65,14 +165,10 @@ var gUItemplate = { "title": "Title",
     gSearchHistory.splice(k,1);
     var shs = gSearchHistory.sort().join('|');
     localStorage.setItem("SearchHistory",shs);
-    //var shg = 'sh-'+guid;
-    //localStorage.removeItem(shg);
     showSeaHis();
-
   }
 
   function clearHistory() {
-
     $("#gSearchBox").val('');
     gSearchHistory=[];
     localStorage.setItem("SearchHistory","");
@@ -81,7 +177,7 @@ var gUItemplate = { "title": "Title",
   }
 
   function saveMD(o){
-    //var mdguid = "SR-"+o.id.substr(3);
+    //show the bookmarks 
     var sname =  $("#gSearchBox").val();
     if ( !sname ) { sname = 'All' }
     if ( o.text == 'Save' ) {
@@ -92,9 +188,7 @@ var gUItemplate = { "title": "Title",
       localStorage.removeItem(o.id);
       o.text = 'Save';
       o.style.backgroundColor="#0971b2";
-    }
-    
-
+    } 
   }
 
   function sortPick(o) {
@@ -108,7 +202,6 @@ var gUItemplate = { "title": "Title",
     if ( $("#shoSavBtn").text() == 'All') { $("#shoSavBtn").text('Saved')}
     else { $("#shoSavBtn").text('All')  }
     showSaved(0);
-    //findRecords(0);
 
   }
 
@@ -118,7 +211,7 @@ var gUItemplate = { "title": "Title",
       console.log( "typeahead success ..." );
     })
     .done(function(data) { 
-      console.log( "typeahead data ..." + JSON.stringify(data) );
+      //console.log( "typeahead data ..." + JSON.stringify(data) );
       if (typeof(data) == "object" ) {
         var dres = data;
       } else {
@@ -174,9 +267,10 @@ function showSaved(o) {
    
  }
 
-  function searchData(yorn) {
+function searchData(yorn) {
     // Setup function
     
+	  gMenuSel = 's';
   	$("#leftHarvest").hide();
     $("#leftSearch").show();
     $("#cb").show();
@@ -193,15 +287,14 @@ function showSaved(o) {
       $("#rec-results").empty();
       findRecords(0);
     }
-    
-
-  }
+}
 
 
   function findRecords(page,g){
 
       $("#cb").show();
       $("#widget-box").hide();
+	    $("#leftMDRecord").hide();
       if ( !page ) { page = 0 }
       sPage = page;
 
@@ -471,28 +564,16 @@ function showSaved(o) {
     facetClear(".nav-rc");
   }
 
-  function clearMarkers(){
+  function clearMarkers() {
 
     if ( gFeatureGroup ) {
       map.removeLayer(gFeatureGroup);
-    }
-     
-
-      //for ( z in gMarkers ){
-      //  var mx = gMarkers[z];
-      //  map.removeLayer(mx);
-      //}
-      gMarkers.length = 0;
-      gExtents.length = 0;
-
-      //$.each(map._layers, function (ml) {
-      //  var mx = map._layers[ml];
-
-        //if (map._layers[ml].feature) {
-        //    map.removeLayer(ml);  
-        //}
-    //});
+    } 
+    gMarkers.length = 0;
+    gExtents.length = 0;
+	
   }
+  
   function findSpatial() {
 
     $("#cb").show();
@@ -818,6 +899,14 @@ function showSaved(o) {
   function linkColors(linkName, linkUrl) {
     var lo = {};
 
+    if ( typeof(linkUrl) == "undefined" ) {
+		lo.text = rt;
+		lo.bgcolor = 'black';
+		lo.txtcolor = 'lightgray';
+		lo.width = '60px';
+		return lo;
+	}
+	
     var rt = linkUrl.substr(linkUrl.lastIndexOf('.')+1);
     var rts = linkUrl.substr(linkUrl.lastIndexOf('=')+1);
     var rtz = linkUrl.substr(linkUrl.lastIndexOf('/')+1);
@@ -951,12 +1040,23 @@ function showSaved(o) {
 
   }
 
-
   function bactoSearch() {
-
-    if ( gSearchType == 'text') {
-
+    gMenuSel = 's'; 
+	
+    $("#CatList").show();
+    $("#CMList").show();
+    $("#AuthList").show();
+    $("#dtList").show();
+    $("#repoList").show();
+    $("#leftMDRecord").hide();
+      
+    if ( gMdRecord ) {
+      findRecords(0);
     }
+	
+    if ( typeof(gSearchType) == "undefined" || gSearchType == 'text') {
+		
+    } 
 
     if ( gSearchType == 'map') {
 
@@ -977,23 +1077,17 @@ function showSaved(o) {
       map.removeLayer(rectangle)
     }
     
-    //map.removeLayer(drawnItems);
 
      var center = new L.LatLng(gS + (gN - gS)/2 ,gE + (gW - gE)/2);
-    // var rectExtent = L.latLngBounds([gN, gW], [gW, gE]);
      var rectExtent = L.latLngBounds([gS, gW], [gN, gE]);
-
-     console.log('bounds A bacto search ' + JSON.stringify(gBounds));
      map.fitBounds(gBounds);  
      map.panTo(center);
-
   	$("#cb").show();
   	$("#widget-box").hide();
 
   }
 
   function xRClean(ds) {
-
     while(ds.charAt(0) == '"') { 
       ds = ds.substr(1); 
     }
@@ -1014,13 +1108,6 @@ function showSaved(o) {
 
     $("#leftCollection").show();
     $("#rightCollection").show();
-
-    //dToggle($("#leftCollection"));
-    //dToggle($("#rightCollection"));
-
-    //dToggle($("#leftSearch"));
-    //dToggle($("#cb"));
-
     function dToggle(o) {
       if ( $(o).css("display") == "none") { 
         $(o).css("display","block");
@@ -1032,14 +1119,28 @@ function showSaved(o) {
 
   function mdView(obj) {
     // view a single record
+	  gMenuSel = 'r'; 
   	var guid = obj.id;
-
+    var vers = obj.version;
+	
     $("#cb").hide();
+    $("#CatList").hide();
+    $("#CMList").hide();
+    $("#AuthList").hide();
+    $("#dtList").hide();
+    $("#repoList").hide();
+    $("#leftCollection").hide();
   	$("#widget-box").show();
+	  $("#leftMDRecord").show();
     $("#widget-view").empty();
 
-  	var sUrl = '/action/record_show?id='+guid;         
-
+  	var sUrl = '/action/record_show?id='+guid;   
+    if ( vers ) {
+      sUrl = sUrl+'&version='+vers;
+    }	
+    gMDEdStack.guid = guid;
+    gMDEdStack.eda.length=0;
+	
     var jqxhr = $.get(sUrl, function() {
         console.log( "success record view " + guid );
       })
@@ -1048,74 +1149,248 @@ function showSaved(o) {
         	 var dres = data;
         } else {
         	 var dres = JSON.parse(data);
-        }
-        var muf = JSON.stringify(gUItemplate);
-        var ltemp = JSON.parse(muf);
-
+        }	
+		    // clone template
+		    var mg = JSON.stringify(gTemplate);
+		    var lbf = JSON.parse(mg);
         var dx = dres.rows;
         for (var i in dx) {
-             var xtm = dx[i];
-             var ndnam = '';
-             var ndval = '';
-             var mpath = '';
-             if ( xtm.hasOwnProperty('node_name')) { ndnam = xRClean(xtm.node_name); }
-             if ( xtm.hasOwnProperty('node_value')) { ndval = xRClean(xtm.node_value); }
-             if ( xtm.hasOwnProperty('map_path')) { mpath = xRClean(xtm.map_path); }
+          var xtm = dx[i];
+          var ndnam = '';
+          var ndval = '';
+          var mpath = '';
+          var nodeid =0;
+          if ( xtm.hasOwnProperty('node_name')) { ndnam = xRClean(xtm.node_name); }
+          if ( xtm.hasOwnProperty('node_value')) { ndval = xRClean(xtm.node_value); }
+          if ( xtm.hasOwnProperty('map_path')) { mpath = xRClean(xtm.map_path); }
+          if ( xtm.hasOwnProperty('node_id')) { nodeid = xRClean(xtm.node_id); }
+      
+          if ( ndnam == 'title') { 
+            lbf.title.value= ndval;
+            lbf.title.path = mpath;
+            lbf.title.nodeid = nodeid;
+          };
+			
+          if ( ndnam == 'mdversion') { 
+            lbf.mdversion = ndval;
+            gMDEdStack.version = ndval;
+          }
+			 
+          if ( ndnam == 'abstract') {  
+            lbf.abstract.value = ndval;
+            lbf.abstract.path = mpath;
+            lbf.abstract.nodeid = nodeid;
+          }
+
+          if ( ndnam == 'guid') { 
+            lbf.guid = ndval;
+          };
+
+          if ( ndnam == 'keyword') { 
+			      var kw = { "value": ndval, "path": mpath, "nodeid": nodeid };
+				    lbf.keywords.push(kw);
+			    };
+
+          if ( ndnam == 'Url' ||  ndnam == 'name' ||  ndnam == 'function' ) {       
+            var ri = 0;
+            var ra = mpath.split('.');
+            for ( i in ra ) {
+              if ( !isNaN(ra[i]) ) {ri = ra[i] }
+            }
+                 
+            if ( typeof(lbf.resource[ri]) === "undefined" ) {
+              var mr = JSON.stringify(gResource);
+              lbf.resource[ri] = JSON.parse(mr); 
+            }
+				
+            if ( ndnam == 'Url') { 
+              lbf.resource[ri].resourceUrl.value = ndval;
+              lbf.resource[ri].resourceUrl.path = mpath;
+              lbf.resource[ri].resourceUrl.nodeid = nodeid;
+            }
+            if ( ndnam == 'name') { 
+              lbf.resource[ri].resourceName.value = ndval;
+              lbf.resource[ri].resourceName.path = mpath;
+              lbf.resource[ri].resourceName.nodeid = nodeid;
+            }
+            if ( ndnam == 'function') {			  
+              lbf.resource[ri].resourceType.value = ndval;
+              lbf.resource[ri].resourceType.path = mpath;
+              lbf.resource[ri].resourceType.nodeid = nodeid; 
+				    }     
+          }
              
-             if ( ndnam == 'title') { ltemp.title = ndval };
-             if ( ndnam == 'abstract') {  ltemp.abstract = ndval };
-             if ( ndnam == 'guid') { ltemp.guid = ndval };
-
-             if ( ndnam == 'title') { ltemp.title = ndval };
-             if ( ndnam == 'keyword') { ltemp.keywords.push(ndval) };
-
-             if ( ndnam == 'Url' ||  ndnam == 'name' ||  ndnam == 'function' ) {
-                  //var ri = mpath.split('.')[4];
-                  var ri = 0;
-                  var ra = mpath.split('.');
-                  for ( i in ra ) {
-                    if ( !isNaN(ra[i]) ) {ri = ra[i] }
-                  }
-                  //if ( isNaN(ri) ) { ri = 0 }
-                  if ( typeof(ltemp.resource[ri]) === "undefined" ) {
-                     ltemp.resource[ri] = { "resourceUrl" : "", "resourceName" : "", "resourceType" : "" }
-                  }
-                  if ( ndnam == 'Url') { ltemp.resource[ri].resourceUrl = ndval;  }
-                  if ( ndnam == 'name') {ltemp.resource[ri].resourceName = ndval;  }
-                  if ( ndnam == 'function') {ltemp.resource[ri].resourceType = ndval;  }     
-             }
-             
-             if ( ndnam == 'Url') { ltemp.resourceUrl.push(ndval) }
-             if ( ndnam == 'name') { ltemp.resourceName.push(ndval) }
-             if ( ndnam == 'function') { ltemp.resourceType.push(ndval) }  
-             if ( ndnam == 'westBoundLongitude') { ltemp.extent.west = ndval };
-             if ( ndnam == 'eastBoundLongitude') { ltemp.extent.east = ndval };
-             if ( ndnam == 'northBoundLatitude') { ltemp.extent.north = ndval };
-             if ( ndnam == 'southBoundLatitude') { ltemp.extent.south = ndval };
-             if ( ndnam == 'metadataStandardName') { ltemp.format = ndval };
-             if ( ndnam == 'metadataStandardVersion') { ltemp.version = ndval };
-             if ( ndnam == 'individualName') { ltemp.contact.name = ndval };
-             if ( ndnam == 'contact.individualName') { ltemp.contact.name = ndval };
-
-             if ( ndnam == 'positionName') { ltemp.contact.position = ndval };
-             if ( ndnam == 'organisationName') { ltemp.contact.org = ndval };
-             if ( ndnam == 'electronicMailAddress') { ltemp.contact.email = ndval };
-             if ( ndnam == 'date') { ltemp.contact.datestamp = ndval };
-            
-            gN =  parseFloat(ltemp.extent.north);
-            gS =  parseFloat(ltemp.extent.south);
-            gE =  parseFloat(ltemp.extent.east);
-            gW =  parseFloat(ltemp.extent.west);
-          
-
+          if ( ndnam == 'westBoundLongitude') {        
+            lbf.extent.west.value = ndval;
+            lbf.extent.west.path = mpath;
+            lbf.extent.west.nodeid = nodeid;
+          };
+          if ( ndnam == 'eastBoundLongitude') { 		
+            lbf.extent.east.value = ndval;
+            lbf.extent.east.path = mpath;
+            lbf.extent.east.nodeid = nodeid;
+          };
+          if ( ndnam == 'northBoundLatitude') { 		
+            lbf.extent.north.value = ndval;
+            lbf.extent.north.path = mpath;
+            lbf.extent.north.nodeid = nodeid;
+          };
+          if ( ndnam == 'southBoundLatitude') { 	
+            lbf.extent.south.value = ndval;
+            lbf.extent.south.path = mpath;
+            lbf.extent.south.nodeid = nodeid;
+          };
+          if ( ndnam == 'metadataStandardName') { 
+            lbf.format = ndval;
+          };
+          if ( ndnam == 'metadataStandardVersion') { 
+            lbf.version = ndval;
+          };
+          if ( ndnam == 'date') { 
+            lbf.contact.datestamp.value = ndval;
+            lbf.contact.datestamp.path = mpath;
+            lbf.contact.datestamp.nodeid = nodeid;
+          };		 
+          if ( ndnam == 'individualName') { 
+            lbf.contact.name.value = ndval;
+            lbf.contact.name.path = mpath;
+            lbf.contact.name.nodeid = nodeid;
+          };			
+          if ( ndnam == 'contact.individualName') { 			
+            lbf.contact.name.value = ndval;
+            lbf.contact.name.path = mpath;
+            lbf.contact.name.nodeid = nodeid;         
+          };
+          if ( ndnam == 'positionName') { 
+            lbf.contact.position.value = ndval;
+            lbf.contact.position.path = mpath;
+            lbf.contact.position.nodeid = nodeid; 
+          };			
+          if ( ndnam == 'organisationName') { 
+            lbf.contact.org.value = ndval;
+            lbf.contact.org.path = mpath;
+            lbf.contact.org.nodeid = nodeid;
+          };         
+          if ( ndnam == 'electronicMailAddress') { 
+							lbf.contact.email.value = ndval;
+              lbf.contact.email.path = mpath;
+              lbf.contact.email.nodeid = nodeid;             
+          };            
+          gN =  parseFloat(lbf.extent.north.value);
+          gS =  parseFloat(lbf.extent.south.value);
+          gE =  parseFloat(lbf.extent.east.value);
+          gW =  parseFloat(lbf.extent.west.value);        
         }
-        recordTemplate(ltemp);
-       topper();
+
+      gT = lbf;
+      gMDEdStack.eda.length=0;
+      recordTemplate(lbf, gKey);
+      mdVersions(guid, vers);
+      topper();
        
     });
-
   }
 
+  function mdVersions(guid, vers) {
+	  
+	 if ( !vers ) {
+		 vers = 0;
+		 var sUrl = '/action/getRecordVersions?guid='+guid;         
+		 $("#leftMDRecord").css({top: 520, left: 5, position:'absolute'});
+		 $("#lr-widget").empty();
+		 gVersions.length=0;
+		  
+		var jqxhr = $.get(sUrl, function() {
+			console.log( "success record view " + guid );
+		  })
+		  .done(function(data) { 
+			 if (typeof(data) == "object" ) {
+				 var dres = data;
+			} else {
+				 var dres = JSON.parse(data);
+			}
+	   
+			for (var i in dres.versions) {
+				var vo = { "mdv": dres.versions[i].mdv_id, "version_id": dres.versions[i].version_id };
+				gVersions.push(vo);
+				var d = new Date(dres.versions[i].create_date);
+				var dm = d.getMonth()+1;
+				var ds = dm+'-'+d.getDate()+'-'+d.getFullYear()+' '+d.getHours()+':'+d.getMinutes();
+				var vid = $('<div id="vrlink-'+i+'" style="width: 200px; font-size: 12px; font-weight: normal; font-family:Helvetica Neue,Helvetica,Arial,sans-serif;" >' 
+					+ dres.versions[i].version_id  + ' ' 
+					+ dres.versions[i].status + ' ' 
+					+ ds +'</div>');
+						   
+				var vv = $('<i id="verv-'+i+'" class="fas fa-eye" onclick="versionView(this)"></i>')
+					   .css("color","#196fa6")
+					   .css("font-size","12px")
+					   .css("margin-left","10px");
+				vid.append(vv);	 
+				
+				if ( i == vers ) {
+					vid.css("background-color","#63d2eb")
+					   .css("font-weight","bold");
+					$(vv).hide();
+				}
+				
+				var vdx = $('<i id="vdel-'+i+'" class="fas fa-trash-alt" onclick="versionDel(this)"></i>')
+							.css("color","#196fa6")
+							.css("font-size","12px")
+							.css("margin-left","5px")
+							.css("display","none");
+				vid.append(vdx);
+				$("#lr-widget").append(vid);
+			}
+		  });
+	 } else {
+		for ( k in gVersions ) {
+			if ( gVersions[k].version_id == vers ) {
+				$("#vrlink-"+k)
+					.css("background-color","#63d2eb")
+					.css("font-weight","bold");
+				$("#verv-"+k).hide();
+			} else {
+				$("#vrlink-"+k)
+					.css("background-color","white")
+					.css("font-weight","normal");
+				$("#verv-"+k).show();	
+			}
+		 }
+	 }	  
+  }
+  
+  function versionView(o) {
+		var k = o.id.split('-')[1];
+		var vers = gVersions[k].version_id;
+		var o = { "id": gT.guid, "version": vers };
+		$("#widget-view").empty();
+		mdView(o);
+		
+  }
+  
+  function versionDel(o) {
+		var k = o.id.split('-')[1];
+		var vers = gVersions[k].version_id;
+		var o = { "id": gT.guid, "version": vers };
+		var sUrl = '/action/deleteMdVersion?guid='+gT.guid+'&version='+vers; 
+		console.log( "delete view " + sUrl );
+		var jqxhr = $.get(sUrl, function() {
+			console.log( "success delete view " + gT.guid );
+		  })
+		  .done(function(data) { 
+        for ( k in gVersions ) {
+          if ( gVersions[k].version_id == vers ) {
+            $("#vrlink-"+k)
+              .css("background-color","#ed7f66")
+              .css("font-weight","lighter");
+            $("#verv-"+k).hide();
+            $("#vdel-"+k).hide();
+          }
+        }
+        console.log('delete ' + JSON.stringify(data) );
+		  });
+			
+  }
 
   function topper() {
     window.scroll({
@@ -1125,127 +1400,981 @@ function showSaved(o) {
     });
   }
 
-  function recordTemplate(ro) {
+  function edState() {
 
-    var gTitle = $('<div>')
-              .css("margin", "4px" )
-              .css("font-size", "16px" )
-              .css("background-color", "slate" )
-              .append('<h2 style="font-size: 14px;" >'+ ro.title + '</h2>');
+    if ( kmu(gKey) ) {
+      if ( gEdState == 'ready') {
+        // active edit 
+        if ( gMDEdStack.eda.length ) {
+          console.log('tracking edits');
+        } else {
+          gMDEdStack.eda.length = 0;
+        }
+        $("#titleE").show();
+        $("#absE").show();
+        $("#authE").show();
+        $("#extentE").show();
+        $("#resxE").show();
+        $("#keyxE").show();
+        for (k in gT.resource) {
+          $("#resEdit-"+k).show();
+          $("#resdel-"+k).show();
+        }
+        for (k in gVersions) {
+          $("#vdel-"+k).show();
+        }
+		
+        $("#mdEditBtn").text("Save");
+        $("#mdCancelBtn").show();     
+        gEdState = 'on';
 
-    var abfix = ro.abstract.replace(/\\n/g, "<br />");
-
-    var gAbstract = $('<div>')
-              .css("margin", "2px" )
-              .append('<p style="font-size: 12px">'+ abfix + '</p>');
-
-    var gResources =  $('<div>')
-              .css("margin", "2px" )
-              .css("background-color", "slate" )
-                .append('<h2 style="font-size: 12px;">Data & Resources</h2>');
-     var xUrl='/csw?service=CSW&version=2.0.2&request=GetRecordById&id='+ro.guid+'&elementsetname=full&outputschema=http://www.isotc211.org/2005/gmd';
-     var gViewXML =  $('<div id="mdXML" >')
-              .css("margin", "2px" )
-              .css("background-color", "slate" )
-                //.append('<h2 style="font-size: 14px;">Metadata Source </h2>')
-                .append('<a href="'+xUrl+ '" style="font-size: 14px;" target="_blank" class="tag">View XML</a>');
-
-    var gKey =  $('<div  id="mdKeywords" >')
-              .css("margin", "2px" )
-              .css("background-color", "slate" )
-              .append('<h2 style="font-size: 14px;">Keywords</h2>');
-
-    for ( var k in ro.keywords) {
-        var kw = ro.keywords[k];
-        // BUG - findRecords wants a PAGE 
-        var kwL = $('<a  id="'+kw+'" onclick="findKW(this)" class="tag" >' + kw + '</a>')
-            .css("margin","5px");  
-        gKey.append(kwL);
-
+    } else if ( gEdState == 'on') {
+        // submit changes
+		  saveEdits();
+      $("#mdEditBtn").text("Edit");
+      $("#mdCancelBtn").hide();
+      $("#titleE").hide();
+      $("#absE").hide();
+      $("#authE").hide();
+      $("#keyxE").hide();	
+      $("#keyxM").hide();	
+      $("#extentE").hide();
+      $("#resxE").hide();
+      for (k in gT.resource) {
+        $("#resEdit-"+k).hide();
+        $("#resdel-"+k).hide();
+      }
+      for (k in gVersions) {
+        $("#vdel-"+k).hide();
+      }
+      $(".fas fa-plus").hide();
+      $(".fas fa-trash-alt").hide();
+        gEdState = 'ready';
     }
 
-    for ( var k in ro.resource) {
+    } else if ( gEdState == 'off' ) {
+      $("#mdEditBtn").hide();
+      $("#mdCancelBtn").hide();
+      $(".fas fa-edit").hide();
+      $(".fas fa-plus").hide();	
+      $(".fas fa-trash-alt").hide();
+      for (k in gVersions) {
+        $("#vdel-"+k).hide();
+      }
+		  gMDEdStack.eda.length = 0;
+	  }
 
-      var rlink = ro.resource[k].resourceUrl;
-      var rtype = ro.resource[k].resourceType;
-      var rname = ro.resource[k].resourceName;
-
-      var lo = linkColors(rname, rlink);
-      var rLL = $('<a href="'+ rlink + '" class="resource-item" target="_blank">' + rname + '</a>');
-      
-      //if ( lo.text == 'WMS' || lo.text == 'WFS' || lo.text == 'MapServer') {
-      //}
-      var rLP = $('<a id="'+rlink+'"  onclick="previewer(this);" class="res-tag" >' + lo.text +  '</a>')
-                       .css("width",lo.width)
-                       .css("color",lo.txtcolor)
-                       .css("background-color",lo.bgcolor);
-
-      var rL = $('<div>').css("margin", "10px" )
-                          .css("width", "700px");
-        rL.append(rLP);
-        rL.append(rLL);
-        
-        gResources.append(rL);
-        urlCheck(rLL);
-
-    }
-
-    var gAuthor = $('<div id="mdAuthor" >')
-              .css("margin", "2px" )
-              .css("background-color", "slate" )
-              .append('<h2  style="font-size:12px;" >Author</h2>');
-
-    gAuthor.append('<label class="md-label">Name:</label><span class="md-value" >'+ ro.contact.name + '</span></br>');
-    gAuthor.append('<label class="md-label">Position:</label><span  class="md-value">'+ ro.contact.position + '</span></br>');
-    gAuthor.append('<label class="md-label">Organization:</label><span class="md-value" >'+ ro.contact.org + '</span></br>');
-    gAuthor.append('<label class="md-label">Email:</label><span class="md-value">'+ ro.contact.email + '</span></br>');
-    
-    var gExtent = $('<div id="mdExtent" >')
-              .css("margin", "2px" )
-              .css("background-color", "slate" )
-               .append('<h2 style="font-size: 12px;"  >Geographic Extent</h2>');
-
-    
-    if ( ro.extent.north == 0 && ro.extent.west == 0 ) {
-      gExtent.append('<label class="md-label">Coordinates:</label><span class="md-value"> Not Provided</span></br>');
-
-    } else {
-      gExtent.append('<label class="md-label">North Bound:</label><span class="md-value">'+ ro.extent.north +  '</span></br>');
-      gExtent.append('<label class="md-label">South Bound:</label><span class="md-value">'+ ro.extent.south + '</span></br>');
-      gExtent.append('<label class="md-label">East Bound:</label><span class="md-value">'+ ro.extent.east +  '</span></br>');
-      gExtent.append('<label class="md-label">West Bound:</label><span class="md-value">'+ ro.extent.west +  '</span></br>');
-    }
-
-    updateExtent();
-
-    var gMd = $('<div id="mdMetaInfo" >')
-              .css("margin", "2px" )
-              .css("background-color", "slate" )
-              .append('<h2 style="font-size: 12px;"  >Metadata</h2>');
-
-    gMd.append('<label class="md-label">Original ID:</label><span class="md-value">'+ ro.guid + '</span></br>');
-    gMd.append('<label class="md-label">Index Date:</label><span class="md-value">'+ ro.datestamp + '</span></br>');
-    gMd.append('<label class="md-label">Original Format:</label><span class="md-value"> '+ ro.format + '</span></br>');
-    gMd.append('<label class="md-label">Source:</label><span class="md-value">'+ ro.source + '</span></br>');
-    gMd.append('<label class="md-label">Version:</label><span class="md-value">'+ ro.version + '</span></br>');
-
-    var gDP = $('<div id="mdPreview" >')
-        .css("margin", "2px" )
-        .css("background-color", "slate" )
-        .css("display", "none" )
-        .append('<h2 style="font-size: 12px;"  >Data Preview</h2>');
-
-     $("#widget-view").append(gTitle);
-     $("#widget-view").append(gAbstract);
-     $("#widget-view").append(gResources);
-     $("#widget-view").append(gViewXML);
-     $("#widget-view").append(gKey);
-     $("#widget-view").append(gAuthor);
-
-     $("#widget-view").append(gExtent);
-     $("#widget-view").append(gMd);
-     $("#widget-view").append(gDP);
   }
+  
+  function edCancel(o) {
+	  
+	gMd = {};
+	gMd = gCWR;
+	gMP = {};
+	//gMP = gCMP;
+	gMDEdStack.eda.length = 0;
+	$("#mdCancelBtn").hide();
+	$("#widget-view").empty();
+	
+	for (k in gVersions) {
+			$("#vdel-"+k).hide();
+	}
+	recordTemplate(gT, gKey);
+	  
+  }
+  
+  function saveEdits() {
+	  
+    if ( gMDEdStack ) {
+      var sUrl = '/action/updateMdRecord'; 
+      $.ajax({ 
+        type: 'POST',
+        url: sUrl,
+        data: JSON.stringify(gMDEdStack),
+        dataType: "json",
+        contentType: "application/json",  
+        success: function(data) {
+          console.log( JSON.stringify(data) );
+          //mdVersions(gMDEdStack.guid);
+          var o = { "id" : gMDEdStack.guid  };
+      
+          var sname =  $("#gSearchBox").val();
+          if ( !sname ) { sname = 'All' }
+          localStorage.setItem("sr-"+gMDEdStack.guid,sname);
+          mdView(o);
+        },
+        error: function (jqXHR, status, err) { 
+          console.log('Save Error : ' + status + ' ' + err);
+        }
+		 });
+	}
+}
+  
+function applyEdits(j) {	
+  // not used
+		for (x in gMDEdStack.eda) {
+			var x = gMDEdStack.eda[x];
+			console.log(x.field + ' ' + x.action + ' ' + x.path + ' ' + x.value);
+			if ( x.path ) {
+				x.path.split('.');		
+			}
+		}
+	}
+  
+function makeMDJson(r, p, t) {
+	// test dont use -  record(json), parent_id, t - return type o - object, a - array
+		var lj = {};
+		var la = [];
+		var sp = {};
+		for (var k in r) {	
+			if ( r[k].parent_id == p ) {
+				var np = r[k].node_id;
+				if ( r[k].node_prefix ) {
+					var propname = r[k].node_prefix + ':' + r[k].node_name; 
+				} else {
+					var propname = r[k].node_name; 
+				}
+				if (r[k].node_name == '$' ) {
+					if ( p == 0 ) {
+						// special case - capture root attribute children
+						sp[propname] = makeMDJson(r,np,'o');
+					} else {
+						lj[propname] = makeMDJson(r,np,'o');
+					}
+				} else if ( r[k].node_value == '{}' ) {
+					if ( p == 0 && sp ) {
+						lj[propname] = Object.assign(sp, makeMDJson(r,np,'o') );
+					} else {
+						lj[propname] = makeMDJson(r,np,'o');
+					}
+				} else if ( r[k].node_value == '[]' ) {
+					// children of arrays - skip the layer that has the number index -
+					lj[propname] = [];
+					for (var v in r) {
+						if ( r[v].parent_id == np ) {
+							var subp = r[v].node_id;
+							var z = {}; 
+							if ( r[v].node_value == '{}' ) {
+								z = makeMDJson(r,subp,'o');													
+							} else {
+								z = r[v].node_value.replace(/(^")|("$)/g, '');
+							}
+							lj[propname].push(z);
+						}
+					}					
+				} else {
+					// end point
+					lj[propname] = r[k].node_value.replace(/(^")|("$)/g, '');
+				}
+			}			
+		}
+		return lj;
+	}
+  
+function stackApply(ero ) {
+	
+    var edType = 'new';  
+    if ( gMDEdStack.eda ) {
+      for ( k in gMDEdStack.eda ) {
+        if (  gMDEdStack.eda[k].nodeid == ero.nodeid )  {
+          gMDEdStack.eda[k].value = ero.value;
+          gMDEdStack.eda[k].path = ero.path;
+          //gMDEdStack.eda[k].nodeid = ero.nodeid;
+          gMDEdStack.eda[k].action = ero.action;
+          edType = 'edit';
+        }
+      }
+    }
+    if ( edType == 'new' ) {
+      gMDEdStack.eda.push(ero);
+    }
+
+}	  
+
+function titleEdt(o) {
+	   
+	  if ( $("#mdt").is(":hidden") ) {
+		  
+        if ( gT.title.value != $("#titlebox").val() ) {
+            gT.title.value = $("#titlebox").val();
+            var ero = { 'field' : 'title', 
+                        'value': gT.title.value, 
+                        'path' :  gT.title.path, 
+                        "nodeid" : gT.title.nodeid,  
+                        'action' : 'edit' };
+            stackApply(ero);
+            $("#mdt").css("color","#916e27");
+            $("#mdt").text(gT.title.value);
+        }
+
+        $("#mdt").show();
+        $("#titlebox").remove();
+	  } else {
+          mdReset(o);
+          $("#tidiv").css({position: 'relative'});
+            var w = $("#mdt").position();
+            var tbw = Math.floor($("#mdt").width()/8);
+            var tb = $('<input id="titlebox" type="text" size="'+ tbw+'" value="'+gT.title.value+'">')
+                .css({top: w.top+20, left: w.left, position:'absolute'})
+                .on("keyup", function(e) {
+                  if (e.keyCode == 13) { titleEdt(this); }
+                    });
+            $("#tidiv").append(tb);
+            $("#tidiv").css("height", $("#mdt").height()+30 );
+            $("#mdt").hide();  
+	  }  
+}
+
+  function absEdt(o) {
+	 
+	if ( $("#pabs").is(":hidden") ) {
+		  if ( gT.abstract.value != $("#absbox").val() ) {
+        gT.abstract.value = $("#absbox").val();
+        var ero = { 'field' : 'abstract', 
+          'value': gT.abstract.value, 
+          'path' : gT.abstract.path,  
+          "nodeid" : gT.abstract.nodeid, 
+          'action' : 'edit' };
+        stackApply(ero);
+        //gMDEdStack.eda.push(ero);
+        $("#pabs").css("color","#916e27");
+        $("#pabs").text(gT.abstract.value);
+		  }
+      $("#pabs").show();
+		  $("#absbox").remove();
+	} else {
+		 mdReset(o);
+		 $("#abdiv").css({position: 'relative'});
+		  var w = $("#pabs").position();
+		  var abw = Math.floor($("#pabs").width()/8);
+		  var abh = Math.floor($("#pabs").height()/8);
+		  var tb = $('<textarea id="absbox"  rows="'+abh+'" cols="'+ abw+'" > '+gT.abstract.value+'</textarea>')
+					.css({top: w.top, left: w.left+40, position:'absolute'});
+		  $("#abdiv").append(tb);
+		  $("#abdiv").css("height", $("#pabs").height()+60 );
+		  $("#pabs").hide();
+		  
+	 }
+	  
+}
+  
+function authEdt(o) {
+	
+	if ( $("#authname").is(":hidden") ) {
+		
+		if ( gT.contact.name.value != $("#anEdit").val() ) {
+			gT.contact.name.value = $("#anEdit").val();
+			
+			var ero = { 'field' : 'contact.name', 
+					'value': gT.contact.name.value, 
+					'path' : gT.contact.name.path, 
+					"nodeid" : gT.contact.name.nodeid, 
+					'action' : 'edit' };
+			stackApply(ero);
+		
+			$("#authname").css("color","#916e27");
+			$("#authname").text(gT.contact.name.value);
+		}
+		
+		if ( gT.contact.position.value != $("#apEdit").val() ) {
+			gT.contact.position.value = $("#apEdit").val();
+			var ero = { 'field' : 'contact.position', 
+						'value': gT.contact.position.value, 
+						'path' : gT.contact.position.path, 
+						"nodeid" : gT.contact.position.nodeid, 
+						'action' : 'edit' };
+			stackApply(ero);
+			$("#authpo").css("color","#916e27");
+			$("#authpo").text(gT.contact.position,value);
+		}
+		
+		if ( gT.contact.org.value != $("#aoEdit").val() ) {
+			gT.contact.org.value = $("#aoEdit").val();
+		
+			var ero = { 'field' : 'contact.org', 
+						'value': gT.contact.org.value, 
+						'path' : gT.contact.org.path, 
+						"nodeid" : gT.contact.org.nodeid, 
+						'action' : 'edit' };
+			stackApply(ero);
+
+			$("#authorg").css("color","#916e27");
+			$("#authorg").text(gT.contact.org.value);
+		}
+		
+		if ( gT.contact.email.value != $("#aoEdit").val() ) {
+			gT.contact.email.value = $("#aoEdit").val();
+			
+			var ero = { 'field' : 'contact.email', 
+						'value': gT.contact.email.value, 
+						'path' : gT.contact.email.path, 
+						"nodeid" : gT.contact.email.nodeid, 
+						'action' : 'edit' };
+			stackApply(ero);
+	
+			$("#authorg").css("color","#916e27");
+			$("#authorg").text(gT.contact.email.value);
+		}
+		
+		$("#authname").show();
+		$("#authpo").show();
+		$("#authorg").show();
+		$("#autheml").show();
+		
+		$("#anEdit").remove();
+		$("#apSel").remove();
+		$("#aoEdit").remove();
+		$("#aeEdit").remove();
+		
+	} else {
+        mdReset(o);
+        $("#mdAuthor").css({position: 'relative'});
+        var nw = $("#authname").position();
+        var pw = $("#authpo").position();
+        var ow = $("#authorg").position();
+        var ew = $("#autheml").position();
+          
+        var nb = $('<input id="anEdit" type="text" size="'+ $("#authname").text().length +'" value="'+$("#authname").text()+'">')
+              .css({top: nw.top, left: nw.left, position:'absolute'});
+                  
+        var ps = $('<select id="apSel"></select>')
+            .css({top: pw.top, left: nw.left, position:'absolute'});
+            
+        $(gPos).each(function() {
+          var pso =  $("<option>").attr('value',this.val).text(this.text);
+          if ( $("#authpo").text() == this.text ) {
+            pso.attr('selected','selected');
+          }
+          ps.append(pso);  
+        });	
+        
+        var ob = $('<input id="aoEdit" type="text" size="'+ $("#authorg").text().length +'" value="'+$("#authorg").text()+'">')
+              .css({top: ow.top, left: nw.left, position:'absolute'});
+              
+        var eb = $('<input id="aeEdit" type="text" size="'+ $("#autheml").text().length +'" value="'+$("#autheml").text()+'">')
+              .css({top: ew.top, left: nw.left, position:'absolute'});
+              
+        $("#mdAuthor").append(nb);
+        $("#mdAuthor").append(ps);
+        $("#mdAuthor").append(ob);
+        $("#mdAuthor").append(eb);
+
+        $("#authname").hide();
+        $("#authpo").hide();
+        $("#authorg").hide();
+        $("#autheml").hide(); 	  
+	  }	    
+}
+  
+function resNew(o) {
+	  
+	if ( $("#resdln").length == 0 ) { 
+        mdReset(o);
+        var rNB = $('<i id="rnbx" class="fas fa-plus" onclick="resNew(this)" style="color:#196fa6;font-size:12px; margin-right: 5px; "></i>');
+        var rt = $('<select id="rtNewSel"></select>');		
+        $(gDt).each(function() {
+          var rto =  $("<option>").attr('value',this.val).text(this.text);
+          rt.append(rto);  
+        });
+        var rn = $('<input id="rnedit" type="text" size="40" placeholder="Enter Resource Description">');
+        var rl = $('<input id="rledit" type="text" size="40" placeholder="Enter Resource Link ">');
+        var rDel = $('<i id="rnewdel" class="fas fa-trash-alt" onclick=" resNew(this)" style="color:#196fa6;font-size:12px; margin-left: 5px;"></i>');
+        var rnewDiv = $('<div id="resdln">').css("margin", "10px" )
+							  .css("width", "700px");
+                  
+        rnewDiv.append(rNB);
+        rnewDiv.append(rt);
+        rnewDiv.append(rn);
+        rnewDiv.append(rl);
+        rnewDiv.append(rDel);
+        $("#resdiv").append(rnewDiv);
+		
+	} else {
+		 if ( o.id == 'rnewdel' ) {
+			  $("#resdln").remove();
+		 } else {
+          var rname = $("#rnedit").val();
+          var rlink = $("#rledit").val();
+          var rtype = $("#rtNewSel").val();
+          
+          var mr = JSON.stringify(gResource);
+          mr.resourceUrl.value = rlink;
+          mr.resourceName.value = rname;
+          mr.resourceType.value = rtype;
+          gT.resource.push( JSON.parse(mr) );
+              
+          var newK = gT.resource.length-1;
+
+          var lo = linkColors(rname, rlink); 
+          var rLL = $('<a id="rn-'+newK+'" href="'+ rlink + '" class="resource-item" target="_blank">' + rname + '</a>');
+          var rLP = $('<a id="rl-'+newK+'"  onclick="previewer(this);" class="res-tag" >' + lo.text +  '</a>')
+                    .css("width",lo.width)
+                    .css("color",lo.txtcolor)
+                    .css("background-color",lo.bgcolor);
+          var rEd = $('<i id="resEdit-'+newK+'" class="fas fa-edit" onclick="resEdt(this);" style="color:#196fa6;font-size:16px; "></i>');
+          var rDel = $('<i id="resdel-'+newK+'" class="fas fa-trash-alt" onclick=" resDel(this)" style="color:#196fa6;font-size:12px; margin-left: 5px;"></i>');
+          var rL = $('<div id="resdl">').css("margin", "10px" )
+                      .css("width", "700px");         
+          $("#resdln").remove();
+          $("#rnbx").remove();
+          rL.append(rEd);
+          rL.append(rLP);
+          rL.append(rLL);
+          rL.append(rDel);
+          $("#resdiv").append(rL);
+          urlCheck(rLL);
+		    }	
+	}   
+}
+  
+function resDel(o) {
+	  
+      var rid = o.id.split('-');
+      var k  = rid[1];
+      gT.resource[k].resourceName.value = 'DELETE-RESOURCE';
+      gT.resource[k].resourceUrl.value = 'DELETE-URL';
+      gT.resource[k].resourceType.value = 'DELETE-TYPE';
+      
+      var ero = { 'field' : 'resourceUrl', 
+          'value': gT.resource[k].resourceUrl.value, 
+          'path' : gT.resource[k].resourceUrl.path, 
+          "nodeid" : gT.resource[k].resourceUrl.nodeid, 
+          'action' : 'delete' };
+      stackApply(ero);
+      					
+      $("#rn-"+k).remove();
+      $("#rl-"+k).remove();
+      $("#resEdit-"+k).remove();
+      $("#resdel-"+k).remove();
+	
+}
+  
+function setResVersion(kindex, property, action) {
+	  // not functional 
+	  if ( !gMd.edits.resource ) { gMd.edits.resource = []; }
+	  
+	  for (x in gMd.edits.resource) {
+		  var reds = gMd.edits.resource[x];
+
+				 
+	  }
+			 
+	  if ( action == 'new') {
+		 var ro = {};
+		 ro.index = kindex;
+		 ro.resourceName = 'new';
+		 ro.resourceUrl = 'new';
+		 ro.resourceType = 'new';
+		 gMd.edits.resource.push(ro);
+	  }
+	  
+	  if ( action == 'delete') {
+		 var ro = {};
+		 ro.index = kindex;
+		 ro.resourceName = 'delete';
+		 ro.resourceUrl = 'delete';
+		 ro.resourceType = 'delete';
+		 gMd.edits.resource.push(ro);
+	  }
+	  
+	   if ( action == 'edit') {
+		    var ro = {};
+	   }
+	  
+  }
+  
+function resEdt(o) {
+	    
+	  var rid = o.id.split('-');
+	  var k  = rid[1];
+	  var lt = $("#rl-"+k).text();
+	  
+	  if ( $("#rn-"+k).is(":hidden") ) {
+		  
+        if ( gT.resource[k].resourceUrl.value !== $("#rledit").val() ) {
+            gT.resource[k].resourceUrl.value = $("#rledit").val();
+          
+            var ero = { 'field' : 'resourceUrl', 
+                  'value': gT.resource[k].resourceUrl.value, 
+                  'path' : gT.resource[k].resourceUrl.path, 
+                  "nodeid" : gT.resource[k].resourceUrl.nodeid, 
+                  'action' : 'edit' };
+            stackApply(ero);			
+
+            $("#rn-"+k).attr("href",$("#rledit").val());
+            $("#rn-"+k).css("color","#916e27");
+        }
+		 
+        if ( gT.resource[k].resourceName.value !== $("#rnedit").val() ) {
+            gT.resource[k].resourceName.value = $("#rnedit").val();
+            var ero = { 'field' : 'resourceName', 
+                  'value': gT.resource[k].resourceName.value, 
+                  'path' : gT.resource[k].resourceName.path, 
+                  "nodeid" : gT.resource[k].resourceName.nodeid, 
+                  'action' : 'edit' };
+            stackApply(ero);			
+            $("#rn-"+k).text($("#rnedit").val());
+            $("#rn-"+k).css("color","#916e27");
+        }
+        
+        if ( gT.resource[k].resourceType.value !== $("#rtSel").val() ) {
+            gT.resource[k].resourceType.value = $("#rtSel").val();
+            var ero = { 'field' : 'resourceType', 
+                  'value': gT.resource[k].resourceType.value, 
+                  'path' : gT.resource[k].resourceType.path, 
+                  "nodeid" : gT.resource[k].resourceType.nodeid, 
+                  'action' : 'edit' };
+            stackApply(ero);			
+            $("#rl-"+k).text($("#rtSel").val());
+        }
+        
+        $("#rn-"+k).show();
+        $("#rl-"+k).show();   
+        $("#rtSel").remove();
+        $("#rnedit").remove();
+        $("#rledit").remove();
+
+			  
+	  } else {
+        mdReset(o);
+        var rlink = gT.resource[k].resourceUrl.value;
+        var rtype = gT.resource[k].resourceType.value;
+        var rname = gT.resource[k].resourceName.value;
+          
+        var w = $(o).position();
+        var rw = rlink.length;
+        var rnw = rname.length;
+      
+        var rt = $('<select id="rtSel"></select>')
+            .css({top: w.top, left: w.left+30, position:'absolute'});
+        $(gDt).each(function() {
+          var rto =  $("<option>").attr('value',this.val).text(this.text);
+          if ( lt == this.text ) {
+            rto.attr('selected','selected');
+          }
+          rt.append(rto);  
+        });	
+        
+        var rn = $('<input id="rnedit" type="text" size="'+ rnw+'" value="'+rname+'">')
+            .css({top: w.top, left: w.left+180, position:'absolute'});		
+          
+        var rl = $('<input id="rledit" type="text" size="'+ rw+'" value="'+rlink+'">')
+            .css({top: w.top+25, left: w.left+180, position:'absolute'});
+            
+        $("#resdl").append(rt);
+        $("#resdl").append(rn);
+        $("#resdl").append(rl);
+        $("#rn-"+k).hide();
+        $("#rl-"+k).hide();
+	  }
+	   
+}
+	
+  function extEdt(o) {
+	  
+	if ( $("#extN").is(":hidden") ) {
+		
+        if ( gT.extent.north.value != $("#extNEdit").val() ) {
+            gT.extent.north.value = $("#extNEdit").val();
+            var ero = { 'field' : 'extent.north', 
+                  'value': gT.extent.north.value, 
+                  'path' : gT.extent.north.path, 
+                  "nodeid" : gT.extent.north.nodeid, 
+                  'action' : 'edit' };                
+            stackApply(ero);			      
+            $("#extN").css("color","#916e27");
+            $("#extN").text(gT.extent.north.value);
+        }
+        
+        if ( gT.extent.south.value != $("#extSEdit").val() ) {
+            gT.extent.south.value = $("#extSEdit").val();
+            var ero = { 'field' : 'extent.south', 
+                  'value': gT.extent.south.value, 
+                  'path' : gT.extent.south.path, 
+                  "nodeid" : gT.extent.south.nodeid, 
+                  'action' : 'edit' };
+            stackApply(ero);			
+            $("#extS").css("color","#916e27");
+            $("#extS").text(gT.extent.south.value);
+        }
+		
+        if ( gT.extent.east.value != $("#extEEdit").val() ) {
+            gT.extent.east.value = $("#extEEdit").val();
+            var ero = { 'field' : 'extent.east', 
+                  'value': gT.extent.east.value, 
+                  'path' : gT.extent.east.path, 
+                  "nodeid" : gT.extent.east.nodeid, 
+                  'action' : 'edit' };
+          stackApply(ero);
+          $("#extE").css("color","#916e27");
+          $("#extE").text(gT.extent.east.value);
+        }
+
+        if ( gT.extent.west.value != $("#extWEdit").val() ) {
+          gT.extent.west.value = $("#extWEdit").val();
+          var ero = { 'field' : 'extent.west', 
+                'value': gT.extent.west.value, 
+                'path' : gT.extent.west.path, 
+                "nodeid" : gT.extent.west.nodeid, 
+                'action' : 'edit' };
+          stackApply(ero);			
+          $("#extW").css("color","#916e27");
+          $("#extW").text(gT.extent.west.value);
+        }
+		
+        $("#extN").show();
+        $("#extS").show();
+        $("#extE").show();
+        $("#extW").show(); 
+        $("#extNEdit").remove();
+        $("#extSEdit").remove();
+        $("#extEEdit").remove();
+        $("#extWEdit").remove();
+		
+	} else {
+        mdReset(o);
+        $("#mdExtent").css({position: 'relative'});
+        var nw = $("#extN").position();
+        var sw = $("#extS").position();
+        var ew = $("#extE").position();
+        var ww = $("#extW").position();
+          
+        var nb = $('<input id="extNEdit" type="text" size="'+ $("#extN").text().length +'" value="'+$("#extN").text()+'">')
+              .css({top: nw.top, left: nw.left, position:'absolute'});
+              
+        var sb = $('<input id="extSEdit" type="text" size="'+ $("#extS").text().length +'" value="'+$("#extS").text()+'">')
+              .css({top: sw.top, left: sw.left, position:'absolute'});	
+        
+        var eb = $('<input id="extEEdit" type="text" size="'+ $("#extE").text().length +'" value="'+$("#extE").text()+'">')
+              .css({top: ew.top, left: ew.left, position:'absolute'});
+              
+        var wb = $('<input id="extWEdit" type="text" size="'+ $("#extW").text().length +'" value="'+$("#extW").text()+'">')
+              .css({top: ww.top, left: ww.left, position:'absolute'});
+              
+        $("#mdExtent").append(nb);
+        $("#mdExtent").append(sb);
+        $("#mdExtent").append(eb);
+        $("#mdExtent").append(wb);
+
+        $("#extN").hide();
+        $("#extS").hide();
+        $("#extE").hide();
+		    $("#extW").hide();		
+	  } 
+  }
+  
+  function kwEdt(o) {
+	  
+	//mdReset(o);
+	if ( o.id == 'keyxE' || o.id == 'kwedit' ) {
+		if ( $("#kwedit").is(":hidden") ) {	
+			// Setup to add new kw
+			gkwid = -1;
+			$("#kwedit").show();
+			$("#keyxM").hide();
+		} else {
+			// Save a keyword
+			var nkw = $("#kwedit").val();
+			if ( gkwid == -1 ) {
+				// new kw
+				 var kw = { "value": nkw, "path": "", "nodeid": -1 };
+				gT.keywords.push(kw);
+				gkwid = gT.keywords.length-1;
+				
+				var ero = { 'field' : 'keywords', 
+						'value': gT.keywords[gkwid].value, 
+						'path' : gT.keywords[gkwid].path, 
+						'index': gkwid,
+						"nodeid" : gT.keywords[gkwid].nodeid, 
+						'action' : 'new' };
+        //gMDEdStack.eda.push(ero);
+        stackApply(ero);
+				var kwL = $('<a id="kw-'+gkwid+'" onclick="kwEdt(this)" class="tag" >' + nkw + '</a>')
+                  .css("margin","5px");  
+				$("#mdKeywords").append(kwL);
+			} else {
+				// edit existing
+				if ( gT.keywords[gkwid].value != nkw ) {
+					gT.keywords[gkwid].value = nkw;		
+					var ero = { 'field' : 'keywords', 
+								'index': gkwid, 
+								'value': gT.keywords[gkwid].value, 
+								'path' : gT.keywords[gkwid].path,
+								"nodeid" : gT.keywords[gkwid].nodeid, 
+								'action' : 'edit' };
+			    stackApply(ero);			   
+					$('#kw-'+gkwid).text(nkw);
+					$('#kw-'+gkwid).css("color","#916e27");
+				} else {
+					// it didnt change
+				}	
+			}
+			$("#kwedit").val("");
+			$("#kwedit").hide();
+			$("#keyxM").hide();
+		}
+	} else if ( o.id == "keyxM") {
+		// clicked delete
+		if ( gkwid > -1 ) {
+			// this allows deletes without having to re-index all the kw a elements
+			gT.keywords[gkwid].value = 'DELETE-KEYWORD';	
+			var ero = { 'field' : 'keywords', 
+						'index': gkwid, 
+						'value': gT.keywords[gkwid].value, 
+						'path' : gT.keywords[gkwid].path, 
+						"nodeid" : gT.keywords[gkwid].nodeid, 
+						'action' : 'delete' };
+			stackApply(ero);			
+			$('#kw-'+gkwid).remove();
+			$("#kwedit").val("");
+			$("#kwedit").hide();
+			$("#keyxM").hide();
+		}
+	} else {
+		// clicked on a kw - just show it
+		mdReset(o);
+		gkwid = parseInt(o.id.substr(3));
+		$("#kwedit").val(o.text);
+		$("#kwedit").show();
+		$("#keyxM").show();
+	
+	}
+}
+  
+  function mdReset(o) {
+	// clears the edit state elements
+	
+	$('input, select, textarea').each(function() { 
+	    var nx = $(this);
+		
+		if ( nx[0].id == 'gSearchBox' || nx[0].id == 'map-lyr-select' || nx[0].id == 'luser' || nx[0].id == 'lpass' ) {
+			console.log('>>> spaghetti-Os '+nx[0].id);
+		} else if ( nx[0].id == 'kwedit' ) {
+			$("#kwedit").hide();
+			console.log('>>> this page '+nx[0].id);
+		} else {
+			console.log(' removed '+nx[0].id);
+			nx[0].remove();
+			
+		}
+	});
+	
+	if ( o.id != 'titleE') {
+		$("#mdt").show();
+	}
+	
+	if ( o.id != 'absE') {
+		$("#pabs").show();
+	}
+
+	
+	$('.md-value').each( function() { 
+		$( this ).show(); 
+	});
+	
+	$('.tag').each( function() { 
+		$( this ).show(); 
+	});
+	
+	$('.resource-item').each( function() { 
+		$( this ).show(); 
+	});
+	
+	$('.res-tag').each( function() { 
+		$( this ).show(); 
+	});
+	
+	$('.a-ref-valid').each( function() { 
+		$( this ).show(); 
+	});
+
+  }
+  
+  function kwSave(o) {
+	// NOT USED anymore
+      var kwi = o.id.substr(4);
+      var okv = gMd.keywords[kwi];
+      var kwid = 'kw-'+kwi;
+      var nkv = $("#kwedit").val();
+      if ( okv != nkv ) {
+        $('#'+kwid).text(nkv);
+        $('#'+kwid).css("color","#916e27");
+        gMd.keywords[kwi] = nkv;
+      }
+      
+      $('#'+kwid).show();
+      $(o).remove();
+      $("#kwedit").remove();
+	
+	  
+  }
+	
+  function recordTemplate(ro, gKey) {
+	// first snapshot for edit cancels
+	
+      gCWR = JSON.parse(JSON.stringify(ro));
+      //gCMP = JSON.parse(JSON.stringify(gMP)); 
+      var ed = false;
+      if ( kmu(gKey) ) {
+            ed = true;
+            $("#mdEditBtn").text("Edit");
+            $("#mdEditBtn").show();
+            gEdState = 'ready';
+      } else {
+          $("#mdEditBtn").hide();
+          $("#mdCancelBtn").hide();
+          $(".fas fa-edit").remove();
+          $(".fas fa-plus").remove();	
+          gEdState = 'off';
+      }
+
+      var titleEdit = $('<i id="titleE" class="fas fa-edit" onclick="titleEdt(this)" style="color:#196fa6;font-size:12px; margin-right: 5px; display:none;"></i>');
+      var AbsEdit = $('<i id="absE" class="fas fa-edit" onclick="absEdt(this)" style="color:#196fa6;font-size:12px;  margin-right: 5px;display:none;"></i>');
+      var authEdit = $('<i id="authE" class="fas fa-edit" onclick=" authEdt(this)" style="color:#196fa6;font-size:12px; margin-right: 5px; display:none;"></i>');
+      var extEdit = $('<i id="extentE" class="fas fa-edit" onclick=" extEdt(this)" style="color:#196fa6;font-size:12px; margin-right: 5px; display:none;"></i>');
+      var kxPlus = $('<i id="keyxE" class="fas fa-plus" onclick=" kwEdt(this)" style="color:#196fa6;font-size:12px; margin-right: 5px; display:none;"></i>');
+      var kxMinus = $('<i id="keyxM" class="fas fa-trash-alt" onclick=" kwEdt(this)" style="color:#196fa6;font-size:12px; margin-left: 5px; display:none;"></i>');
+      var rxPlus = $('<i id="resxE" class="fas fa-plus" onclick="resNew(this)" style="color:#196fa6;font-size:12px; margin-right: 5px; display:none;"></i>');
+        
+      var gTitle = $('<div id="tidiv">')
+          .css("margin", "4px" )
+          .css("font-size", "16px" )
+          .css("background-color", "slate" );
+      gTitle.append(titleEdit);
+      
+      gTitle.append('<h2 id="mdt" style="font-size: 14px; display: inline;" >'+ ro.title.value + '</h2><br />');
+      gTitle.append('<span id="mdver" style="font-size: 11px; display: inline;" >Version: '+ ro.mdversion + '</span><br />');
+        var abfix = ro.abstract.value.replace(/\\n/g, "<br />");
+        var gAbstract = $('<div id="abdiv">')
+                  .css("margin", "2px" );
+      gAbstract.prepend(AbsEdit);
+      
+      gAbstract.append('<span id="pabs" style="font-size: 12px">'+ abfix + '</span>');
+      
+        var gResources =  $('<div id="resdiv">')
+                  .css("margin", "2px" )
+                  .css("background-color", "slate" );
+      gResources.append(rxPlus);
+      gResources.append('<h2 style="font-size: 12px; display: inline;">Data & Resources</h2></br>');
+      for ( var k in ro.resource) {
+          var rlink = ro.resource[k].resourceUrl.value;
+          var rtype = ro.resource[k].resourceType.value;
+          var rname = ro.resource[k].resourceName.value;
+          if ( rname != 'DELETE-RESOURCE' ) {
+              var lo = linkColors(rname, rlink);
+              var rLL = $('<a id="rn-'+k+'" href="'+ rlink + '" class="resource-item" target="_blank">' + rname + '</a>');
+              var rLP = $('<a id="rl-'+k+'"  onclick="previewer(this);" class="res-tag" >' + lo.text +  '</a>')
+                      .css("width",lo.width)
+                      .css("color",lo.txtcolor)
+                      .css("background-color",lo.bgcolor);
+              var rEd = $('<i id="resEdit-'+k+'" class="fas fa-edit" onclick="resEdt(this);" style="color:#196fa6;font-size:16px; display: none;"></i>');
+              var rDel = $('<i id="resdel-'+k+'" class="fas fa-trash-alt" onclick=" resDel(this)" style="color:#196fa6;font-size:12px; margin-left: 5px; display:none;"></i>');
+              var rL = $('<div id="resdl">').css("margin", "10px" )
+                        .css("width", "700px");
+              rL.append(rEd);
+              rL.append(rLP);
+              rL.append(rLL);
+              rL.append(rDel);
+              gResources.append(rL);
+              urlCheck(rLL);
+          }
+      }
+	
+      var xUrl='/csw?service=CSW&version=2.0.2&request=GetRecordById&id='+ro.guid+'&elementsetname=full&outputschema=http://www.isotc211.org/2005/gmd';
+	    var jUrl='/action/getRecordJson?guid='+ro.guid;
+	 
+      var gViewXML =  $('<div id="mdXML" >')
+              .css("margin", "2px" )
+              .css("background-color", "slate" )
+              .append('<a href="'+xUrl+ '" style="font-size: 14px;" target="_blank" class="tag">View XML</a>')
+			        .append('<a href="'+jUrl+ '" style="font-size: 14px;" target="_blank" class="tag">View JSON</a>');
+
+      var gKeyDiv =  $('<div id="mdKeywords" >')
+              .css("margin", "2px" )
+              .css("background-color", "slate" );
+	    gKeyDiv.append(kxPlus);
+
+      gKeyDiv.append('<h2 style="font-size: 14px; display: inline">Keywords</h2>');
+	    var kbox = $('<input id="kwedit" type="text" style="display: none;">')
+                .on("keyup", function(e) {
+                  if (e.keyCode == 13) {
+                    kwEdt(this);
+                  }
+                });
+      gKeyDiv.append(kbox);
+      gKeyDiv.append(kxMinus);
+      gKeyDiv.append('</br>');
+	
+      for ( var k in ro.keywords) {
+          var kw = ro.keywords[k].value;
+          // BUG - findRecords wants a PAGE 
+          if ( kw != 'DELETE-KEYWORD' ) {
+            if ( ed ) {
+              var kwL = $('<a id="kw-'+k+'" onclick="kwEdt(this)" class="tag" >' + kw + '</a>')
+                  .css("margin","5px");  
+            } else {
+              var kwL = $('<a  id="'+kw+'" onclick="findKW(this)" class="tag" >' + kw + '</a>')
+                  .css("margin","5px");  
+            }
+            gKeyDiv.append(kwL);
+          }
+      }
+
+      var gAuthor = $('<div id="mdAuthor" >')
+              .css("margin", "2px" )
+              .css("background-color", "slate" );
+	    gAuthor.append(authEdit); 
+      gAuthor.append('<h2  style="font-size:12px; display: inline;" >Author</h2></br>');
+      gAuthor.append('<label class="md-label">Name:</label><span id="authname" class="md-value" >'+ ro.contact.name.value + '</span></br>');
+      gAuthor.append('<label class="md-label">Position:</label><span id="authpo" class="md-value">'+ ro.contact.position.value + '</span></br>');
+      gAuthor.append('<label class="md-label">Organization:</label><span id="authorg" class="md-value" >'+ ro.contact.org.value + '</span></br>');
+      gAuthor.append('<label class="md-label">Email:</label><span id="autheml" class="md-value">'+ ro.contact.email.value + '</span></br>');
+      var gExtent = $('<div id="mdExtent" >')
+                .css("margin", "2px" )
+                .css("background-color", "slate" );
+	    gExtent.append(extEdit);		  
+      gExtent.append('<h2 style="font-size: 12px; display: inline"  >Geographic Extent</h2></br>');
+
+      if ( ro.extent.north.value == 0 && ro.extent.west.value == 0 ) {
+        gExtent.append('<label class="md-label">Coordinates:</label><span class="md-value"> Not Provided</span></br>');
+      } else {
+        gExtent.append('<label class="md-label">North Bound:</label><span id="extN" class="md-value">'+ ro.extent.north.value +  '</span></br>');
+        gExtent.append('<label class="md-label">South Bound:</label><span id="extS" class="md-value">'+ ro.extent.south.value + '</span></br>');
+        gExtent.append('<label class="md-label">East Bound:</label><span id="extE" class="md-value">'+ ro.extent.east.value +  '</span></br>');
+        gExtent.append('<label class="md-label">West Bound:</label><span id="extW" class="md-value">'+ ro.extent.west.value +  '</span></br>');
+      }
+      updateExtent();
+      var gMd = $('<div id="mdMetaInfo" >')
+                .css("margin", "2px" )
+                .css("background-color", "slate" )
+                .append('<h2 style="font-size: 12px;"  >Metadata</h2>');
+
+      gMd.append('<label class="md-label">Original ID:</label><span class="md-value">'+ ro.guid + '</span></br>');
+      gMd.append('<label class="md-label">Index Date:</label><span class="md-value">'+ ro.datestamp + '</span></br>');
+      gMd.append('<label class="md-label">Original Format:</label><span class="md-value"> '+ ro.format + '</span></br>');
+      gMd.append('<label class="md-label">Source:</label><span class="md-value">'+ ro.source + '</span></br>');
+      gMd.append('<label class="md-label">Version:</label><span class="md-value">'+ ro.version + '</span></br>');
+
+      var gDP = $('<div id="mdPreview" >')
+          .css("margin", "2px" )
+          .css("background-color", "slate" )
+          .css("display", "none" )
+          .append('<h2 style="font-size: 12px;"  >Data Preview</h2>');
+	
+      $("#widget-view").append(gTitle);
+      $("#widget-view").append(gAbstract);
+    
+      $("#widget-view").append(gResources);
+      $("#widget-view").append(gViewXML);
+      $("#widget-view").append(gKeyDiv);
+    
+      $("#widget-view").append(gAuthor);
+      
+      $("#widget-view").append(gExtent);
+      $("#widget-view").append(gMd);
+      $("#widget-view").append(gDP);
+
+}
 
   var findKW  = function(o) {
     if ( o.id ) {
@@ -1258,7 +2387,6 @@ function showSaved(o) {
   var urlCheck = function( urlink) {
   // Readl time asynchronous check
     var urlString =  $(urlink).attr("href");
-
     var hurl = '/url_status?' + 'url='+urlString ;
     console.log('start url check');
       $.ajax({
@@ -1267,24 +2395,15 @@ function showSaved(o) {
           dataType: 'json',
           contentType: "application/json",
           success: function(data, status) {
-            if ( data ) {
-              //console.log('url check - OK');
-            
-              $(urlink).attr("class","aref-valid");
-           
-              
-            } else {
-              //console.log('url check - BAD');
+            if ( data ) {      
+              $(urlink).attr("class","aref-valid");            
+            } else {             
               $(urlink).attr("class","aref-not");
-              
-            }
-        
+            }       
           }, 
           error: function (jqXHR, status, err) {  
             console.log('url check error');
-            //cb('Nope');
           }
-
       });
   }
 
@@ -1295,36 +2414,36 @@ function showSaved(o) {
     if ( rectangle ) {
       map.removeLayer(rectangle)
     }
-     //var yl = parseFloat(gS) + (parseFloat(gN) - parseFloat(gS) )/2;
-    // var xl = parseFloat(gE) + ( parseFloat(gW) - parseFloat(gE) )/2;
-     var yl = gS + (gN - gS )/2;
-     var xl = gE + ( gW -gE )/2;
-     var center = new L.LatLng(yl, xl);
-     //var center = new L.LatLng(gS + (gN - gS)/2 ,gE + (gW - gE)/2);
-     map.panTo(center);
+    
+    if ( gMdRecord ) {
+      return;
+    }
+    var sa = [180, 90, 45, 22,5, 11.25, 5.625, 2.8, 1.4 ];
+    
+    var xs = gW -gE;
+    var ys = gN - gS;
+    var yl = gS + (ys)/2;
+    var xl = gE + (xs)/2;
+    if ( ys > xs ) { var scal = Math.abs(ys); } else { var scal = Math.abs(xs) }
+    var z = sa.findIndex(k => k < scal );
+    if ( z < 0 ) { z = 4 }
+    var center = new L.LatLng(yl, xl);
+    //map.panTo(center);
+    map.setView(center, z);
     var bounds = [[ gS, gW], [ gN, gE ]];
-    //drawnItems = new L.featureGroup(bounds);
-
     rectangle = L.rectangle(bounds, {color: 'slateblue', weight: 1}).on('click', function (e) {
-    // There event is event object
-    // there e.type === 'click'
-    // there e.lanlng === L.LatLng on map
-    // there e.target.getLatLngs() - your rectangle coordinates
-    // but e.target !== rect
       console.info(e);
     }).addTo(map);
-
     map.fitBounds(bounds);
 
-  }
+}
 
-  var showSpinner = function(o)  {
+var showSpinner = function(o)  {
     var target = $("#rec-results");
     var spinner = new Spinner(opts).spin(target);
-   
-  }
+}
 
-  var facetView = function(o) {
+var facetView = function(o) {
     if (o.id == 'Cat') {
       console.log('cat');
       if (  $("#CatB").attr("class") == "fa fa-angle-right" ) {
@@ -1379,21 +2498,18 @@ function showSaved(o) {
       $(".nav-rc").each(function() {
         divToggle(this);
       });
-    }
+    }    
+}
 
-   
-    
-  }
-
-  function divToggle(o) {
+function divToggle(o) {
     if ( $(o).css("display") == "none") { 
       $(o).css("display","block");
     } else {
       $(o).css("display","none");
     }
-  }
+ }
 
-  function facetClear(facet) {
+function facetClear(facet) {
     var f = $(facet);
     $(f).each(function() {
       $( this ).remove();
@@ -1404,9 +2520,9 @@ function showSaved(o) {
     } else {
       $(f).css("display","none");
     }
-  }
-  var showCategories = function(lim) {
+}
 
+var showCategories = function(lim) {
     var sTerms = $("#gSearchBox").val();
     if ( sTerms ) {
       var gUrl = '/action/getCategories?q='+sTerms+'&lid='+lim.toString();
@@ -1414,7 +2530,7 @@ function showSaved(o) {
       var gUrl = '/action/getCategories?lid='+lim.toString();
     }
     
-      var jqxhr = $.get(gUrl, function() {
+    var jqxhr = $.get(gUrl, function() {
         console.log( "success - categories" );
       })
       .done(function(data) { 
@@ -1455,30 +2571,29 @@ function showSaved(o) {
           
   }
 
-  var selectCategory = function(oCat) {
-      if ( $("#gSearchBox").val() ) {
-        var ss = $("#gSearchBox").val() + " " + oCat.id;
-      } else {
-        ss = oCat.id;
-      }
-      $("#gSearchBox").val(ss);
-      $("#cb").show();
-      sPage = 0;
-     	$("#PageCnt").html("Page " + sPage);
-      $("#widget-box").hide();
-      if ( gSearchType == 'map' ) {
-        findSpatial(0);
-      } else {
-        findRecords(0);
-      }
-      topper();
+var selectCategory = function(oCat) {
+    if ( $("#gSearchBox").val() ) {
+      var ss = $("#gSearchBox").val() + " " + oCat.id;
+    } else {
+      ss = oCat.id;
+    }
+    $("#gSearchBox").val(ss);
+    $("#cb").show();
+    sPage = 0;
+    $("#PageCnt").html("Page " + sPage);
+    $("#widget-box").hide();
+    if ( gSearchType == 'map' ) {
+      findSpatial(0);
+    } else {
+      findRecords(0);
+    }
+    topper();
 
-  }
-  
+}
+
   var showAuthors = function(l) {
 
      var gUrl = '/action/getAuthors';
-    
      var sTerms = $("#gSearchBox").val();
      if ( !l ) { l = 5; }
      if ( sTerms ) {
@@ -1505,7 +2620,6 @@ function showSaved(o) {
 
             var dx = dres.rows;
             for (var i in dx) {
-              
               var cname = dx[i].node_value;
               cname = cname.replace(/"/g,"");
               var cn = cname;
@@ -1523,8 +2637,7 @@ function showSaved(o) {
    
                   $("#AuthList").append(cax);
               }
-            }
-            
+            }     
       });
           
   }
@@ -1580,7 +2693,7 @@ function showSaved(o) {
              
              var cname = dx[i].cm;
              cname = cname.replace(/"/g,"");
-             var cn = cname; //cname.substring(8);
+             var cn = cname; 
              if ( cn.length > 22 ) { var cn = cn.substr(0,22) + '..' }
              var cnum = dx[i].countx;
              if ( i > 0 ) {
@@ -1716,9 +2829,7 @@ var selectDT = function(oDT) {
 var previewer = function(o) {
 
   var dtype = $(o).text();
-
   if ( dtype == 'wfs' || dtype == 'WFS' ||  dtype == 'wns' || dtype == 'WMS' ) {
-
       divToggle($("#mdXML"));
       divToggle($("#mdKeywords"));
       divToggle($("#mdAuthor"));
@@ -1749,8 +2860,6 @@ var previewer = function(o) {
             console.log('ready map')
         });
 
-        var lx = 'http://geothermal.smu.edu:9000/geoserver/gtda/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=gtda:wells&maxFeatures=50&outputFormat=application%2Fjson';
-
         lx = '/previewMap';
         var jqxhr = $.get(lx, {dataType : "jsonp"}, function() {
           console.log( "success - data layer" );
@@ -1761,17 +2870,13 @@ var previewer = function(o) {
             var dres = JSON.parse(data);
          }
           console.log(data);
-         // if ( dres.crs ) {
-         //   delete data["crs"];
-         // }
-
-          var tf = {   "type": "FeatureCollection",
+          var tf = {  "type": "FeatureCollection",
                       "features": [
                         {   "type": "Feature",
                             "properties": {},
                             "geometry": {
-                              "type": "Point",
-                              "coordinates": [-96.0829037,29.1506589] }
+                                "type": "Point",
+                                "coordinates": [-96.0829037,29.1506589] }
                         }]    
                   };
 
@@ -1826,13 +2931,12 @@ var previewer = function(o) {
   } 
   console.log('previewer: ' + dtype);
 
-
 }
 
-function logmein(o) {
+function logmein(o, cb) {
   var un = $("#luser").val();
   var pw =  $("#lpass").val();
-
+  //var fcp = o.id;
   var xUrl = '/action/getToken?q='+un+'&p='+pw;
 
   var jqxhr = $.get(xUrl, function() {
@@ -1846,19 +2950,22 @@ function logmein(o) {
           var dres = JSON.parse(data);
        }
       
-        for (var k in dres) {
-          var ak = dres[k];
-
-          if ( ak ) {
-            gKey = { k : ak };
-            $("#laname").text(un);
+        //for (var k in dres) {
+        if ( dres.authtoken == dres.kv ) {
+            gKey = {};
+            gKey[dres.authtoken] = dres.kv;
+			gKey.agentRole = dres.agentrole;
+            $("#laname").text(un).css("font-size","12px")
+				.css("font-family","Arial, Lucida Grande, sans-serif");
             $("#loginBtn").text("Logout");
-            $("#Cex").css("display","block");
-
-          }
-        }
-
-        toggleLogin();   
+            //$("#Cex").css("display","block");
+            $("#loginDiv").hide();
+            cb();
+            return;
+        } else {
+			gKey = {"x":"z","agentRole":"99"};
+			cb();
+		}
       });
 }
 
@@ -1877,12 +2984,23 @@ var showLogin = function() {
   } 
 }
 
-var toggleLogin = function() {
-  if ( $("#loginDiv").css("display") == "none") { 
-    $("#loginDiv").css("display","block");
+var toggleLogin = function(o, cb) {
+   
+  if (  $(o).text() == "Logout" ) {
+      gKey = { "a" : "b" };
+      $("#laname").text("");
+      $(o).text("Login");
+	   $("#Cex").css("display","none");
+      cb();
   } else {
-    $("#loginDiv").css("display","none");
+    if ( $("#loginDiv").css("display") == "none") { 
+      $("#loginDiv").css("display","block");
     
+    } else {
+      $("#loginDiv").css("display","none");
+  
+    }
+  
   }
 
 }

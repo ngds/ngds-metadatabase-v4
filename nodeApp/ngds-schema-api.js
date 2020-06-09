@@ -3,8 +3,8 @@ var router = express.Router();
 
 var  Path = process.env.NODE_PATH;
 const pg = require('pg');
-//const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/GEOTHERMAL';
-const connectionString = 'postgres://ngdsdb:geonewton@localhost:5432/geothermal';
+
+const connectionString = '';
 //var pgapi = require("./ngds-pg-api.js");
 
 const client = new pg.Client(connectionString);
