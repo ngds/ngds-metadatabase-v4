@@ -40,7 +40,7 @@ function XMLtoJ(data) {
 	 var parser = new xml2js.Parser({explicitArray: false, ignoreAttrs: false, mergeAttrs: false });
 	 parser.parseString(data, function (err, result) {
         aj = result;
-        console.log(' xml Parser !!!!'); // + JSON.stringify(aj) );
+        console.log(' xml Parser !!!!'); 
     });
 	 return aj;
 }
@@ -85,37 +85,29 @@ grbi.exec = async function(o,r) {
             })
             var babyXd = xd.firstChild;
 
-            //response.header('Content-Type', 'text/xml');
-            //response.type('text/xml');
-            //console.log(' body ' + oiw.toString({compressed:true}) ); // + new xmldoc.XmlDocument(body).toString({trimmed:true}));
             return new Promise(function(resolve, reject){
             	if (typeof(oiw) !== "undefined") {
             		var jBody =  XMLtoJ( oiw.toString({compressed:true}) );
             		var mBody = JSON.stringify(jBody);
             		mBody = mBody.replace(/'/g, "\''");
-            		//var rcd = create_record(rGuid, setid, gTitle, mBody).catch(err=>console.log('create record err '+err));
+            		
             		var sqlStr = 'select * from makemdrecord(\''+rGuid+'\','+setid+',\''+rGuid+'\',\''+ gTitle + '\',6,\'' + mBody + '\'::json)';
             		console.log(' makdmd call' + sqlStr);
-
-            		//return new Promise(function(resolve, reject){
 
 						client.query(sqlStr, (err, res) => {
 						 	console.log('Write query return '+JSON.stringify(res) );
 						  	if ( typeof(res) !== "undefined" ) {
-						  	//var pic = res.rows;
-						  		//resolve(res);
+
 						  		console.log('write q response '+JSON.stringify(res));
 						  		r.json(res);
-						  	//resolve(JSON.stringify(res));
+
 						  	} else {
 						  		console.log('write q errored '+JSON.stringify(err));
 						  		r.json(err);
 								//reject("create_record error " + err);	  	
 						  	}
 						});
-			     
-					//});
-            		//resolve(oiw.toString({compressed:true}) );
+	
             	} else {
             	    reject("error")
             	}
@@ -170,9 +162,7 @@ var cswRBId = async function (o) {
           body += chunk;
         })
         .on ('end', function() {
-    		//var tb = JSON.parse(body);
-            //var xlj = XMLtoJ(body);
-            //var x = body.children[0];
+  
             var xd = new xmldoc.XmlDocument(body);
             var oiw;
             xd.eachChild(function(d){
@@ -180,13 +170,10 @@ var cswRBId = async function (o) {
             		return;
             	}
             	oiw = d;
-            	
-            	//console.log('child pass '+ d.toString({trimmed:true}) );
+
             })
             var babyXd = xd.firstChild;
 
-            //response.header('Content-Type', 'text/xml');
-            //response.type('text/xml');
             console.log(' body ' + oiw.toString({compressed:true}) ); // + new xmldoc.XmlDocument(body).toString({trimmed:true}));
             return new Promise(function(resolve, reject){
             	if (typeof(oiw) !== "undefined") {
@@ -572,7 +559,7 @@ router.post('/transact', (req, res) => {
      var bl = xml.length;
      console.log('xml ' + xml);
    
-     var hurl = 'http://10.208.11.160:8000/?service=CSW&version=2.0.2&request=Transaction&TransactionSchemas=';
+     var hurl = 'http://test.geothermaldata.org:8000/?service=CSW&version=2.0.2&request=Transaction&TransactionSchemas=';
      hurl = hurl + 'http://www.isotc211.org/2005/gmi';
      var options = {url: hurl, 
          method: "POST",
@@ -594,16 +581,8 @@ router.post('/transact', (req, res) => {
             res.send(stuff);
         }
     }
-
    request.post(options, rtnRes);
-   //res.send('Testing transactions'); 
-   
 
 });
 
-
-
 module.exports = router;
-
-//module.exports = { Router: router, create_record: create_record } ;
- 

@@ -19,15 +19,14 @@ var  fs = require("fs");
  
 const pg = require('pg');
 
-const connectionString = '';
-//console.log(' connection ', connectionString );
+const connectionString = '@';
+
 const xml2js = require('xml2js');
 
 var csw = require('csw-client');
 var options = { "outputSchema" :"http://www.isotc211.org/2005/gmd" };
 
-//options.schema = 'iso';
-//options.compat
+
 options.typeName = 'gmd:MD_Metadata';
 options.outputSchema = 'http://www.isotc211.org/2005/gmd';
 options.outputFormat = 'application/xml';
@@ -42,7 +41,8 @@ var express = require('express'),
 	fs = require("fs"),
 	xmldoc = require('xmldoc'),
     request = require('request'),
-    urlExists = require('url-exists'),
+    //urlExists = require('url-exists'),
+    urlExists = require('url-exists-async-await'),
     bodyParser = require('body-parser');
 
 var mdapi = require("./ngds-routes-db.js");
@@ -72,7 +72,6 @@ const client = new pg.Client(connectionString);
 
 const results = [];
 client.connect();
-
 
 function XMLtoJ(data) {
 	var aj = {};
@@ -946,15 +945,26 @@ app.post('/createHarvestSource', function(request,response) {
    
 });
 
-app.get('/url_status', function(req, res){
+app.get('/url_status', function(req, res) {
 	var lp = '/url_status';
 	routelog(req, lp);
-	 var urlToCheck = req.query.url;
-	 	urlExists(urlToCheck, function(err,exists) {
-	 		res.send(exists);
-	 	});
-   
-});
+  	var exists = true;
+	res.send(exists);
+	/*
+  	var urlToCheck = req.query.url;
+   	var urlVal = async(urlToCheck) => {
+		try {
+			var result = await urlExists(urlToCheck);
+			res.send(result);
+		} catch(err) {
+			console.log(err);
+			res.send('false');
+		}
+	}
+	*/
+});	
+
+
 
 app.listen(port, () => {
   //console.log('App running on port ${port}.')

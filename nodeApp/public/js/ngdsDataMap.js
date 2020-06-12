@@ -85,9 +85,6 @@ var  mapLeftTemplate = function() {
      var dbd = $('<option value="DDDDD">');
  
      dlBM.append(dbA);
-     //dlBM.append(dbb);
-    // dlBM.append(dbc);
-    // dlBM.append(dbd);
  
      var selBM = $('<input class="map-select" list="dlBM"  size="35"  name="selBM">');
 
@@ -161,11 +158,7 @@ var  mapLeftTemplate = function() {
     $("input[name=RepoList]").on("dblclick",function() {
         $("input[name=RepoList]").val("");
     });
-    /*
-    $("input[name=map-lyr-select]").on("dblclick",function() {
-        $("input[name=map-lyr-select]").val("");
-    });
-    */
+
 
 }
 
@@ -195,18 +188,6 @@ var dmInit = function() {
 
         gDxMap = L.map('dataMap', {minZoom: 1 }).setView([41, -100.09], 6);   
         L.esri.basemapLayer('Streets').addTo(gDxMap);
-        /*
-        L.mapbox.accessToken = 'pk.eyJ1IjoiZ2FyeWh1ZG1hbiIsImEiOiJjaW14dnV2ZzAwM2s5dXJrazlka2Q2djhjIn0.NOrl8g_NpUG0TEa6SD-MhQ';
-        var Lurl = 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token='+L.mapbox.accessToken;
-        L.tileLayer(Lurl, {
-            // maxZoom: 18,
-            infoControl: false,
-            legendControl: false,
-            zoomControl: true, 
-            trackResize: true,
-            id: 'mapbox.streets'
-        }).addTo(gDxMap);
-        */
 
         gDxMap.on('ready',function() { 
             setTimeout(function(){ 
@@ -267,9 +248,7 @@ var showQryParams = function(z) {
                     vz = m.extent;
                 }
             }
-            //var zgd = gExtents[z.id];
-            
-        //}
+
 
     } else if ( bmi ) {
         // for saved maps bypass other params
@@ -626,7 +605,7 @@ var preLax = function(o) {
     }
 
     if ( zid ) { 
-        if ( gSubLayer[zid] && lType != 'EMS'  ) { 
+        if ( gSubLayer[zid] ) { 
             // its cached
             subLayerListView(o);
             
@@ -1292,7 +1271,7 @@ var esriShowTile = function(o) {
         var mf = $(o).text() + '</br>';
     }
 
-    var mlO = $('<option id="tlo-'+ zid + '" value="' + zid + '-' + $(o).text() + '" selected="selected">' + kf +  ' ( 0 )</option>');
+    var mlO = $('<option id="tlo-'+ zid + '" value="' + zid + '-' + $(o).text() + '" selected="selected">' + kf +  ' ( WMS )</option>');
     $("#map-lyr-status").text("Loading");
     $("#map-lyr-status").css("background","#88bb88");
     $("#map-lyr-select").append(mlO);
@@ -1312,14 +1291,20 @@ var esriShowTile = function(o) {
              //bbox: zbox,
              transparent: true, 
              srs: 'EPSG%3A4326', 
-             format: 'image/gif' 
+             format: 'image/png' 
             };
 
-        gWmsLayer = L.tileLayer.wms(zUrl, mo ).addTo(gDxMap);
+        gWmsLayer = L.tileLayer.wms(zUrl, mo )
+            .addTo(gDxMap)
+            .on('load', function(evt) {
+                $("#map-lyr-status").text("Loaded");
+                $("#map-lyr-status").css("background","white");
+                $("#map-lyr-status").text("Complete");
+            });
         // gWmsLayer = L.esri.TiledMapLayer(zUrl, mo ).addTo(gDxMap);
-
-        var mlO = $('<option id="tlo-'+ zid + '" value="' + zid + '-' + $(o).text() + '" selected="selected">' + $(o).text() + '</option>');
-        $("#map-lyr-select").append(mlO);
+      
+       // var mlO = $('<option id="tlo-'+ zid + '" value="' + zid + '-' + $(o).text() + '" selected="selected">' + kf + ' WMS</option>');
+        //$("#map-lyr-select").append(mlO);
     }
 
 }

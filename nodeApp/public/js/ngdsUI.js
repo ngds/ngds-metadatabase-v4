@@ -24,8 +24,9 @@
                     "version" : "1.2" };
 					
 	var gResource = { "resourceUrl" : { "value": "", "path" : "", "nodeid": "" }, 
-	              "resourceName" : { "value": "", "path" : "", "nodeid": "" }, 
-				        "resourceType" : { "value": "", "path" : "", "nodeid": "" } };
+	                  "resourceName" : { "value": "", "path" : "", "nodeid": "" }, 
+                    "resourceType" : { "value": "", "path" : "", "nodeid": "" },
+                    "resourceDesc" : { "value": "", "path" : "", "nodeid": "" } };
 					
   var gMD, 
       gMP,
@@ -49,7 +50,8 @@
 			{val : 'RTF', text: 'RTF'},
 			{val : 'SHP', text: 'SHP'},
 			{val : 'TIF', text: 'TIF'},
-			{val : 'WFS', text: 'WFS'},
+      {val : 'WFS', text: 'WFS'},
+      {val : 'WMS', text: 'WMS'},
 			{val : 'XLS', text: 'XLS'},
 			{val : 'ZIP', text: 'ZIP'}];
 			
@@ -211,7 +213,7 @@
       console.log( "typeahead success ..." );
     })
     .done(function(data) { 
-      //console.log( "typeahead data ..." + JSON.stringify(data) );
+     
       if (typeof(data) == "object" ) {
         var dres = data;
       } else {
@@ -476,7 +478,7 @@ function searchData(yorn) {
                           .css("color",lnk.txtcolor)
                           .css("background-color",lnk.bgcolor);
                     }
-                    //var rLL = $('<a href="'+ lurl + '" class="resource-item" target="_blank">' + lnam + '</a></br>');
+                   
 
                     gLinks.append(rLP);
 
@@ -1191,7 +1193,7 @@ function searchData(yorn) {
 				    lbf.keywords.push(kw);
 			    };
 
-          if ( ndnam == 'Url' ||  ndnam == 'name' ||  ndnam == 'function' ) {       
+          if ( ndnam == 'Url' ||  ndnam == 'name' ||  ndnam == 'function' || ndnam == 'linkdesc' ) {       
             var ri = 0;
             var ra = mpath.split('.');
             for ( i in ra ) {
@@ -1217,7 +1219,13 @@ function searchData(yorn) {
               lbf.resource[ri].resourceType.value = ndval;
               lbf.resource[ri].resourceType.path = mpath;
               lbf.resource[ri].resourceType.nodeid = nodeid; 
-				    }     
+            }  
+            if ( ndnam == 'linkdesc') { 
+              ndval = ndval.replace(/\\/g, '');
+              lbf.resource[ri].resourceDesc.value = ndval;
+              lbf.resource[ri].resourceDesc.path = mpath;
+              lbf.resource[ri].resourceDesc.nodeid = nodeid;
+            }   
           }
              
           if ( ndnam == 'westBoundLongitude') {        
@@ -1927,43 +1935,101 @@ function resEdt(o) {
             stackApply(ero);			
             $("#rl-"+k).text($("#rtSel").val());
         }
+
+        if ( gT.resource[k].resourceDesc.value !== $("#rdedit").val() ) {
+          gT.resource[k].resourceDesc.value = $("#rdedit").val();
+          var ero = { 'field' : 'resourceDesc', 
+                'value': gT.resource[k].resourceDesc.value, 
+                'path' : gT.resource[k].resourceDesc.path, 
+                "nodeid" : gT.resource[k].resourceDesc.nodeid, 
+                'action' : 'edit' };
+          stackApply(ero);			
+         // $("#rde-"+k).text($("#rdEdit").val());
+        }
         
         $("#rn-"+k).show();
         $("#rl-"+k).show();   
+        
         $("#rtSel").remove();
         $("#rnedit").remove();
         $("#rledit").remove();
+        $("#rdedit").remove();
 
-			  
+        $("#lte").remove();
+        $("#lne").remove();
+        $("#lue").remove();
+        $("#lpe").remove();
+        
+        for ( var z in gT.resource) {
+          $("#resdl-"+z).css("height","20px")
+                        .css("background-color","white")
+                        .show();
+        }
 	  } else {
         mdReset(o);
+
         var rlink = gT.resource[k].resourceUrl.value;
         var rtype = gT.resource[k].resourceType.value;
         var rname = gT.resource[k].resourceName.value;
-          
+        var rdesc = gT.resource[k].resourceDesc.value;
         var w = $(o).position();
         var rw = rlink.length;
         var rnw = rname.length;
-      
+        var rdw = rdesc.length;
+
+        for ( var z in gT.resource) {
+          if ( z == k ) {
+            $("#resdl-"+k).css("position","relative")
+                          .css("background-color","#e8e8e8")
+                          .css("height","80px")
+                          .css("width","960px");
+          } else {
+            $("#resdl-"+z).hide();
+          }
+        }
+ 
         var rt = $('<select id="rtSel"></select>')
-            .css({top: w.top, left: w.left+30, position:'absolute'});
+            .css({top: 5, left: 80, position:'absolute'});
+
+        if ( rtype.length > 1 && gDt.indexOf(rtype) == -1 ) {
+          gDt.push({"val": rtype, "text": rtype });
+        }
+
         $(gDt).each(function() {
           var rto =  $("<option>").attr('value',this.val).text(this.text);
-          if ( lt == this.text ) {
+          if ( rtype == this.text ) {
             rto.attr('selected','selected');
           }
           rt.append(rto);  
         });	
         
         var rn = $('<input id="rnedit" type="text" size="'+ rnw+'" value="'+rname+'">')
-            .css({top: w.top, left: w.left+180, position:'absolute'});		
-          
+            .css({top: 5, left: 280, position:'absolute'});		
+      
         var rl = $('<input id="rledit" type="text" size="'+ rw+'" value="'+rlink+'">')
-            .css({top: w.top+25, left: w.left+180, position:'absolute'});
-            
-        $("#resdl").append(rt);
-        $("#resdl").append(rn);
-        $("#resdl").append(rl);
+            .css({top: 30, left: 70, position:'absolute'});
+
+        var rd = $('<input id="rdedit" type="text" size="'+ rdw+'" value="'+ rdesc.replace(/"/g, '&quot;') + '">')
+              .css({top: 55, left: 70, position:'absolute'});
+
+        var lt = $('<label id="lte" class="md-label" for="rtSel">Type</label>')
+                    .css({top: 5, left: 50, position:'absolute'});
+        var ln = $('<label  id="lne" class="md-label" for="rnedit">Name</label>')
+                    .css({top: 5, left: 240, position:'absolute'});
+        var lu =  $('<label  id="lue" class="md-label" for="rledit">Url</label>')
+                    .css({top: 30, left: 20, position:'absolute'});
+        var lp = $('<label  id="lpe" class="md-label" for="rdedit">Params</label>')
+                    .css({top: 55, left: 20, position:'absolute'});
+
+        $("#resdl-"+k).append(lt);             
+        $("#resdl-"+k).append(rt);
+        $("#resdl-"+k).append(ln);
+        $("#resdl-"+k).append(rn);
+        $("#resdl-"+k).append(lu);
+        $("#resdl-"+k).append(rl);
+        $("#resdl-"+k).append(lp);
+        $("#resdl-"+k).append(rd);
+
         $("#rn-"+k).hide();
         $("#rl-"+k).hide();
 	  }
@@ -2167,6 +2233,27 @@ function resEdt(o) {
 		$("#pabs").show();
 	}
 
+  if ( o.id.substr(0,8) != 'resEdit-' && $("#lte").length  ) {
+   
+    $("#rtSel").remove();
+    $("#rnedit").remove();
+    $("#rledit").remove();
+    $("#rdedit").remove();
+
+    $("#lte").remove();
+    $("#lne").remove();
+    $("#lue").remove();
+    $("#lpe").remove();
+    
+    for ( var z in gT.resource) {
+      $("#resdl-"+z).css("height","20px")
+                    .css("background-color","white")
+                    .show();
+      $("#rn-"+z).show();
+      $("#rl-"+z).show();   
+    }
+
+  }
 	
 	$('.md-value').each( function() { 
 		$( this ).show(); 
@@ -2251,7 +2338,7 @@ function resEdt(o) {
       
       gAbstract.append('<span id="pabs" style="font-size: 12px">'+ abfix + '</span>');
       
-        var gResources =  $('<div id="resdiv">')
+      var gResources =  $('<div id="resdiv">')
                   .css("margin", "2px" )
                   .css("background-color", "slate" );
       gResources.append(rxPlus);
@@ -2262,14 +2349,19 @@ function resEdt(o) {
           var rname = ro.resource[k].resourceName.value;
           if ( rname != 'DELETE-RESOURCE' ) {
               var lo = linkColors(rname, rlink);
+              if ( !rtype ) {
+                ro.resource[k].resourceType.value = lo.text;
+                rtype = lo.text;
+              }
+
               var rLL = $('<a id="rn-'+k+'" href="'+ rlink + '" class="resource-item" target="_blank">' + rname + '</a>');
-              var rLP = $('<a id="rl-'+k+'"  onclick="previewer(this);" class="res-tag" >' + lo.text +  '</a>')
+              var rLP = $('<a id="rl-'+k+'"  onclick="previewer(this);" class="res-tag" >' + rtype +  '</a>')
                       .css("width",lo.width)
                       .css("color",lo.txtcolor)
                       .css("background-color",lo.bgcolor);
               var rEd = $('<i id="resEdit-'+k+'" class="fas fa-edit" onclick="resEdt(this);" style="color:#196fa6;font-size:16px; display: none;"></i>');
               var rDel = $('<i id="resdel-'+k+'" class="fas fa-trash-alt" onclick=" resDel(this)" style="color:#196fa6;font-size:12px; margin-left: 5px; display:none;"></i>');
-              var rL = $('<div id="resdl">').css("margin", "10px" )
+              var rL = $('<div id="resdl-'+k+'">').css("margin", "10px" )
                         .css("width", "700px");
               rL.append(rEd);
               rL.append(rLP);
@@ -2844,7 +2936,7 @@ var previewer = function(o) {
       L.mapbox.accessToken = 'pk.eyJ1IjoiZ2FyeWh1ZG1hbiIsImEiOiJjaW14dnV2ZzAwM2s5dXJrazlka2Q2djhjIn0.NOrl8g_NpUG0TEa6SD-MhQ';
       var Lurl = 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token='+L.mapbox.accessToken;
         L.tileLayer(Lurl, {
-           // maxZoom: 18,
+
             infoControl: false,
             legendControl: false,
             zoomControl: true, 
@@ -2920,10 +3012,7 @@ var previewer = function(o) {
           var gLayer = new L.GeoJSON();
           gLayer.addData(dres);
           dpMap.addLayer(gLayer);
-          
-          //var geojsonLayer = new L.GeoJSON();
-          //geojsonLayer.addData(data); 
-          //dpMap.addLayer(geojsonLayer);
+
 
         });
 
@@ -2950,7 +3039,7 @@ function logmein(o, cb) {
           var dres = JSON.parse(data);
        }
       
-        //for (var k in dres) {
+  
         if ( dres.authtoken == dres.kv ) {
             gKey = {};
             gKey[dres.authtoken] = dres.kv;
@@ -2958,7 +3047,7 @@ function logmein(o, cb) {
             $("#laname").text(un).css("font-size","12px")
 				.css("font-family","Arial, Lucida Grande, sans-serif");
             $("#loginBtn").text("Logout");
-            //$("#Cex").css("display","block");
+         
             $("#loginDiv").hide();
             cb();
             return;
@@ -2979,8 +3068,7 @@ var showLogin = function() {
        $("#Cex").css("display","none");
   } else {
     $("#Cex").css("display","block");
-    //TEMP FOR DEV - use toggle !!
-    //toggleLogin();
+
   } 
 }
 

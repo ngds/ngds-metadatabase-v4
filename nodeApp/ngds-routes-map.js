@@ -1,6 +1,6 @@
 /* Supports spatial operations 
     test.geothermaldata
-    May 14 2020
+    June 12 2020
 
 */
 
@@ -13,7 +13,7 @@ var xmldoc = require('xmldoc');
 var  Path = process.env.NODE_PATH;
 const pg = require('pg');
 
-const connectionString = '';
+const connectionString = '@';
 const client = new pg.Client(connectionString);
 client.connect();
 
@@ -61,7 +61,6 @@ function XMLtoJ(data) {
     var aj = {};
     
 	 var parser = new xml2js.Parser({explicitArray: false, ignoreAttrs: false, mergeAttrs: false });
-     //console.log(' xml Parser ' + data.length + ' XX ' + data.substr(0,30));
      var td = data.trim();
 
 	 parser.parseString(data, function (err, result) {
@@ -119,7 +118,6 @@ function fetchMapServers() {
 				}
 		});	     
 	});
-
 }
 
 function fetchServiceList(cm, repo) {

@@ -12,9 +12,10 @@ var crypto = require('crypto');
 var xml2js = require('xml2js');
 var  fs = require("fs");
 const util = require('util');
-const pyUrl = '';
+const pyUrl = 'http://test.geothermaldata.org:8000/';
 
-const connectionString = '';
+
+const connectionString = '@';
 const client = new pg.Client(connectionString);
 
 var gKeystack = [];
@@ -37,7 +38,12 @@ var sha512 = function(password, salt){
 };
 
 function saltHashPassword(userpassword) {
-
+    var salt = genRandomString(16); /** Gives us salt of length 16 */
+    var salt = '5d097fe1065645c8';
+    var passwordData = sha512(userpassword, salt);
+    console.log('UserPassword = '+userpassword);
+    console.log('Passwordhash = '+passwordData.passwordHash);
+    console.log('nSalt = '+passwordData.salt);
     return passwordData;
 }
 
@@ -509,7 +515,7 @@ function fetchMapServers() {
 
 function fetchAuth(u,p,s ) {
 
-    var sqlStr = ''; 
+    var sqlStr = 'select name, apikey, agent_id, password from users where name = \'' + u +'\' and password = \'' + p +'\' order by 1'; 
     //console.log(' sql ' + sqlStr);
     return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
@@ -526,7 +532,24 @@ function fetchAuth(u,p,s ) {
 function createUser(uo) {
   
   var tdate = Date.now();
- 
+  var pwh = sha512(uo.pw,gNACL);
+  
+  var sqlStr = 'insert into users (user_id, name, apikey, agent_id, created, password, fullname, email,state) values '
+              + ' (nextval(\'user_id_seq\'),\'' + uo.uname + '\',\'' + gNACL + '\',' + uo.rp + ',current_timestamp,\'' 
+              + pwh.passwordHash + '\',\'' + uo.fn + '\',\'' + uo.em + '\',\'active\')';
+  //console.log(' sql ' + sqlStr);
+  return new Promise(function(resolve, reject) {
+    client.query(sqlStr, (res, err) => {
+    
+  				if ( typeof(res) !== "undefined" ) {
+            		//console.log(' resolve ' + JSON.stringify(res) );
+  					resolve(res);
+  				} else {
+  				   console.log(' create user bad ' + JSON.stringify(err));
+  				  reject(err);	  	  	
+  				}
+  		});	
+  }); 
   
 }
 

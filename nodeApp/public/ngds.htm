@@ -129,9 +129,8 @@
         if ( sh ) {
             gSearchHistory = sh.split('|');
         }
-        //$("#sortBtn").text(gSortTypes[gSortOrder]);
-        $("#sortBtn").text("Modified Date");
 
+        $("#sortBtn").text("Modified Date");
         mapInit();
         if ( guid ) {
 			var o = { "id": guid };
@@ -156,7 +155,7 @@
         });
 
         $("#widget-box").on('mouseover',function(){
-            
+    
             $("#SearchHistory").css("display","none");      
         });
 
@@ -202,7 +201,7 @@
                     showSeaHis();
                 }
             }
-            //console.log(' pre len ' + gTApre.length);
+            
             if ( gTApre.length > 2 ) {
                 console.log(' pre len ' + gTApre.length);
                 if ( e.keyCode > 47 && e.keyCode < 91 ) {
@@ -219,7 +218,6 @@
                 if ( gTAK > 0 ) { gTAK--; }
 
                 $(".sh-item").each(function() {
-                    //console.log( ' id ' +  $(this).attr("id") );
 
                     if ( $(this).attr("id") == 'sh-'+gTAK ) {
                         $(this).css("font-weight","bold");
@@ -275,7 +273,7 @@
                 });
 
                 $(".ta-item").each(function() {
-                    //console.log(' down arrow ' + $(this).attr("id") + gTAK);
+
                     if ( $(this).attr("id") == 'ta-'+gTAK ) {
                         $(this).css("font-weight","bold");
                         $(this).css("font-size","14px");
@@ -304,11 +302,8 @@
         }).on('mouseout',function() { 
              mous = 0;
              console.log('sh mouseout');
-            // $("#SearchHistory").css("display","none");
+            
         });
-
-        //showCM();
-        //showDataTypes();
         
     }
 
@@ -342,7 +337,7 @@
                     <img src="/img/ngds-logo.png" height="48px">
                     </li> 
                     <li class="nav-item">
-                        <!--a class="nav-link" href="#searchPanel" onclick="searchData();" >National Geothermal Data System</a-->
+                   
                         <a class="nav-link" href="http://geothermaldata.org"  >National Geothermal Data System</a>
                     </li>
                     <li class="nav-item">
@@ -425,8 +420,6 @@
         </div>
 
         <div id="SearchHistory" style="height:300px; width: 240px; background: #eeeeee; border: 1px; position: absolute; top: 105px; left: 15px; overflow-x: hidden; overflow-y: scroll; display: none;">
-            <!--span style="font-size: 12px; font-weight:bold; font-family: calibri;  margin: 5px 5px; background-color: #e8e8e8; ">Sort </span>
-            <a id="sortBtn" onclick="sortPick(this)" class="tag" ></a></br-->
             <span id="shTitle" style="font-size: 12px; font-weight:bold; font-family: calibri;  margin: 5px 5px; background-color: #e8e8e8; ">Search History</span>
             <div id="sHistoryItems" class="g-search-pane-left" stype="margin:5px;"></div> 
         </div> 
