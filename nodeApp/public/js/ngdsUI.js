@@ -213,7 +213,7 @@
       console.log( "typeahead success ..." );
     })
     .done(function(data) { 
-     
+      //console.log( "typeahead data ..." + JSON.stringify(data) );
       if (typeof(data) == "object" ) {
         var dres = data;
       } else {
@@ -441,7 +441,13 @@ function searchData(yorn) {
                   var lnam = lnk[0];
                   var lurl = lnk[lnk.length-1];
                   var lnk = linkColors(lnam, lurl);
+                  var rlab = $('<span>Link: </span>')
+                        .css("padding","2px")
+                        .css("margin","2px")
+                        .css("font-size", "12px");
                   var rLL = $('<a href="'+ lurl + '" class="resource-item" target="_blank">' + lnam + '</a></br>');
+
+                  /*
                   if ( lnk.text == 'MapServer' || lnk.text == 'WMS' || lnk.text == 'WFS') {
                     var rLP = $('<a id="'+ gs+'" data-link="'+ lurl + '" onclick="dataMapView(this);" class="res-tag" >' + lnk.text +  '</a>')
                     .css("width",lnk.width)
@@ -456,17 +462,30 @@ function searchData(yorn) {
                           .css("background-color",lnk.bgcolor);
                   
                   }
+                  */
                  
             
-                  gLinks.append(rLP);
+                  gLinks.append(rlab);
                   gLinks.append(rLL);
                 } else {
+                  var rlab = $('<span>Links: </span>')
+                              .css("padding","2px")
+                              .css("margin","2px")
+                              .css("font-size", "12px");
+                  var drl = $('<select id="rld-'+gs+'">')
+                              .attr("onchange","window.open(this.options[this.selectedIndex].value);")
+                              .attr("onfocus","this.selectedIndex= -1;")
+                              .css("width","440px");
+                             
                   for (i in linkz ) {
                     var lnk = linkz[i].split(',');
                     var lnam = lnk[0];
                     var lurl = lnk[lnk.length-1];
+                   
                     console.log('links ' + lnam + ' ' + lurl);
                     var lnk = linkColors(lnam, lurl);
+                    var rldo = $('<option title="'+lurl+'" value="'+lurl+'">'+lnam+ ' '+ lnk.text + '</option>');
+                    drl.append(rldo);
                     if ( lnk.text == 'MapServer' || lnk.text == 'WMS' || lnk.text == 'WFS') {
                       var rLP = $('<a  data-link="'+lurl+'" id="'+gs+'" onclick="dataMapView(this);" class="res-tag" >' + lnk.text +  '</a>')
                       .css("width",lnk.width)
@@ -478,9 +497,12 @@ function searchData(yorn) {
                           .css("color",lnk.txtcolor)
                           .css("background-color",lnk.bgcolor);
                     }
-                   
+                    //var rLL = $('<a href="'+ lurl + '" class="resource-item" target="_blank">' + lnam + '</a></br>');
 
-                    gLinks.append(rLP);
+                    //gLinks.append(rLP);
+                    gLinks.append(rlab);
+                    gLinks.append(drl);
+
 
                   }
                 }
@@ -556,6 +578,11 @@ function searchData(yorn) {
 
       });
 
+  }
+
+  function preview(o) {
+    
+    window.open(o.value);
   }
 
   function facetRefresh() {
@@ -750,28 +777,39 @@ function searchData(yorn) {
                     var lnam = linkz['gmd:CI_OnlineResource']['gmd:name']['gco:CharacterString']['#text'];
                     var lurl = linkz['gmd:CI_OnlineResource']['gmd:linkage']['gmd:URL']['#text'];
                     var lnk = linkColors(lnam, lurl);
-                    var rLL = $('<a href="'+ lurl + '" class="resource-item" target="_blank">' + lnam + '</a></br>');
-                    var rLP = $('<a href="'+ lurl + '" onclick="preview(this);" class="res-tag"  target="_blank">' + lnk.text +  '</a>')
-                                    .css("width",lnk.width)
-                                    .css("color",lnk.txtcolor)
-                                    .css("background-color",lnk.bgcolor);
-              
-                    gLinks.append(rLP);
+                    var rlab = $('<span>Link: </span>')
+                        .css("padding","2px")
+                        .css("margin","2px")
+                        .css("font-size", "12px");
+                    var rLL = $('<a href="'+ lurl + '" class="resource-item" target="_blank">' + lnam + ' ' + lnk.text + '</a></br>');          
+                    gLinks.append(rlab);
                     gLinks.append(rLL);
 
               } else {
+                var rlab = $('<span>Links: </span>')
+                            .css("padding","2px")
+                            .css("margin","2px")
+                            .css("font-size", "12px");
+                var drl = $('<select id="rld-'+gs+'">')
+                            .attr("onchange","window.open(this.options[this.selectedIndex].value);")
+                            .css("width","440px");
+
                 for (i in linkz) {
                   lntm = linkz[i];
                   var lnam = lntm['gmd:CI_OnlineResource']['gmd:name']['gco:CharacterString']['#text'];
                   var lurl = lntm['gmd:CI_OnlineResource']['gmd:linkage']['gmd:URL']['#text'];
                   var lnk = linkColors(lnam, lurl);
-                  var rLP = $('<a href="'+ lurl + '" onclick="preview(this);" class="res-tag"  target="_blank">' + lnk.text +  '</a>')
-                        .css("width",lnk.width)
-                        .css("margin","3px")
-                        .css("color",lnk.txtcolor)
-                        .css("background-color",lnk.bgcolor);
-                  gLinks.append(rLP);
+                  var rldo = $('<option title="'+lurl+'" value="'+lurl+'">'+lnam+ ' '+ lnk.text + '</option>');
+                  drl.append(rldo);
+                  //var rLP = $('<a href="'+ lurl + '" onclick="preview(this);" class="res-tag"  target="_blank">' + lnk.text +  '</a>')
+                  //      .css("width",lnk.width)
+                  //      .css("margin","3px")
+                  //      .css("color",lnk.txtcolor)
+                   //     .css("background-color",lnk.bgcolor);
+                  //gLinks.append(rLP);
                 }
+                gLinks.append(rlab);
+                gLinks.append(drl);
               }
             }       
             var gCard = $('<div id ="gCard-' + gs + '" class="g-item-card" />')
@@ -2517,7 +2555,14 @@ function resEdt(o) {
     var yl = gS + (ys)/2;
     var xl = gE + (xs)/2;
     if ( ys > xs ) { var scal = Math.abs(ys); } else { var scal = Math.abs(xs) }
-    var z = sa.findIndex(k => k < scal );
+    var z = 4;
+    for ( k in sa ) {
+       if ( scal > sa[k] ) {
+         z = k;
+         break;
+       }
+    }
+    //var z = sa.findIndex(k => k < scal );
     if ( z < 0 ) { z = 4 }
     var center = new L.LatLng(yl, xl);
     //map.panTo(center);
@@ -2537,7 +2582,7 @@ var showSpinner = function(o)  {
 
 var facetView = function(o) {
     if (o.id == 'Cat') {
-      console.log('cat');
+      //console.log('cat');
       if (  $("#CatB").attr("class") == "fa fa-angle-right" ) {
         $("#CatB").attr("class","fa fa-angle-down");
       } else { $("#CatB").attr("class","fa fa-angle-right") }
@@ -2552,7 +2597,7 @@ var facetView = function(o) {
     }
 
     if (o.id == 'Auth') {
-      console.log('auth facet toggle');
+      //console.log('auth facet toggle');
       if (  $("#authB").attr("class") == "fa fa-angle-right" ) {
         $("#authB").attr("class","fa fa-angle-down");
       } else { $("#authB").attr("class","fa fa-angle-right") }
@@ -2561,9 +2606,8 @@ var facetView = function(o) {
       });
     }
 
-
     if (o.id == 'ContModel') {
-      console.log('cm facet toggle');
+      //console.log('cm facet toggle');
       if (  $("#cmB").attr("class") == "fa fa-angle-right" ) {
         $("#cmB").attr("class","fa fa-angle-down");
       } else { $("#cmB").attr("class","fa fa-angle-right") }
@@ -2573,7 +2617,7 @@ var facetView = function(o) {
     }
 
     if (o.id == 'DataType') {
-      console.log('dt facet toggle');
+      //console.log('dt facet toggle');
       if (  $("#dtB").attr("class") == "fa fa-angle-right" ) {
         $("#dtB").attr("class","fa fa-angle-down");
       } else { $("#dtB").attr("class","fa fa-angle-right") }
@@ -2583,7 +2627,7 @@ var facetView = function(o) {
     }
 
     if (o.id == 'repoCatalog') {
-      console.log('dt facet toggle');
+      //console.log('dt facet toggle');
       if (  $("#repoB").attr("class") == "fa fa-angle-right" ) {
         $("#repoB").attr("class","fa fa-angle-down");
       } else { $("#repoB").attr("class","fa fa-angle-right") }
@@ -2706,7 +2750,7 @@ var selectCategory = function(oCat) {
             }
 
             $(".nav-author").each(function() {
-              console.log('remove ' + $(this).attr('id') );
+              //console.log('remove ' + $(this).attr('id') );
               $( this ).remove();
             })
 
@@ -2776,7 +2820,7 @@ var selectCategory = function(oCat) {
            }
 
            $(".nav-cm").each(function() {
-            console.log('remove ' + $(this).attr('id') );
+            //console.log('remove ' + $(this).attr('id') );
             $( this ).remove();
           })
 
@@ -2847,12 +2891,12 @@ var showDataTypes = function(l) {
          }
 
          $(".nav-dt").each(function() {
-          console.log('remove ' + $(this).attr('id') );
+          //console.log('remove ' + $(this).attr('id') );
           $( this ).remove();
         })
 
         $(".nav-rc").each(function() {
-          console.log('remove ' + $(this).attr('id') );
+          //console.log('remove ' + $(this).attr('id') );
           $( this ).remove();
         })
 
@@ -2936,7 +2980,7 @@ var previewer = function(o) {
       L.mapbox.accessToken = 'pk.eyJ1IjoiZ2FyeWh1ZG1hbiIsImEiOiJjaW14dnV2ZzAwM2s5dXJrazlka2Q2djhjIn0.NOrl8g_NpUG0TEa6SD-MhQ';
       var Lurl = 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token='+L.mapbox.accessToken;
         L.tileLayer(Lurl, {
-
+           // maxZoom: 18,
             infoControl: false,
             legendControl: false,
             zoomControl: true, 
@@ -3012,7 +3056,10 @@ var previewer = function(o) {
           var gLayer = new L.GeoJSON();
           gLayer.addData(dres);
           dpMap.addLayer(gLayer);
-
+          
+          //var geojsonLayer = new L.GeoJSON();
+          //geojsonLayer.addData(data); 
+          //dpMap.addLayer(geojsonLayer);
 
         });
 
@@ -3039,7 +3086,7 @@ function logmein(o, cb) {
           var dres = JSON.parse(data);
        }
       
-  
+        //for (var k in dres) {
         if ( dres.authtoken == dres.kv ) {
             gKey = {};
             gKey[dres.authtoken] = dres.kv;
@@ -3047,7 +3094,7 @@ function logmein(o, cb) {
             $("#laname").text(un).css("font-size","12px")
 				.css("font-family","Arial, Lucida Grande, sans-serif");
             $("#loginBtn").text("Logout");
-         
+            //$("#Cex").css("display","block");
             $("#loginDiv").hide();
             cb();
             return;
@@ -3068,7 +3115,8 @@ var showLogin = function() {
        $("#Cex").css("display","none");
   } else {
     $("#Cex").css("display","block");
-
+    //TEMP FOR DEV - use toggle !!
+    //toggleLogin();
   } 
 }
 

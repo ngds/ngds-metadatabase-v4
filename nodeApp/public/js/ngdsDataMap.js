@@ -23,6 +23,8 @@ var gDxMap,
 var dataMapView = function (o) {
     gMenuSel = 'm';
     $("#leftSearch").hide();
+    $("#widget-box").hide();
+    $("#leftMDRecord").hide();
     $("#cb").hide();
 
     $("#leftEdit").hide();
@@ -85,6 +87,9 @@ var  mapLeftTemplate = function() {
      var dbd = $('<option value="DDDDD">');
  
      dlBM.append(dbA);
+     //dlBM.append(dbb);
+    // dlBM.append(dbc);
+    // dlBM.append(dbd);
  
      var selBM = $('<input class="map-select" list="dlBM"  size="35"  name="selBM">');
 
@@ -158,7 +163,11 @@ var  mapLeftTemplate = function() {
     $("input[name=RepoList]").on("dblclick",function() {
         $("input[name=RepoList]").val("");
     });
-
+    /*
+    $("input[name=map-lyr-select]").on("dblclick",function() {
+        $("input[name=map-lyr-select]").val("");
+    });
+    */
 
 }
 
@@ -179,15 +188,30 @@ var setExtent = function(o) {
 var dmInit = function() {
 
     // $("#dataMap").empty();
-    var savdBound = localStorage.getItem('gDataMapBounds');
-    if ( savdBound ) {
-        savdBound =  JSON.parse(savdBound);
+    var savdBound;
+    var sBound = localStorage.getItem('gDataMapBounds');
+    if ( sBound ) {
+        sBound =  JSON.parse(sBound);
+        savdBound = L.latLngBounds(sBound._southWest, sBound._northEast);
+        //savdBound = gDxMap.wrapLatLngBounds(sb);
     }
 
     if ( !gDxMap ) {
 
         gDxMap = L.map('dataMap', {minZoom: 1 }).setView([41, -100.09], 6);   
         L.esri.basemapLayer('Streets').addTo(gDxMap);
+        /*
+        L.mapbox.accessToken = 'pk.eyJ1IjoiZ2FyeWh1ZG1hbiIsImEiOiJjaW14dnV2ZzAwM2s5dXJrazlka2Q2djhjIn0.NOrl8g_NpUG0TEa6SD-MhQ';
+        var Lurl = 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token='+L.mapbox.accessToken;
+        L.tileLayer(Lurl, {
+            // maxZoom: 18,
+            infoControl: false,
+            legendControl: false,
+            zoomControl: true, 
+            trackResize: true,
+            id: 'mapbox.streets'
+        }).addTo(gDxMap);
+        */
 
         gDxMap.on('ready',function() { 
             setTimeout(function(){ 
@@ -196,16 +220,24 @@ var dmInit = function() {
             }, 200);
             console.log('ready map')
         }).on('zoomend', function() {
-            savdBound = gDxMap.getBounds();
+            var uwb = gDxMap.getBounds();
+            savdBound = gDxMap.wrapLatLngBounds(uwb);
+
             console.log(' data map zoom '+ JSON.stringify(savdBound));
             localStorage.setItem("gDataMapBounds", JSON.stringify(savdBound));  
         }).on('moveend', function() {
-            savdBound = gDxMap.getBounds();
+             var uwb = gDxMap.getBounds();
+            savdBound = gDxMap.wrapLatLngBounds(uwb);
             console.log(' data map move '+ JSON.stringify(savdBound));
             localStorage.setItem("gDataMapBounds", JSON.stringify(savdBound));    
+        }).on('click', function(ev) {
+            var latlng =  gDxMap.mouseEventToLatLng(ev.originalEvent);
+            console.log(latlng.lat + ', ' + latlng.lng);
+            //console.log('map click ');
         });
 
         if ( savdBound ) {
+            savdBound = gDxMap.wrapLatLngBounds(savdBound);
             gDxMap.fitBounds([ [ savdBound._southWest.lat, savdBound._southWest.lng ],
                                [ savdBound._northEast.lat, savdBound._northEast.lng ] ], 
                             { padding:[ 2, 2 ] } );
@@ -248,7 +280,9 @@ var showQryParams = function(z) {
                     vz = m.extent;
                 }
             }
-
+            //var zgd = gExtents[z.id];
+            
+        //}
 
     } else if ( bmi ) {
         // for saved maps bypass other params
@@ -1279,8 +1313,8 @@ var esriShowTile = function(o) {
     if ( zUrl ) {
   
         var bounds = gDxMap.getBounds();
-        var northEast = bounds.getNorthEast(),
-            southWest = bounds.getSouthWest();
+        var northEast = bounds.getNorthEast().wrap(),
+            southWest = bounds.getSouthWest().wrap();
 
         var zbox = southWest.lng + ',' + southWest.lat + ',' + northEast.lng + ',' + northEast.lat;
         zUrl = zUrl;
@@ -1296,10 +1330,22 @@ var esriShowTile = function(o) {
 
         gWmsLayer = L.tileLayer.wms(zUrl, mo )
             .addTo(gDxMap)
+            .on('tileerror', function(error,tile){
+                var ec = error;
+                console.log(' error ' );
+                gWmsLayer.removeFrom(gDxMap);
+                $("#map-lyr-select option:selected").remove();
+                alert('ERROR for ' + rlo.title + ' data request to server ');
+                $("#map-lyr-status").text("");
+            })
             .on('load', function(evt) {
                 $("#map-lyr-status").text("Loaded");
                 $("#map-lyr-status").css("background","white");
                 $("#map-lyr-status").text("Complete");
+                $("#tlo-"+zid).attr("id","tlo-"+zid+"-"+gWmsLayer._leaflet_id);
+            }).bindPopup(function(evt) {
+                var flx = evt.feature.properties;
+                console.log(' tile click ');
             });
         // gWmsLayer = L.esri.TiledMapLayer(zUrl, mo ).addTo(gDxMap);
       
@@ -1332,8 +1378,8 @@ var esriShowWFS = function(o) {
 
     if ( zUrl ) {
         var bounds = gDxMap.getBounds();
-        var northEast = bounds.getNorthEast(),
-            southWest = bounds.getSouthWest();
+        var northEast = bounds.getNorthEast().wrap(),
+            southWest = bounds.getSouthWest().wrap();
         
         var zbox = '&bbox='+ southWest.lng + ',' + southWest.lat + ',' + northEast.lng + ',' + northEast.lat;
         if ( zUrl.indexOf('?') > 1 ) {
@@ -1347,16 +1393,25 @@ var esriShowWFS = function(o) {
         if ( gMapLayerCount < 7) { gMapLayerCount++; }
         else { gMapLayerCount = 0;}
         var icnImg = gMarkerIcon[gMapLayerCount];
-        var df, fc, gt, pDesc, fldArray=[];
+        var df, fc=0, 
+            gt, pDesc, fldArray=[];
+
         var tl = L.esri.featureLayer({ url: zUrl, useCors: false, cacheLayers: true,  simplifyFactor: 1,
                 onEachFeature: function (feature, layer) {
                     var fx = feature;
-                    console.log('F');
-
+                    fc++;
+                    //console.log('F');
                 } })
         .metadata(function(err,metadata) {
             var ix = metadata;
-            if ( metadata ) {
+            if ( err ) {
+                if ( err.error.code && err.error.code == 500 ) {
+                    $("#map-lyr-select option:selected").remove();
+                    alert('ERROR for ' + rlo.title + ' data request to server ');
+                    $("#map-lyr-status").text("");
+                }
+                console.log('Metata data error ' + JSON.stringify(err) );
+            } else if ( metadata ) {
                 gt = metadata.geometryType;
                 //pDesc = metadata.description;
                 df = metadata.displayField;
@@ -1364,10 +1419,7 @@ var esriShowWFS = function(o) {
                 tl.displayField = df;
                 fldArray = metadata.fields;
             }  
-        })
-        .addTo(gDxFGroup);
-        
-        tl.on('error', function(evt) {
+        }).on('error', function(evt) {
             console.log('ESRI Feature load error ' + evt.error.code + ' ' + evt.error.message);
             $("#map-lyr-status").text("Error" + evt.error.message);
             $("#map-lyr-status").css("background","#bb7777");
@@ -1402,7 +1454,7 @@ var esriShowWFS = function(o) {
                 }
             });
             */
-        });
+        }).addTo(gDxFGroup);
 
        
         tl.bindPopup(function(evt) {
@@ -1592,17 +1644,34 @@ var deleteLayer = function(o) {
 
     var lid = $("#map-lyr-select option:selected").attr("id");
     var lx = lid.split("-");
-    var lstate="";
 
+    var lt = $("#map-lyr-select option:selected").text();
+   
+    var lstate="";
+    // lx[2] is leaflet id
     if (lx[2]) {
-        gDxFGroup.eachLayer(function(lyr){
-            if ( lyr._leaflet_id == lx[2] ) {
-                gDxFGroup.removeLayer(lyr);
-                $("#map-lyr-select option:selected").remove();
-                lstate = 'Status '+lx[2]+ ' removed';
-                return;
-            }
-        });
+
+        if ( lt.indexOf('WMS') > 1 ) {
+            gDxMap.eachLayer(function(layer) {
+                if ( layer._leaflet_id == lx[2] ) {
+                    gDxMap.removeLayer(layer);
+                    $("#map-lyr-select option:selected").remove();
+                    lstate = 'Status '+lx[2]+ ' removed';
+                    return;
+                }
+            });
+
+        } else {
+            gDxFGroup.eachLayer(function(lyr){
+                if ( lyr._leaflet_id == lx[2] ) {
+                    gDxFGroup.removeLayer(lyr);
+                    $("#map-lyr-select option:selected").remove();
+                    lstate = 'Status '+lx[2]+ ' removed';
+                    return;
+                }
+            });
+        }
+
         if (lstate=="") {
             console.log("Layer not found "+lx[2]);
         }
