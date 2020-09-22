@@ -1,0 +1,154 @@
+
+Installation for the data.geothermaldata.org at 10.208.3.120
+Logged in as developer on data.geothermaldata
+
+System - add dns entry for local in /etc/hosts
+
+x.x.x.x data.geothermaldata.org
+
+NodeJs installation
+
+	sudo snap install node --classic --channel=14
+
+Setup NGDS web app directory at:
+
+/opt/ngds/node-app
+
+Refer to package.json and npm to install required modules
+
+POSTGRES Setup - Using version 12
+
+	sudo apt update
+	sudo apt -y upgrade
+	sudo apt install postgresql postgresql-client
+	sudo apt install postgis 
+
+	sudo su - postgres
+	psql
+
+	alter user postgres with password 'xxx';
+
+	createuser ngdsdb;
+	createdb geothermal -O ngdsdb;
+	createdb pycsw -O ngdsdb;
+	alter user ngdsdb with password 'xxx';
+
+	CREATE USER py_fdw WITH password 'xxx';
+	GRANT CONNECT ON DATABASE pycsw to py_fdw;
+
+Edit pg_hba.conf
+
+host    all             ngdsdb          10.x.x.x./24           md5
+host    all             ngdsdb          172.17.0.0/24           md5
+
+Edit postgresql.conf >
+listener_addresses = '*'
+
+Then Add extensions
+
+	sudo su - postgres
+	psql
+	\c geothermal
+
+	create extension ltree;
+	create extension pg_trm;
+	create extension tablefunc;
+	create extension postgres_fdw;
+	create extension postgis;
+	\c pycsw
+	create extension postgis;
+
+Note Version 12 does not support plpythonu - only plpython3u !
+
+	sudo service postgresql restart
+
+FIREWALL
+    set localhost access
+	ufw allow proto tcp from x.x.x.x/24 to any port 5432
+	
+	For docker to database connection
+	ufw allow proto tcp from 172.17.0.0/24 to any port 5432
+
+Geothermal Database Configuration
+
+- execute script
+  geothermal-schema.sql
+  
+- import tables for configuration
+	- activity_definition.csv
+	-	agant.csv
+	-	process_definition.csv
+	-	process_ruleset.csv
+	-	schema_map.csv
+	-	schema_object_map.csv
+	-	schemas.csv
+	-	users.csv (note, encrypted password must be regenerated)
+	
+DOCKER/pycsw Installation 
+
+Docker is used for pycsw application
+
+	sudo apt install docker.io
+	sudo docker pull geopython/pycsw
+
+	sudo docker run --name pycsw -p 8000:8000 -detach geopython/pycsw
+
+    Firewall rule
+	sudo ufw allow proto tcp from 172.17.0.0/24 to any port 5432 
+
+Copy 2 pycsw files, apiso.py & pycsw.cfg. Edit pycsw.cfg as needed, then copy to docker environment
+
+	sudo docker container cp ./pycsw.cfg pycsw:/etc/pycsw/pycsw.cfg
+	sudo docker container cp ./apiso.py pycsw:/usr/lib/python3.5/site-packages/pycsw/plugins/profiles/apiso/apiso.py
+
+Restart the docker container
+
+	sudo docker container stop pycsw
+	sudo docker container start pycsw
+
+Connect and setup pycsw 
+
+	sudo docker exec -it --user root pycsw /bin/sh
+	pycsw-admin.py -c setup_db -f /etc/pycsw/pycsw.cfg
+
+Connect to pycsw database and run script
+	ngds-pycsw-extesnsions-schema.sql
+	
+SETUP NODE AS SERVICE
+
+Refer to NodeServicesConfiguration /docs folder
+
+Locally cached client side libraries
+/node-app/public/js
+
+- esri-leaflet.js
+- esri-leaflet/js.map
+- jClass
+- jquery.min
+- leaflet.draw.js
+- leaflet.js
+
+
+SYSTEM TEST
+
+From web browser:
+
+https://goethermaldata.org
+
+https://goethermaldata.org
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

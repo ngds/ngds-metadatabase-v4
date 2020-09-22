@@ -1,0 +1,47 @@
+Service Start up for the web applications
+
+The service files are located in 
+/node-app/services
+
+Primary web SSL Application 
+
+/etc/systemd/system/ngds-app-ssl.service
+ 
+Redirection Sevrice
+
+/etc/systemd/system/ngds-app.service
+
+DB Pooling to geothermal database - middle ware
+
+/etc/systemd/system/ngds-pg-pool.service
+
+DB Pooling to pycsw database
+
+/etc/systemd/system/ngds-pysearch.service
+
+Autmation Server 
+
+/etc/systemd/system/ngds-server.service
+
+Commands
+
+$ systemctl enable ngds-app-ssl
+$ systemctl enable ngds-app
+$ systemctl enable ngds-pg-pool
+$ systemctl enable ngds-pysearch
+
+$ systemctl daemon-reload
+
+$ systemctl start ngds-app-ssl
+$ systemctl start ngds-app
+$ systemctl start ngds-pg-pool
+$ systemctl start ngds-pysearch
+
+The server automation service is only needed when automation
+services (such as harvesting) are executed.
+
+$ systemctl start ngds-server
+
+
+
+  

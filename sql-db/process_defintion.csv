@@ -1,0 +1,11 @@
+5,UpsertRecord,pgsql,2019-05-21 14:18:23.104305,1,1,2,3,each,makemdrecord,
+4,cswFetchRecord,node-API,2019-05-21 14:18:23.104305,1,1,2,1,once,,"{ '"in'" : { '"collection'" : '"set_id'", '"guid'" : '"text'" }, '"out'" : { '"mdobject'" : '"pipe'" } }"
+1,cswGetRecords,node-API,,1,1,1,1,once,cswGetRecords,"{ '"in'" :{'"collection'":'"setid'" } }"
+2,cswFetchRecord,node-API,,1,1,1,2,each,cswFetchRecords,
+6,clearCollection,pgsql,2019-06-14 17:10:44.247746,1,2,3,1,once,"select * from clear_collection($1,$2,$3)",
+3,validation,pgsql,,1,1,1,3,each,tbd,
+7,ckanGetList,node-API,2019-09-30 16:27:09.8575,1,1,5,1,each,ckanGetList,
+8,ckanFetchRecord,node-API,2019-09-30 16:28:50.438837,1,1,5,2,each,ckanFetchRecord,
+9,batchDBUpdateCollection,node-client,2020-07-30 19:19:35.928103,1,1,6,1,once,/action/batchDbUpdateCollection,
+10,batchPycswUpdate,node-client,2020-07-30 19:21:08.258805,1,1,6,2,once,/action/batchPycswUpdateCol,
+11,schema-validation,pgsql,2020-08-20 17:32:20.109275,1,1,7,1,once,,

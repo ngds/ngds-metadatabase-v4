@@ -1,0 +1,7 @@
+2,single-record-harvest,cap_record,2019-05-21 14:14:16.70644,1,1,"","{'"collection'" : '"set_id'", '"activity_definition'" : '"activity_name'", '"md_record'" : '"guid'", '"directive'" : '"text'"  }"
+3,clear-harvest,collection,2019-06-14 16:37:08.59796,1,2,,
+1,standard harvest,harvest,,1,1,,
+4,harvest-fetch,harvest,2019-08-29 15:54:15.533822,1,1,,
+5,ckan-harvest,harvest,2019-09-30 16:16:00.020223,1,1,ckan api,
+6,batch edit,collection,2020-07-30 19:10:50.233437,1,1,apply edit to collection,
+7,schema validation,collection,2020-08-20 17:28:53.425773,1,1,check for metadata validity against a schema,

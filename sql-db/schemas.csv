@@ -1,0 +1,10 @@
+3,USGIN-ISO-19139,json,1,usgin,2019-03-06 15:50:14.440649,10,off
+8,TestName,json,1,sourceURL,2019-04-12 16:32:25.384506,10,off
+6,USGIN-ISO-19139,json,4,usgin,2019-03-06 15:59:16.255311,10,active
+7,pyCSW,xml,1,pyCSW,2019-04-09 14:25:09.519637,10,active
+10,Federated,json,1,ngds,2019-04-16 11:38:37.022346,10,active
+1,SMU,json,1,SMU,2019-08-16 12:12:44.019163,10,active
+11,USGIN-GDR,json,1,GDR,2019-08-22 15:58:05.377029,10,active
+2,testname,json,1,usgin,2019-03-06 15:46:19.645321,10,off
+9,Test-html,json,1,testsource,2019-04-12 16:55:47.090764,10,off
+16,USGS,user-interface,1,sciencebase.gov,2020-08-27 23:51:28.60242,10,active

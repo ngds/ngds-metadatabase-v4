@@ -1,0 +1,19 @@
+[Unit]
+Description=NGDS HTTPS Server
+After=network.target
+
+[Service]
+
+User=root
+Group=root
+Restart=always
+RestartSec=500ms
+StartLimitInterval=0
+KillSignal=SIGQUIT
+WorkingDirectory=/opt/ngds/node-app
+ExecStart=/snap/bin/node /opt/ngds/node-app/ngds-app-ssl.js
+StandardOutput=append:/opt/ngds/node-app/log/ngds-app-ssl.log
+StandardError=append:/opt/ngds/node-app/log/ngds-error-ssl.log
+
+[Install]
+WantedBy=multi-user.target

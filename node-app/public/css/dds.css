@@ -1,0 +1,722 @@
+
+/* chrome */
+
+
+/* outline: none commented out for accessibility*/
+/*
+:focus {
+  outline: none;
+}*/
+
+.dijitTitlePaneTextNode {
+  font-size: 14px;
+  font-family: "Avenir Next W01","Avenir Next","Avenir","Helvetica Neue","Helvetica","Arial",sans-serif;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  vertical-align: middle;
+  width: 100%;
+}
+.calcite .dijitTitlePaneTitle {
+  padding: 4px 6px;
+}
+.calcite .dijitTitlePaneContentInner {
+  padding: 8px;
+}
+.calcite .dijitTitlePane {
+  border: 1px solid #ebebeb;
+}
+.calcite .dijitTitlePaneContentOuter {
+	/*border-top: 1px solid #ebebeb;*/
+	border: none;
+}
+
+/*
+.calcite .modal-dialog .modal-content .modal-header .close {
+  font-size: 21px;
+}
+*/
+/* Custom CSS */
+/* cinergi about and contribute */
+.aGrid {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 20px 300px auto 300px 20px ;
+    background-color: #fff;
+}
+
+.aBox {
+
+
+    border-radius: 5px;
+    padding: 20px;
+
+
+}
+
+.aaa {
+    grid-column: 1 / span 4;
+
+}
+
+.aa {
+    grid-column: 2 / span 2;
+    background-color: #ABCADE;
+
+}
+.dd {
+    grid-column: 2 ;
+    grid-row: 3 / span 2;
+}
+.bb {
+    grid-column: 4 ;
+    grid-row: 2 ;
+}
+.cc {
+    grid-column: 3 / span 2;
+    grid-row: 4 ;
+}
+
+.calcite .esriSimpleSlider div{width:32px;height:24px ;
+    border-width:0;border-style:none;color:#4c4c4c;
+    background-color:#fff;-moz-transition:all 0.25s ease;
+    -o-transition:all 0.25s ease;-webkit-transition:all 0.25s ease;
+    transition:all 0.25s ease;
+    -moz-user-select:-moz-none;-ms-user-select:none;-webkit-user-select:none;
+    user-select:none;-moz-box-sizing:border-box;
+    -webkit-box-sizing:border-box;box-sizing:border-box;cursor:pointer;
+    font-family:"CalciteWebCoreIcons";speak:none;
+    font-size:8px;
+    font-style:normal;font-weight:normal;font-variant:normal;text-transform:none;text-indent:0;line-height:1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-size:12px;line-height:2.66667}
+
+.g-spatial-filter-locator {
+
+    top: 234px;
+}
+
+.g-spatial-filter-bbox {
+
+}
+.g-filter-bbox-input {
+    width: 70%;
+}
+.g-spatial-filter-n  {
+    width: 6em;
+
+      height:1.5em;
+  }
+.g-spatial-filter-s{
+    width: 6em;
+
+    height: 1.5em;
+}
+.g-spatial-filter-e{
+    width: 6em;
+;
+     height: 1.5em;
+ }
+.g-spatial-filter-w{
+    width: 6em;
+
+    height: 1.5em;
+}
+
+.g-item-card .g-item-source-and-date {
+    padding: 2px;
+    font-size: 10px;
+    width: 15%;
+}
+/* .g-item-card .g-item-description, */
+.g-item-card .g-item-owner-and-date {
+
+    width: 75%;
+}
+
+.g-paging .pagination-page {
+   width: 4em;
+    padding: 0px 0px;
+}
+.g-paging .dijitTextBox .dijitInputField,
+.g-paging .dijitTextBox .dijitInputInner {
+    padding: 0px 0px;
+    line-height: 1.5;
+}
+.g-paging .dijitButtonContents {
+
+    padding: 0px 0px;
+}
+
+.g-paging  .dijitArrowButtonContainer{
+
+    padding: 0px 0px;
+}
+.g-paging .pagination-sm > li > span {
+    padding: 0em 0.5em;
+}
+
+.navbar-brand {
+    height:auto;
+    padding-bottom: 0px;
+    padding-top: 0px;
+}
+.navbar-logo {
+    height:48px;
+    width: auto;
+   float:left ;
+
+}
+.navbar-text {
+    margin-top: 0px;
+   margin-bottom: 0px;
+}
+.g-item-save {
+
+    font-family: "Avenir Next W01","Avenir Next","Avenir","Helvetica Neue","Helvetica","Arial","sans-serif";
+
+}
+
+.g-item-save-xx {
+    padding-left: 2px;
+    padding-right: 2px;
+    padding-bottom: 2px;
+    padding-top: 2px;
+    margin-top: 2px;
+    color: #440000;
+    display: inline-block;
+    margin-left: 400px;
+    font-family: "Avenir Next W01","Avenir Next","Avenir","Helvetica Neue","Helvetica","Arial",sans-serif;
+    border:2px solid #dcdcdc;
+    background-color: #29fa6;
+
+}
+.g-item-card .g-item-card-saved {
+    margin-top: 5px;
+    margin-left: 40px;
+    padding: 4px;
+    border-bottom: 1px solid #cccccc;
+    font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.g-item-card-saved {
+    background-color: #aaaaaa;
+    font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.g-item-card .g-item-title {
+    font-weight: bold;
+    font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.g-item-card .g-item-status {
+    margin-right: 0.5em;
+    font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.g-indent {
+	margin-left: 20px;
+}
+
+.g-loading {
+	margin-right: 4px;
+  width: 16px;
+  height: 16px;
+  background-image: url("images/LoadingAnimation16_Trans.gif");
+  vertical-align: middle;
+}
+
+.g-modal-plot .modal-dialog {
+  width: 800px;
+}
+.g-temporal-plot {
+  min-width: 700px;
+}
+.g-temporal-plot .c3-axis-x .tick {
+  display: none;
+}
+
+.g-app-loading {
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  z-index: 99;
+  background-color: #f8f8f8;
+}
+.g-app-loading .progress {
+  width: 200px;
+  margin: auto;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background-color: #f8f8f8;
+}
+.g-app-loading .g-error {
+  height: 50px;
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #000000;
+}
+.g-app-loading .progress {
+  border-radius: 5px;
+}
+.g-app-loading .progress-bar {
+  border-radius: 4px;
+}
+
+.navbar-inverse {
+  background-color: #005e95;
+}
+.navbar-inverse .navbar-nav > .active > a, 
+.navbar-inverse .navbar-nav > .active > a:hover, 
+.navbar-inverse .navbar-nav > .active > a:focus {
+  background-color: #478CB8;
+  color: #ffffff;
+}
+.navbar-inverse .navbar-nav > li > a {
+  color: #ffffff;
+}
+.navbar-inverse .glyphicon, .navbar-inverse .navbar-brand {
+  color: #ffffff;
+}
+.tab-content > .active {
+    display: block;
+    margin-top: -70px;
+    padding-top: 70px;
+
+}
+
+.g-app > .navbar {
+	min-height: 5px;
+}
+.g-app > .navbar-inverse .navbar-nav > li > a {
+	padding-left: 8px;
+  padding-right: 8px;
+	padding-bottom: 12px;
+	padding-top: 12px;
+}
+.g-app > .navbar-inverse .navbar-nav > li > a:hover, 
+.g-app > .navbar-inverse .navbar-nav > li > a:focus {
+  background-image: none;
+  transition: none;
+  background-color: transparent;
+}
+.g-app > .navbar-inverse .navbar-nav > li.active > a {
+  background-image: linear-gradient(to bottom, transparent 90%, #cfe1ec 91%, #cfe1ec 100%);
+  transition: color 150ms linear 0s, text-decoration 150ms linear 0s;
+  background-color: transparent;
+}
+.g-app > .navbar-inverse .navbar-nav > li > a:hover {
+  outline: thin dotted;
+  outline-offset: -2px;
+}
+.g-app > .navbar-inverse .g-tools {
+  padding-top: 13px;
+  padding-right: 20px;
+  color: #ffffff;
+}
+.g-app > .navbar-inverse .g-tools > a {
+  color: #ffffff;
+}
+.g-app > .navbar-inverse .g-tools > .g-options {
+  margin-left: 16px;
+}
+
+.g-search-pane {
+	margin: 0px 20px 20px 20px; 
+	padding: 0px;
+}
+.g-search-pane-left {
+    width: 20%;
+    min-width: 290px;
+    float: left;
+    box-sizing: border-box;
+    margin: 2px;
+
+}
+.g-search-pane-right {
+  margin: 2px;
+  box-sizing: border-box;
+  display: block;
+  width:70%;
+  min-width: 360px;
+	float: left; 
+}
+
+.g-schema-pane-right {
+  float: right; 
+}
+.g-drop-pane-tools {
+  float: right;
+  vertical-align: middle;
+}
+
+.g-drop-pane-tools input {
+  vertical-align: top;
+  cursor: pointer;
+}
+.g-drop-pane-tools label {
+  margin-left: 3px;
+  font-size: 10px;
+  font-weight: normal;
+  cursor: pointer;
+}
+.g-drop-pane-tools .glyphicon {
+  vertical-align: middle;
+  margin-bottom: 4px;
+}
+
+.g-drop-pane .g-entries {
+  max-height: 200px;
+  overflow-y: auto;
+}
+/* resolves map disappearing issue #63
+and will apply to all search facets */
+.g-search-pane-left .dijitTitlePaneTitle {
+    overflow-y:hidden !important;;
+}
+.g-entry-links > div {
+  padding: 2px 0px;
+}
+
+.g-spatial-filter-map {
+  height: 300px !important;
+  width: auto !important;
+
+}
+.g-spatial-filter-relations {
+  margin-right: 12px;
+}
+.g-spatial-filter-relation {
+  margin-left: 12px;
+}
+.g-spatial-filter-locator {
+  display: block;
+  position: absolute;
+  z-index: 31;
+  left: 44px;
+  top: 215px;
+}
+.g-spatial-filter-locator-inline {
+  display: block;
+  z-index: 31;
+}
+.g-applied-filters .g-drop-pane-tools label {
+	margin-right: 20px;
+	margin-top: 4px;
+}
+/*
+.g-applied-filters .g-drop-pane-tools .glyphicon {
+	vertical-align: none;
+	top: 0;
+}
+*/
+
+.g-applied-filter {
+  line-height: 2;
+  padding: 2px 4px;
+  margin-right: 4px;
+  border: 1px solid #cccccc;
+  border-radius: 5px;
+  
+}
+.g-applied-filter a {
+  vertical-align: middle;
+}
+
+.g-search-results-pane .g-sort-dropdown {
+  display: inline-block;
+  width: 120px;
+}
+.g-search-results-pane .g-sort-dropdown .glyphicon {
+  padding-left: 2px;
+  margin-bottom: 2px;
+}
+
+.g-paging {
+	display: inline-block;
+	margin-left: 10px;
+}
+.g-paging-count {
+  display: inline-block;
+  margin: 0 10px;
+}
+.g-paging .pagination {
+  margin: 0;
+}
+.g-paging .pagination-sm > li > a, .g-paging .pagination-sm > li > span {
+  padding: 1px 10px;
+}
+
+.g-search-results {
+  /*max-height: 400px;
+  overflow-y: auto;*/
+  max-height: -webkit-calc(100vh - 200px);
+  max-height:    -moz-calc(100vh - 200px);
+  max-height:         calc(100vh - 200px);
+  overflow: auto;
+}
+
+.g-item-card {
+  margin-top: 5px;
+  padding: 4px;
+  border-bottom: 1px solid #cccccc;
+}
+
+.g-item-card .g-item-title {
+  font-weight: bold;
+}
+
+.g-item-card .g-item-status {
+  margin-right: 0.5em;
+}
+
+.g-item-card .g-item-description, 
+.g-item-card .g-item-actions, 
+.g-item-card .g-item-owner-and-date {
+	margin-left: 20px;
+}
+
+.g-item-card .g-item-description, 
+.g-item-card .g-item-owner-and-date {
+  padding: 2px;
+  font-size: 10px;
+  width: 85%;
+}
+.g-item-card .g-item-thumbnail {
+	width: 80px;
+	height: 60px;
+}
+
+/* Style for descriptions creates a cap of a few lines of text  */
+.g-item-card .g-item-description {
+  max-height: 46px;
+  overflow: hidden;
+  width: 85%;
+}
+
+.g-item-card .g-item-actions {
+  padding: 2px;
+  clear: both;
+}
+.g-item-card .g-item-actions > a, 
+.g-item-card .g-item-actions > .dropdown {
+  margin-right: 20px;
+}
+
+.g-item-card .g-item-actions > .dropdown > .dropdown-menu {
+	max-height: 300px;
+	overflow-y: auto;
+	padding-right: 20px;
+}
+
+.g-scrollable-typeahead .tt-menu {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.g-validation-errors {
+	margin-top: 12px;
+	max-height: 200px;
+	overflow-y: auto;
+}
+
+.g-mapframe-container {
+  position: absolute;
+  top: 50px; /* TODO ?? */
+  left: 0; 
+  bottom: 4px; 
+  right: 0;
+}
+.g-mapframe-container > iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.g-input-number {
+	/*width: 200px;*/
+}
+
+.modal-body > .g-settings-pane {
+	max-height: 420px;
+	overflow-y: auto;
+	padding-right: 10px;
+}
+
+.g-labels-right .form-group input {
+	margin-bottom: 10px;
+}
+.g-labels-right .control-label {
+	text-align: right;
+	color: #6e6e6e;
+}
+
+.calcite .gxePrimaryToolbar > .gxeTabs > .gxeTabButton {
+  border: 1px solid #ccc;
+}
+
+/*
+.gxePrimaryToolbar > .gxeTabs > div {
+  float: right;
+}
+.gxePrimaryToolbar > .gxeTabs > .gxeMessageArea {
+	clear: right;
+  position: relative;
+  left: 200px;
+  margin-top: -20px;
+}
+*/
+
+.g-temporal-bar {
+	margin-bottom: 5px;
+}
+.g-temporal-bar select {
+  margin-left: 3px;
+  margin-right: 10px;
+}
+
+.g-temporal-d3 svg {
+  /*font: 10px sans-serif;*/
+  font-size: 9px;
+}
+
+.g-temporal-d3 .axis path,
+.g-temporal-d3 .axis line {
+  fill: none;
+  stroke: #cccccc;
+  shape-rendering: crispEdges;
+}
+
+.g-temporal-d3 .dot {
+  /* #0079c1 #818181 #1db87b #FFC300 #f6b052 #ff7f0e; */
+  stroke: #818181;
+  fill-opacity: 0;
+}
+
+.g-temporal-d3 .area {
+	/* #818181 #a7a7a7 */
+  fill: #a7a7a7;
+}
+
+.g-temporal-d3 .brush .extent {
+  stroke: #fff;
+  fill: #b3b3b3;
+  fill-opacity: 0.125;
+  shape-rendering: crispEdges;
+}
+
+.g-temporal-d3 .resize path {
+	/* #bfbfbf #b3b3b3 #818181 */
+  fill: #0079c1;
+  fill-opacity: 0.6;
+  stroke: #0079c1;
+  stroke-width: 1.5px;
+}
+
+.g-temporal-d3 .tooltip,
+.g-spatial-filter-d3-tooltip {
+  position: absolute;
+  padding: 5px;
+  pointer-events: none;
+  background-color: #ffffff;
+  color: #000000;
+  border: 1px solid #cccccc;
+  border-radius: 5px;
+  z-index: 99;
+}
+
+.dijitTooltipContainer, .dijitTooltipContainer > div, 
+.dijitTooltipContainer > div > div, 
+.dijitTooltipContainer > div > div > div {
+  width: 100%;
+  height: 100%;
+}
+
+.g-preview-error {
+  position: absolute; 
+  color: black; 
+  background-color: white; 
+  left: 32%; 
+  right: 32%;
+  top: 50%; 
+  z-index: 1; 
+  padding: 3px;
+  border: #000000 solid thin;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.g-access-groups {
+	margin: 0px;
+	padding: 5px;
+  max-height: 100px;
+  overflow-y: auto;
+  border: 1px solid #cccccc;
+  list-style-type: none;
+}
+
+.modal-dialog .navbar {
+	min-height: 0px;
+	margin-bottom: 8px;
+}
+
+/* Accessibility Changes */
+.btn-success {
+    color: #ffffff;
+    background-color: #338033;
+    border-color: #50834f;
+}
+
+a {
+    color: #444444;
+    text-decoration: none;
+    font-size: 14px;
+    font-family: calibri;
+
+}
+
+a.resource-item {
+    color: #000000;
+    font-size: 14px;
+    font-weight: bold;
+
+}
+
+a.dropdown-toggle:focus {
+    outline: 5px auto -webkit-focus-ring-color;
+}
+
+.pagination > .disabled > span, .pagination > .disabled > span:hover, .pagination > .disabled > span:focus, .pagination > .disabled > a, .pagination > .disabled > a:hover, .pagination > .disabled > a:focus {
+    color: #595959;
+    background-color: #ffffff;
+    border-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.offscreen {
+	position: absolute;
+	height: 1px;
+	width: 1px;
+	overflow: hidden;
+	clip-path: inset(1px 1px 1px 1px);
+	clip-path: inset(1px, 1px, 1px, 1px);
+}
+
+.skip-to-content.offscreen:focus {
+	position: relative;
+	display: inline-block;
+	height: auto;
+	width: auto;
+	padding: 0.625em 1.25em;
+	background-color: #005e95;
+	color: #fff;
+	overflow: visible;
+	clip-path: none;
+	text-decoration: none;
+}
+
+.g-open-search-result-links {
+  float: right;
+  padding: 1em;
+}
+
+.g-open-search-result-link {
+  margin-left: 1em;
+}

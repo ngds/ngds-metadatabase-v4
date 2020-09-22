@@ -1,0 +1,35 @@
+{
+  "name": "NGDS",
+  "version": "1.0.0",
+  "description": "NGDS database API",
+  "main": "ngds-db.js",
+  "repository": "",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "bson-ext": "^1.0.5",
+    "crypto": "^1.0.1",
+    "csw-client": "^0.18.3",
+    "dotenv": "^4.0.0",
+    "express": "^4.17.1",
+    "fs": "0.0.1-security",
+    "https": "^1.0.0",
+    "node-json2html": "^1.4.0",
+    "pg": "^8.0.3",
+    "request": "^2.88.2",
+    "url-exists": "^1.0.3",
+    "url-exists-async-await": "^1.0.0",
+    "xml": "^1.0.1",
+    "xml2js": "^0.4.23",
+    "xmldoc": "^1.1.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node ngds-app.js",
+    "poststart": "echo $NODE_PATH"
+  },
+  "keywords": [
+    "ngds"
+  ],
+  "author": "Gary Hudman"
+}

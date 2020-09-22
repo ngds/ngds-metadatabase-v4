@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NGDS Search</title>
+<script src='https://api.tiles.mapbox.com/mapbox.js/v2.2.4/mapbox.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox.js/v2.2.4/mapbox.css' rel='stylesheet' />
+<link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.3/leaflet.draw.css' rel='stylesheet' />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://kit-free.fontawesome.com/releases/latest/css/free.min.css" media="all">
+<link rel="stylesheet" href="/css/ngds.css" />
+<link rel="stylesheet" href="/css/dds.css" />
+<link rel="shortcut icon" href="/img/nico.ico" />
+
+<script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.3/leaflet.draw.js'></script>
+
+<link rel="stylesheet" href="/css/leaflet.css"/>
+<script src="/js/leaflet.js"></script>
+
+<!-- Load Esri Leaflet from CDN -->
+<script src="/js/esri-leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/esri-leaflet-renderers@2.0.6"></script>
+
+<script src="/js/jquery.min.js"></script>
+<script src="/js/ngdsUI.js"></script>
+<script src="/js/ngdsEdit.js"></script>
+<script src="/js/ngdsDataMap.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/json2html/1.2.0/json2html.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.json2html/1.2.0/jquery.json2html.min.js"></script>
+<link href="/css/spin.css" type="text/css" rel="stylesheet" />
+<script src="/js/spin.js"></script>
+
+<style>
+
+    .leaflet-container .leaflet-popup-content-wrapper {
+      background:#2c3e50;
+      color:#fff;
+      font-size:12px;
+      line-height:14px;
+      }
+      .leaflet-container .leaflet-popup-content-wrapper a {
+      color:rgba(255,255,255,0.5);
+      }
+    .leaflet-container .leaflet-popup-tip-container  {
+      width:30px;
+      height:15px;
+      }
+
+    .leaflet-container .leaflet-popup-tip {
+      border-left:15px solid transparent;
+      border-right:15px solid transparent;
+      border-top:15px solid #2c3e50;
+      }
+
+</style>
+<script>
+
+    var sSrchUrl = "";
+    var sPage = 0;
+    var gSp = 0;
+    var gFeatureGroup;
+    var gBounds;
+    var gExtents=[];
+    var gMdRecord=false;
+    var gSearchHistory=[];
+    var gSavedGuids=[];
+	var sType ="";
+  var sOff = 0;
+  var pgSize = 10;
+  var curID = "";
+  var map;
+  var drawnItems, 
+      rectangle;
+  var init=true;
+
+	var gN = Number(45.0),
+		  gW = Number(-110.0),
+		  gS = Number(28.0),
+		  gE = Number(-80.0);
+
+  var opts = {
+        lines: 10, // The number of lines to draw
+        length: 38, // The length of each line
+        width: 17, // The line thickness
+        radius: 45, // The radius of the inner circle
+        scale: .3, // Scales overall size of the spinner
+        corners: 1, // Corner roundness (0..1)
+        color: 'white', // CSS color or array of colors
+        background: 'white',
+        fadeColor: 'transparent', // CSS color or array of colors
+        speed: 1, // Rounds per second
+        rotate: 0, // The rotation offset
+        animation: 'spinner-line-fade-quick', // The CSS animation name for the lines
+        direction: 1, // 1: clockwise, -1: counterclockwise
+        zIndex: 2e9, // The z-index (defaults to 2000000000)
+        className: 'spinner', // The CSS class to assign to the spinner
+        top: '30%', // Top position relative to parent
+        left: '50%', // Left position relative to parent
+        shadow: '0 0 1px transparent', // Box-shadow for the lines
+        position: 'absolute' // Element positioning
+        };
+
+    var target = $("#rec-results");
+    var spinner = new Spinner(opts);
+    var sR;
+    var mous=0;
+    var gTApre='';
+    var gTA =[];
+    var gTAK=0;
+
+    function appInit() {
+        
+        var guid;
+        var query = window.location.href.split('?')[1]; 
+
+        $("#gSearchBox").val("");
+        
+		if (query) {
+			var params = query.split('&');
+			var pairs = {};
+			for (var i = 0, len = params.length; i < len; i++) {
+			  var pair = params[i].split('=');
+			  pairs[pair[0]] = pair[1];
+			  if ( pair[0] == "guid" ) {
+			    guid = pair[1];
+				console.log('incoming guid - ' + pair[1] );
+			  }
+			}
+        }
+        
+        var sh = localStorage.getItem("SearchHistory");
+
+        if ( sh ) {
+            gSearchHistory = sh.split('|');
+        }
+      
+        $("#sortBtn").text("Modified Date");
+
+        mapInit();
+        if ( guid ) {
+			var o = { "id": guid };
+			gMdRecord=true;
+			mdView(o);
+		} else {
+			findRecords(0);
+		}
+
+        $("#app").on('mouseover',function(){
+            $("#SearchHistory").css("display","none");      
+        });
+
+        $("#userLoginBtn").click(function() {
+           logmein(this, userMenu);
+        });
+
+        $("#cb").on('mouseover',function(){          
+            $("#SearchHistory").css("display","none");      
+        });
+
+        $("#widget-box").on('mouseover',function(){
+            
+            $("#SearchHistory").css("display","none");      
+        });
+
+        $("#searchTool").on('mouseover',function(){
+            
+            $("#SearchHistory").css("display","none");      
+        });
+
+        $("#searchMap").on('mouseover',function(){          
+            $("#SearchHistory").css("display","none");      
+        });
+
+        $("#gSearchBox").on('mouseover',function() {
+            gTApre='';
+            showSeaHis();
+        }).bind('mousewheel', function(e){
+            if(e.originalEvent.wheelDelta /120 > 0) {
+                var ssu = 'scrolling up !';
+            }
+            else{
+                var ssu = 'scrolling down !';
+            }
+        }).on('mouseout',function(){
+            var ssu = 'sb mouseoout';
+           
+        }).on("keyup", function(e) {
+           
+            if (e.keyCode == 32 || e.keyCode == 13) {
+                gTApre='';
+                $(".ta item").each(function() { $(this).remove() })
+             
+            } else {
+                if ( e.keyCode > 47 && e.keyCode < 91) {
+                    gTApre = gTApre+e.key;
+                }
+            }
+
+            if ( e.keyCode == 8) { 
+                gTApre = gTApre.slice(0,-1);
+                if ( gTApre.length == 0 ) {
+                    showSeaHis();
+                }
+            }
+ 
+            if ( gTApre.length > 2 ) {
+                console.log(' pre len ' + gTApre.length);
+                if ( e.keyCode > 47 && e.keyCode < 91 ) {
+                    $("#sHistoryItems").empty();
+                    getTA();
+                }
+               
+            } else {
+                $(".ta-item").each(function() { $(this).remove() });
+                gTA.length=0;
+            }
+
+            if (e.keyCode == 38 ) { //UP ARROW
+                if ( gTAK > 0 ) { gTAK--; }
+
+                $(".sh-item").each(function() {
+                   
+
+                    if ( $(this).attr("id") == 'sh-'+gTAK ) {
+                        $(this).css("font-weight","bold");
+                        $(this).css("font-size","14px");
+                    } else {
+                        $(this).css("font-weight","normal");
+                        $(this).css("font-size","12px");
+                    }
+                });
+
+                $(".ta-item").each(function() {
+
+                    if ( $(this).attr("id") == 'ta-'+gTAK ) {
+                        $(this).css("font-weight","bold");
+                        $(this).css("font-size","14px");
+                    } else {
+                        $(this).css("font-weight","normal");
+                        $(this).css("font-size","12px");
+                    }
+                });
+            } 
+            
+            if (e.keyCode == 39 ||  e.keyCode == 9 ) { //RIGHT ARROW  TAB autocomplete
+         
+                $(".sh-item").each(function() {
+                    if ( $(this).attr("id") == 'sh-'+gTAK ) {
+                        var cp =  $("#gSearchBox").val();
+                        $("#gSearchBox").val(cp + ' ' + $(this).text());
+                    } 
+                    $(this).css("font-weight","normal");
+                    $(this).css("font-size","12px");
+
+                });
+
+                gTAK = 0;
+                gTApre ='';
+            } 
+
+            if ( e.keyCode == 40 ) { //DOWN ARROW
+                var kl = gSearchHistory.length + gTA.length;
+
+                if ( gTAK > kl ) { gTAK = 0 } else { gTAK ++; }
+
+                $(".sh-item").each(function() {
+                   
+                    if ( $(this).attr("id") == 'sh-'+gTAK ) {
+                        $(this).css("font-weight","bold");
+                        $(this).css("font-size","14px");
+                    } else {
+                        $(this).css("font-weight","normal");
+                        $(this).css("font-size","12px");
+                    }
+                });
+
+                $(".ta-item").each(function() {
+                  
+                    if ( $(this).attr("id") == 'ta-'+gTAK ) {
+                        $(this).css("font-weight","bold");
+                        $(this).css("font-size","14px");
+                    } else {
+                        $(this).css("font-weight","normal");
+                        $(this).css("font-size","12px");
+                    }
+                });
+            } 
+
+
+            if (e.keyCode == 13) {
+                gTApre='';
+              
+                $("#SearchHistory").css("display","none");
+                findRecords(0);   
+            }
+        }).on("dblclick",function() {
+            gTApre='';
+            $("#gSearchBox").val("")
+        });
+
+        $("#SearchHistory").on('mouseover',function() {
+           
+              mous = 1;
+        }).on('mouseout',function() { 
+             mous = 0;
+           
+        });
+    }
+
+    function  mapInit() {
+       
+		$("#showMap").show(); 
+        map = L.map('showMap', { minZoom: 1 }); 
+        L.esri.basemapLayer('Streets').addTo(map);
+
+        map.on('ready',function() { 
+            setTimeout(function(){ 
+                map.invalidateSize();         
+            }, 200);
+        });
+
+        map.on('click', function() {
+            var ssu = ' map clicked';
+        });
+
+    }
+
+</script>
+</head>
+<body  onload="appInit()">
+        <div class="g-app" id="app" style="position: sticky;">
+            <nav class="navbar navbar-inverse"> 
+                <ul class="nav navbar-nav" style="float: left; width: 600px">
+                    <li class="nav-item">
+                    <img src="/img/ngds-logo.png" height="48px">
+                    </li> 
+                    <li class="nav-item">
+                       
+                        <a class="nav-link" href="http://geothermaldata.org"  >National Geothermal Data System</a>
+                    </li>
+                    <li class="nav-item">
+                            <a class="nav-link" onclick="searchData();" >Search</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link"  onclick="dataMapView();" >Map</a>
+                    </li>
+                    <li id="Cex" class="nav-item" style="display: none;">
+                        <a class="nav-link"  onclick="edView(this);" >Admin</a>
+                    </li>
+                </ul>   
+
+                <div class="g-tools pull-right" style="width: 150px;">
+                    <span class="nav navbar-nav">
+                        <a class="navbar-text" href="http://geothermaldata.org/help" style="color:#dcdcdc"  >Help</a> 
+                    </span>
+                   
+                     <span class="nav navbar-nav"> 
+                        <a class="navbar-text" id="loginBtn" href="#loginPanel" style="color:#dcdcdc" onclick="toggleLogin(this, userMenu);" >Login</a>  
+                        <span class="nav navbar-nav" id="laname"></span>
+                    </span>
+                </div>
+            </nav>
+        </div>
+        <div id="leftSearch" class="g-search-pane-left" style="margin:5px;" > 
+
+            <input type="text" class="form-control" style="height:25px;" id="gSearchBox" 
+                    placeholder="Enter Search terms" autofill="off" autocomplete="new-password" autofocus size="30" />
+            <button id="searchBtn" class="arrow-button"  
+                        style="height: 30px;" 
+                        onclick="findRecords(0)"><i class="fa fa-search"></i></button></br>
+            <div id="searchTool" style="height:14px; margin: 2px;">
+                <span style="font-size: 12px; font-weight:bold; font-family: calibri;  margin: 3px 3px; background-color: #e8e8e8; ">Sort By
+                    <a id="sortBtn" onclick="sortPick(this)" class="tag" ></a>
+                    <a id="clearHistoryBtn" onclick="clearHistory(this)" class="tag" >Clear</a>
+                    <a id="shoSavBtn" onclick="showSaved(this)" class="tag" >Saved</a>
+                </span>
+            </div></br>        
+            <div id="showMap" style="height:300px"></div></br>
+            <div id="searchMap" class="g-tools pull-right" style="position:absolute; top: 500px; left: 108px; height:30px; z-index: 99;">
+                    <span  class="nav navbar-nav" style="font-family: calibri; height:30px; width: 160px;">
+                    <button id="searchBox" class="arrow-button"  
+                    style="height: 30px;" 
+                    onclick="findSpatial(this)" >Search Using MapExtent <i class="fa fa-search"></i></button></span>
+            </div></br>
+            <div id="accordion">
+                    <div class="dijitTitlePaneTextNode" id="CatList" style="display:none;">
+                            <p class="dijitTitlePaneTextNode" >
+                                <i id="CatB" class="fa fa-angle-right"></i> 
+                                <span id="Cat" onclick="facetView(this);"
+                                    style="font-size: 14px; font-weight:bold; background-color: #e8e8e8; ">Top Keywords</span></p>
+                    </div>
+                                     
+                    <div class="dijitTitlePaneTextNode" id="CMList">
+                            <p class="dijitTitlePaneTextNode">
+                                <i id="cmB" class="fa fa-angle-right"></i> 
+                                <span id="ContModel" onclick="facetView(this);" 
+                                style="font-size: 14px; font-weight:bold; background-color: #e8e8e8; ">Content Models</span></p>
+                    </div>
+                    <div class="dijitTitlePaneTextNode" id="AuthList">
+                            <p class="dijitTitlePaneTextNode">
+                                <i id="authB" class="fa fa-angle-right"></i> 
+                                <span id="Auth" onclick="facetView(this);" 
+                                style="font-size: 14px; font-weight:bold; background-color: #e8e8e8; ">Authors</span></p>
+                    </div>
+                    <div class="dijitTitlePaneTextNode" id="dtList">
+                            <p class="dijitTitlePaneTextNode">
+                                <i id="dtB" class="fa fa-angle-right"></i> 
+                                <span id="DataType" onclick="facetView(this);" 
+                                style="font-size: 14px; font-weight:bold; background-color: #e8e8e8; ">Data Types</span></p>
+                    </div>
+                    <div class="dijitTitlePaneTextNode" id="repoList">
+                            <p class="dijitTitlePaneTextNode">
+                                <i id="repoB" class="fa fa-angle-right"></i> 
+                                <span id="repoCatalog" onclick="facetView(this);" 
+                                style="font-size: 14px; font-weight:bold; background-color: #e8e8e8; ">Catalogs</span></p>
+                    </div>
+            </div>
+        </div>
+
+        <div id="SearchHistory" style="height:300px; width: 240px; background: #eeeeee; border: 1px; position: absolute; top: 105px; left: 15px; overflow-x: hidden; overflow-y: scroll; display: none;">
+  
+            <span id="shTitle" style="font-size: 12px; font-weight:bold; font-family: calibri;  margin: 5px 5px; background-color: #e8e8e8; ">Search History</span>
+            <div id="sHistoryItems" class="g-search-pane-left" stype="margin:5px;"></div> 
+        </div> 
+
+        <div id="cb" class="g-search-pane-right" style="margin:5px;">
+            <span id="cb-title" style="margin:5px; font-size: 14px; font-weight: bold">NGDS Search Results</span>
+            <span id="cb-page" style="display:none"></span>
+            <div id="rec-results" style="background-color: white; margin:5px;" ></div>
+           
+        </div>
+             
+        <div id="widget-box" class="g-search-pane-right" style="display: none;">
+            <a href="http://geothermaldata.org" ><i class="fa fa-home" style="font-size: 20px; color: #196fa6"></i></a>
+            <span id="widget-title" class="dijitTitlePaneTextNode"  style="margin:2px; font-size: 16px;"> / Dataset</span>
+            <button id="goSearchBtn" class="arrow-button" onclick="bactoSearch(this)">Return to Search</button>
+            <button id="mdEditBtn" class="arrow-button" onclick="edState(this)" style="display:none;">Edit</button>
+            <button id="mdValBtn" class="arrow-button" onclick="mdValidate(this)" style="display:none;">Validate</button>
+			<button id="mdCancelBtn" class="arrow-button" onclick="edCancel(this)" style="display:none;">Cancel</button></br>
+            <div id="widget-view"></div>
+        </div>
+        
+        <div id="leftCollection" class="g-search-pane-left" stype="margin:5px;display:none;">
+            <span  class="nav navbar-nav" style="font-family: calibri; font-weight: bold; height:30px; width: 160px;">Data Search</span>
+            <div id="map-l-widget"></div>
+            <div id="gMoBox" 
+                style="margin: 5px; width: 240px; font-size: 10px; font-family: calibri;
+                        background-color: #c2d2e0; border-radius: 5px; display: none;"></div>
+        </div>
+
+        <div id="rightCollection" class="g-search-pane-right" style="display: none;">
+                <a onclick="searchData(this)" ><i class="fa fa-home" style="font-size: 20px; color: #196fa6"></i></a>
+                <span id="map-title" class="dijitTitlePaneTextNode"  style="margin:2px; font-size: 16px; "> / Map</span>
+                <button id="mapSaveBtn" class="arrow-button" onclick="saveMap(this)">Save Map</button>
+                <button id="mapClrBtn" class="arrow-button" onclick="clearMap(this)">Clear</button>
+                <label class="lablX" for="map-lyr-list">Active Map Layers</label>
+              
+                <select id="map-lyr-select" onchange="pickLayer(this)" style="width: 420px;" ></select>
+
+                <i class="fa fa-search-plus" id="zoomLayerBtn" onclick="zoomToLayer(this)" style="font-size:16px; color: #0971B2;"></i>
+                <i class="fa fa-close" id="deLayerBtn" onclick="deleteLayer(this)" style="font-size:16px; color: #0971B2;"></i>
+                <span id="map-lyr-status" style="width: 120px;"></span>
+                </br>
+                <div id="mapStats" style="background-color: white; margin:5px; width: 900px; height: 30px; display: none" ></div> 
+                <div id="dataMap" style="background-color: white; margin:5px; width: 900px; height: 650px;" ></div>
+
+         </div>
+
+        <div id="leftMDRecord" class="g-search-pane-left" style="margin:5px; display: none;" >
+         <span id="edit-l-title" style="margin:5px; font-size: 14px; 
+                 font-family: Helvetica Neue Light, Helvetica Neue, Helvetica, Arial; 
+                 font-weight: normal">Metadata Record Versions</span>
+                <div id="lr-widget" style="margin-left:10px;"></div>
+         </div>
+         
+        <div id="leftEdit" class="g-search-pane-left" style="margin:5px; display: none;" >
+            <span id="edit-l-title-a" style="margin:5px; font-family: Arial; font-size: 14px; font-weight: bold">Admin Tools</span>
+            <div id="ed-l-admin"></div>
+            <span id="edit-l-title-e" style="margin:5px;  font-family: Arial; font-size: 14px; font-weight: bold">Edit Functions</span>
+            <div id="ed-l-widget"></div>
+        </div>
+
+        <div id="rightEdit" class="g-search-pane-right" style="margin:5px;display: none;">
+            <a href="http://geothermaldata.org" ><i class="fa fa-home" style="font-size: 20px; color: #196fa6"></i></a>
+            <span id="map-title" class="dijitTitlePaneTextNode"  style="margin:2px; font-size: 16px; "> / Admin</span>
+            <div id="editFrame" style="background-color: white; margin:5px; width: 800px; height: 600px;" ></div>
+        </div>
+
+        <div id="loginDiv" style="position: absolute; top: 75px; left: 800px; margin: 6px; height: 140px; width: 200px; background-color: #005e95; border-radius: 3px; display: none;">
+            <div style="margin:5px;"> 
+            <span style="margin:5px 15px; font-family: Helvetica Neue Light, Helvetica Neue, Helvetica, Arial; color: white; font-size: 14px; font-weight: bold">Login</span>
+            </div>
+            <div style="margin:5px 15px;">
+            <input class="form-control" placeholder="Username" id="luser"></br>
+            <input  id="lpass" class="form-control" placeholder="Password" type="password">
+            </br>
+           
+        </div>
+        <div style="margin:5px 15px;">
+            <a id="userLoginBtn" class="tag" type="submit" style="margin:4px;">Login</a>
+            <a class="tag" type="submit"  onclick="toggleLogin();"  style="margin:4px;">Cancel</a>
+        </div>
+        </div>
+          
+            
+</body>

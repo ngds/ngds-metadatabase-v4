@@ -1,0 +1,19 @@
+[Unit]
+Description=NGDS Automation Server
+After=network.target
+
+[Service]
+
+User=root
+Group=root
+Restart=always
+RestartSec=500ms
+StartLimitInterval=0
+KillSignal=SIGQUIT
+WorkingDirectory=/opt/ngds/node-app
+ExecStart=/snap/bin/node /opt/ngds/node-app/ngds-server-v2.js
+StandardOutput=append:/opt/ngds/node-app/log/ngds-server.log
+StandardError=append:/opt/ngds/node-app/log/ngds-server-error.log
+
+[Install]
+WantedBy=multi-user.target
