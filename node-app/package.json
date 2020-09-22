@@ -1,8 +1,8 @@
 {
   "name": "NGDS",
   "version": "1.0.0",
-  "description": "NGDS database API",
-  "main": "ngds-db.js",
+  "description": "NGDS metadata search",
+  "main": "ngds-app-ssl.js",
   "repository": "",
   "license": "MIT",
   "dependencies": {
@@ -25,7 +25,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "start": "node ngds-app.js",
+    "start": "node ngds-app-ssl.js",
     "poststart": "echo $NODE_PATH"
   },
   "keywords": [
