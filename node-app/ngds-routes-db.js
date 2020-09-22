@@ -17,11 +17,11 @@ const pyUrl = 'http://data.geothermaldata.org:8000/';
 const connectionString = 'xxxx';
 const client = new pg.Client(connectionString);
 
-const pyCon = 'postgres://ngdsdb:geonewton@localhost:5432/pycsw';
+const pyCon = 'postgres://u:p@localhost:5432/pycsw';
 //const pyClient = new pg.Client(pyCon);
 
 var gKeystack = [];
-var gNACL = '5d097fe1065645c8';
+var gNACL = 'xxxii';
 
 var genRandomString = function(length){
     return crypto.randomBytes(Math.ceil(length/2))
@@ -41,7 +41,7 @@ var sha512 = function(password, salt){
 
 function saltHashPassword(userpassword) {
     var salt = genRandomString(16); /** Gives us salt of length 16 */
-    var salt = '5d097fe1065645c8';
+    var salt = '5d';
     var passwordData = sha512(userpassword, salt);
     console.log('UserPassword = '+userpassword);
     console.log('Passwordhash = '+passwordData.passwordHash);
@@ -88,7 +88,7 @@ function XMLtoJ(data) {
 	 var parser = new xml2js.Parser({explicitArray: false, ignoreAttrs: false, mergeAttrs: false });
 	 parser.parseString(data, function (err, result) {
         aj = result;
-        console.log(' xml Parser !!!!'); // + JSON.stringify(aj) );
+        console.log(' xml Parser !!!!'); 
     });
 	 return aj;
 }
@@ -165,18 +165,7 @@ function batchRecordQuery(fld, qry, guids) {
 			resolve(body);
 		});		 
 	});
-	/*
-	return new Promise(function(resolve, reject){
-		client.query(sqlStr, (err, res) => {
-			  if ( typeof(res) !== "undefined" ) {
-			  	resolve(JSON.stringify(res));
-			  } else {
-				reject("batch query error");	  	
-			  }
-		});
-		     
-	});
-	*/
+
 
 }
 
@@ -198,7 +187,7 @@ async function testfind(q) {
 		.on ('data', function(chunk) {
 			body += chunk;
 		}).on ('end', function() {
-			//console.log('done'+JSON.stringify(body));
+			
 			resolve(body);
 		});		 
 	});
@@ -264,10 +253,10 @@ async function find_records(qry,rOff, rLim, sortby,guids) {
 			//console.log('response');       		
 		})
 		.on ('data', function(chunk) {
-			//console.log('sending');
+			
 			body += chunk;
 		}).on ('end', function() {
-			//console.log('done'+JSON.stringify(body));
+			
 			resolve(body);
 		});
 	});
@@ -281,7 +270,7 @@ async function fetchUrlCache(guid,url) {
 	var qUrl = 'http://127.0.0.1:8082/query?q='+encodeURI(sqlStr);
 	var qr = require('request');
 	var body = '';
-	//console.log('request '+ qUrl);
+
 
 	return new Promise(function(resolve, reject){
 		qr.get(qUrl)
@@ -290,7 +279,7 @@ async function fetchUrlCache(guid,url) {
 		.on ('data', function(chunk) {
 			body += chunk;
 		}).on ('end', function() {
-			//console.log('returns '+ JSON.stringify(body));
+
 			resolve(body);
 		});		 
 	});
@@ -328,7 +317,7 @@ function old_find_records(qry,rOff, rLim,sortby,guids) {
 	  var qs = '\'{';
 	  for (var i in qA) {
 		  var strm = '"%' + qA[i] + '%"';
-		//if ( i == 0) { qs = qs + strm + ','}
+		
 		  if ( i < qA.length - 1) {
 			  qs = qs + strm + ',';
 		  } else {
@@ -373,11 +362,11 @@ function old_find_records(qry,rOff, rLim,sortby,guids) {
 	}
 
   }   
-    //console.log('finder ' + sqlStr);
+
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
-				//console.log('finder .. ' + JSON.stringify(res));
+			
 			  	resolve(res);
 
 			  } else {
@@ -435,19 +424,7 @@ function record_show(qry, vid ) {
 		});		 
 	});
 
-	//console.log('record show guid ' + sqlStr);
-	/*
-	return new Promise(function(resolve, reject){
-		client.query(sqlStr, (err, res) => {
-			  if ( typeof(res) !== "undefined" ) {
-			  	//console.log('record show success');//JSON.stringify(res));
-			  	resolve(JSON.stringify(res));
-			  } else {
-				reject("error noodle");	  	
-			  }
-		});     
-	});
-	*/
+
 
 }
 
@@ -494,18 +471,6 @@ function categories(climit, qry) {
 		});		 
 	});
 
-	/*
-	return new Promise(function(resolve, reject){
-		client.query(sqlStr, (err, res) => {
-			  if ( typeof(res) !== "undefined" ) {
-			  	resolve(JSON.stringify(res));
-			  } else {
-				reject("error in categories");	  	
-			  }
-		});	     
-	});
-	*/
-
 
 }
 
@@ -537,7 +502,7 @@ function authors(climit,qry ) {
 	}
 
 	
-	//console.log('authors ' + sqlStr);
+	
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
@@ -588,7 +553,7 @@ function contentModels(climit, qry, srt ) {
 
 	}
 
-	//console.log('content model facet ' + sqlStr);
+
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
@@ -627,7 +592,7 @@ function dataTypeFacets(climit, qry) {
 		+ ' group by ext order by 2 desc limit ' + climit;
 	}
 		
-	//console.log('data types facet ' + sqlStr);
+	
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
@@ -665,7 +630,7 @@ function fetchInspection(lim,off) {
 		if ( off == -1 ) {off = 0;  }
 		var tSql = 'select jso from inspection order by date_modified desc limit + ' + lim + ' offset ' + off;
 	}
-	//console.log (' inspect ' + tSql );
+
 	return new Promise(function(resolve, reject){
 		client.query(tSql, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
@@ -693,7 +658,7 @@ function fetchMapServers() {
 				 + '		or lurl ilike \'%wfs%\' or lurl ilike \'%wms%\' '
 				 + '		or lurl ilike \'%mapserver%\') z '
 				 + ' group by dmm order by dmm';
-    //console.log('map s ' + sqlStr);
+   
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 				if ( typeof(res) !== "undefined" ) {
@@ -752,12 +717,12 @@ function createUser(uo) {
   var sqlStr = 'insert into users (user_id, name, apikey, agent_id, created, password, fullname, email,state) values '
               + ' (nextval(\'user_id_seq\'),\'' + uo.uname + '\',\'' + gNACL + '\',' + uo.rp + ',current_timestamp,\'' 
               + pwh.passwordHash + '\',\'' + uo.fn + '\',\'' + uo.em + '\',\'active\')';
-  console.log(' sql ' + sqlStr);
+
   return new Promise(function(resolve, reject) {
     client.query(sqlStr, (res, err) => {
     
   				if ( typeof(res) !== "undefined" ) {
-            		//console.log(' resolve ' + JSON.stringify(res) );
+            	
   					resolve(res);
   				} else {
   				   console.log(' create user bad ' + JSON.stringify(err));
@@ -793,7 +758,7 @@ async function delRecordVersion(guid, version) {
              +	' update md_version set status = \'DELETE\' '
 			 +  ' where mdv_id = ( select mdv_id from cv)';
 			 
-		//console.log('delete ' + sqlStr);
+		
 		return new Promise(function(resolve, reject){
 			client.query(sqlStr, (err, res) => {
 				  if ( typeof(res) !== "undefined" ) {
@@ -819,7 +784,7 @@ async function fetchRecordJson(guid, v ) {
              + ' r.guid = \'' + guid +'\' and v.version_id = ' + v + ')'
 			 + ' select * from mdvnode where version_id = (select mdv_id from cv) order by parent_id';
 	}
-	//console.log(' sql ' + sqlStr);
+	
     var jr = {};
 	
 	return new Promise(function(resolve, reject){
@@ -873,7 +838,7 @@ async function fetchValidation(guid, fid,sid,mdv) {
 		var sqlStr = 'select v.mdv_id as mdv_id, v.source_schema_id as sid, v.version_id as version_id' 
              + ' from md_record r, md_version v where v.md_id = r.md_id and '
 			 + ' r.guid = \'' + guid +'\'  and v.end_date is null';
-		console.log('fetch guid validation sql '+ sqlStr);
+		
 		return new Promise(function(resolve, reject){
 			client.query(sqlStr, (err, res) => {
 				if ( typeof(res) !== "undefined" ) {
@@ -890,8 +855,7 @@ async function fetchValidation(guid, fid,sid,mdv) {
 		});	 
 
 	}
-
-	console.log(' xxx ' + guid + fid + sid + mdv)
+	
 	if ( guid == 'x') {
 		return(getValidation(fid,sid,mdv));
 	} else {
@@ -914,11 +878,7 @@ async function fetchGuidValidation(guid) {
 					var vid = trx[0].version_id;
 					var fid = 10;
 					resolve(fetchValidation(fid,sid,mdv));
-					//var vr = fetchValidation(fid,sid,mdv);
-					//vr.schema_id = sid;
-					//vr.mdv_id = mdv;
-					//vr.version_id = vid;
-					//resolve(vr);
+					
 
 				} else {
 					reject("guid validation error");	  	
@@ -950,12 +910,9 @@ async function fetchSchemas(sid) {
 }
 
 async function saveSchemaElem(sid, qt, fe, type, varule, mpath) {
-	console.log('Save Schema new elem '+ sid + ' ' + qt );
-
+	
 	var sqlStr = 'select * from scmap_insert ('
 		+ sid +',\''+qt+'\',\''+fe+'\',\''+type+'\','+varule+',\''+mpath+'\')';
-
-	console.log('Save Schema sql '+ sqlStr);
 
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
@@ -973,8 +930,6 @@ async function updateSchemaElem(sid, map_id, moid, varule, mpath) {
 
 	var sqlStr = 'select * from scmap_update ('
 		+ sid +','+map_id+','+moid+','+varule+',\''+mpath+'\')';
-
-	console.log('update schema element '+ sqlStr);
 
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
@@ -996,7 +951,7 @@ async function delSchemaElem(sid, map_id, moid) {
 			sqlStr = 'delete from schema_object_map where moid = '+moid;
 		}
 	}
-	console.log('delete schema element '+ sqlStr);
+	
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
@@ -1015,7 +970,6 @@ async function makeNewSchema(sname,authsource) {
 			+ 'values ( nextval(\'schema_seq\'),\''+ sname + '\',\'user-interface\','
 			+ '1,\''+ authsource + '\',current_timestamp,10,\'active\') returning schema_id';
 
-	console.log('create new  '+ sqlStr);
 
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
@@ -1082,7 +1036,7 @@ function fetchRecEdJson(guid,ed) {
 				 + ' r.guid = \'' + guid +'\' and v.end_date is null)'
 				 + ' select * from mdvnode where version_id = (select mdv_id from cv) order by parent_id';
 		}	 
-		//console.log('fje sql ' + sqlStr);
+		
 		var jr = {};
 		
 		return new Promise(function(resolve, reject){
@@ -1090,12 +1044,11 @@ function fetchRecEdJson(guid,ed) {
 				  if ( typeof(res) !== "undefined" ) {
 					var ds = res.rows;
 					var elk = edById(ed);
-					console.log('edit stack ' + JSON.stringify(elk) );
-					//var jr = f(ds, 0, elk);
+					
 					var jr = editMDJson(ds, 0, elk);
-					//console.log('process '+JSON.stringify(jr));
+					
 					if ( jr ) {
-						//console.log('fje json ' );
+						
 						resolve(mdeWrite(guid, jr));
 					} else {
 						resolve('Record not resolve');
@@ -1121,7 +1074,7 @@ function fetchRecEdJson(guid,ed) {
 				  if ( typeof(res) !== "undefined" ) {
 					var ds = res.rows;
 					var cswj = wrapUpdateJson(j);
-					//console.log(' mde write  ');
+				
 					var xml = jToXML(cswj);
 					pyCswInsert(guid,xml);
 					resolve(JSON.stringify(res));
@@ -1139,7 +1092,7 @@ function fetchRecEdJson(guid,ed) {
 async function pyCswInsert (mGuid, xmlBody) {
 
 	return new Promise(function(resolve, reject) {
-		//console.log('XML ' + xmlBody);
+	
 		var	hurl = pyUrl + '?service=CSW&version=2.0.2&request=Transaction&TransactionSchemas='
 					+ 'http://www.isotc211.org/2005/gmi';
 		var bl = xmlBody.length;
@@ -1157,12 +1110,12 @@ async function pyCswInsert (mGuid, xmlBody) {
 		var pyResponse = function(err, httpResponse, body) {
 			var n = new Date();
 			if (err) {
-				//console.log('pycsy failed:' + mGuid + ' ' + err);				
+							
 				reject("pycsw error " + mGuid);  	
 				
 			} else {
 				console.log('PYCSW update for :' + mGuid );
-				//console.log(util.inspect(httpResponse, {showHidden: false, depth: null}))
+			
 				resolve(httpResponse);
 				
 			}
@@ -1248,7 +1201,7 @@ function editMDJson(r, p, ed) {
 				// end point
 				var nx = r[k].node_id;
 				if ( ed.edit[nx] ) {
-					//console.log('endpoint - found edit ' + nx + ' NEW ' + edStack[nx] + ' Old ' + r[k].node_value  );
+					
 					lj[propname] = ed.edit[nx].replace(/(^")|("$)/g, '');
 				} else {
 					lj[propname] = r[k].node_value.replace(/(^")|("$)/g, '');
@@ -1322,7 +1275,6 @@ function processCollection(cb) {
 					+ ' values (nextval(\'collection_activity_id_seq\'),'+s+',\'collection\',current_timestamp,null,'
 					+ '6,1,null,\'new\',\'new\',current_timestamp) returning ca_id';
 
-		console.log('col activty '+sqlStr);
 		return new Promise(function(resolve, reject){
 			client.query(sqlStr, (err, res) => {
 				  
@@ -1342,19 +1294,19 @@ function processCollection(cb) {
 
 	function jqBld(o,s,a, p ) {
 		// 2 jq - one for db,  one for pycsw
-		//var pd = 9;
+	
 
 		var sqlStr = 'insert into cap_jobque (pjq_id,pd_id,ca_id,ad_id,jobtype,status,created,completed)'
 					+ ' values (nextval(\'pjq_seq\'),'+p+','+a+', 6,\'node-client\',\'new\',current_timestamp, null )'
 					+ 'returning pjq_id';
-		console.log('jq bld  '+sqlStr);			
+					
 		return new Promise(function(resolve, reject){
 			client.query(sqlStr, (err, res) => {	  
 				  if ( typeof(res) !== "undefined" ) {
 					var q = res.rows[0].pjq_id;
 					console.log('new jq  ' + q);
 					if ( p == 9 ) {
-						//jqBld(o,s,a,10);
+					
 						process_rows(o,s,a,q);
 					}
 
@@ -1378,7 +1330,7 @@ function processCollection(cb) {
 	function process_rows(o,s,a,q) {
 		var c = o.collection;
 		var sqlStr = 'select * from batch_edit_collect('+a+','+q+',\''+JSON.stringify(c) + '\'::json)';
-		console.log('process rows ' + sqlStr);
+	
 		
 		return new Promise(function(resolve, reject){
 			client.query(sqlStr, (err, res) => {	
@@ -1481,7 +1433,7 @@ function rd() {
 
 router.get('/', async function(req, res) {
   var testme = await noodle();	
-  //console.log('returned '+testme)
+  
   var lp = '/';
   routelog(req, lp);
   res.send(testme);
@@ -1538,7 +1490,7 @@ router.get('/getCategories', async function(req, res) {
 	routelog(req, lp);
 	var lid = req.query.lid;
 	var qry = req.query.q;
-	//console.log(' >>> categoruesrecord show '+lid)
+	
     var cats = await categories(lid,qry)
     if ( cats ) {
     	
@@ -1556,7 +1508,7 @@ router.get('/validateMDRecord', async function(req, res) {
 	var sid = req.query.sid;
 	var mdv = req.query.mdv;
 	if (typeof(guid) == 'undefined' ) { guid = 'x' }
-	console.log('validate '+fid+sid+mdv+guid);
+	
 	var s = await fetchValidation(guid,fid,sid,mdv);
 
     if ( s ) {
@@ -1585,7 +1537,7 @@ router.get('/getSchemas', async function(req, res) {
 router.get('/saveSchemaElem', async function(req, res) {
 	var lp = 'action/saveSchemaElem';
 	routelog(req, lp);
-	// q='+q+'&sid='+eid+'&fe='+fd+'&type='+sty+'&vr='+vt+'&mp='+mp
+	
 	var action = req.query.action;
 	var sid = req.query.sid;
 	var qt = req.query.q;
@@ -1595,7 +1547,7 @@ router.get('/saveSchemaElem', async function(req, res) {
 	var mpath = req.query.mp;
 	var mapid = req.query.mapid;
 	var moid = req.query.moid;
-	console.log(' save '+ sid + qt + fe);
+	
 	if ( action == 'new' ) {
 		var s = await saveSchemaElem(sid, qt, fe, type, varule, mpath);
 	} else {
@@ -1618,8 +1570,6 @@ router.get('/deleteSchemaElem', async function(req, res) {
 	var moid =  req.query.moid;
 	var sid = req.query.sid;
 
-
-	console.log('delete '+ sid + mapid + moid);
 	var s = await delSchemaElem(sid, mapid, moid);
 	
     if ( s ) {
@@ -1785,7 +1735,7 @@ router.post('/batchUpdateCollection', async (request, response) => {
 	var lp = '/batchUpdateCollection';
 	routelog(request, lp);
 	var colBody = request.body;
-	//var guid = edStack.guid;
+
 	var cur = await processCollection(colBody);
 	response.json(cur);
 	
@@ -1835,7 +1785,6 @@ router.get('/getMdVJson', async function(req, res ) {
     var guid = req.query.guid;
 	var vid = req.query.version;
 	
-    //console.log('edit record ' + guid );
     if ( guid ) {
 		var cur = await fetchRecordJson(guid);
 		if ( cur == null) {
@@ -1883,7 +1832,7 @@ router.get('/getContentModels', async function(req, res) {
 	var qry = req.query.q;
 	var lid = req.query.lid;
 	var so = req.query.sortby;
-	//console.log(' sort by ' + so );
+	
 	if ( !so ) { so = 1 }
     var cms = await contentModels(lid,qry, so);
     if ( cms ) {
@@ -1967,7 +1916,6 @@ router.get('/getUrlStatusCached', async function(req, res) {
 	var lp = '/action/getUrlStatusCached';
 	routelog(req, lp);
   	var exists = true;
-	//res.send(exists);
 	
 	var guid = req.query.guid;
   	var urlToCheck = req.query.url;
@@ -2011,7 +1959,7 @@ router.get('/getData', (request, response) => {
 	  } else {
 		response.json('Not Ready'); 
 	  }
-	  //client.end()
+	 
 	})
 });
 
@@ -2042,8 +1990,6 @@ router.get('/harvest', (request, response) => {
            var mDate = mx.modified;
            var mBody = JSON.stringify(mx.body);
          
-           //console.log('Writing  ', mGuid, mTitle);
-
            var rcd = await create_record(mGuid, mCid, mTitle, mBody);
            var rbg = JSON.stringify(rcd);
            rsp.results.push(rbg);
@@ -2056,8 +2002,6 @@ router.get('/harvest', (request, response) => {
            	 
        }
 
-       //console.log( ' return json --> ', JSON.stringify(rsp) );
-
 	}
 
 	fw();
@@ -2069,7 +2013,7 @@ router.get('/harvestSourceInfo', (request, response) => {
 	var lp = '/harvestSourceInfo';
 	routelog(req, lp);
     var hsid = request.query.hsid;
-    //var sqlStr = 'Select * from collections where set_id = '+ hsid;
+  
     var sqlStr = 'select set_id, set_name, c.status, c.user_id, c.create_date, '  
 							+ '		source_url, '
 							+ '		set_description, '
@@ -2084,7 +2028,6 @@ router.get('/harvestSourceInfo', (request, response) => {
 							+ '		c.set_type = \'harvest\' and' 
 							+ '		c.status = \'active\' and c.set_id = ' + hsid;
 
-    //console.log('sql ' + sqlStr);
 
     client.query(sqlStr, (err, res) => {
 
@@ -2123,7 +2066,7 @@ router.get('/newCollectionActivity', (request, response) => {
 	var lp = '/newCollectionActivity';
 	routelog(req, lp);
     var params = request.query;
-	  //console.log(JSON.stringify(request.query));
+
 	
 	var set_id = request.query.set_id;
 	var actdef = request.query.activity;
@@ -2133,13 +2076,11 @@ router.get('/newCollectionActivity', (request, response) => {
 		guids = request.query.guids;		
 	}
 
-	//var sqlStr = 'select * from activity_definition where activity_name = \''+actdev+\'';
+	
 	var sqlStr = 'select * from new_collection_activity('+set_id+','+actdef+','+directive+ ',string_to_array('+guids+',\',\'))';
 
 	client.query(sqlStr, (err, res) => {
 	    if ( typeof(res) !== "undefined" ) {
-	    	//var p = res.activity_params;
-	    	//var ad = res.ad_id;
 
 	    	//console.log(res);
 	    	if (directive == 'now') {
