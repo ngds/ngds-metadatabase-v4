@@ -1,0 +1,19 @@
+[Unit]
+Description=NGDS HTTP Server
+After=network.target
+
+[Service]
+
+User=root
+Group=root
+Restart=always
+RestartSec=500ms
+StartLimitInterval=0
+KillSignal=SIGQUIT
+WorkingDirectory=/opt/ngds/node-app
+ExecStart=/snap/bin/node /opt/ngds/node-app/ngds-pysearch.js
+StandardOutput=append:/opt/ngds/node-app/log/ngds-pysearch.log
+StandardError=append:/opt/ngds/node-app/log/ngds-pys-error.log
+
+[Install]
+WantedBy=multi-user.target

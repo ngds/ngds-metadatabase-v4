@@ -1,10 +1,13 @@
 /* Data Map Tab UI  
-
+  9/30/20 - Fixed Clear button for tile layers - added TGroup
+  9/30/20 - code Cleanup
+  GH
 */
 
 var gLayer = {}; 
 var gDxMap,
     gDxFGroup,
+    gDxTGroup,
     gWmsLayer,
     gLayerExtents = [],
     gFGExtents,
@@ -87,9 +90,7 @@ var  mapLeftTemplate = function() {
      var dbd = $('<option value="DDDDD">');
  
      dlBM.append(dbA);
-     //dlBM.append(dbb);
-    // dlBM.append(dbc);
-    // dlBM.append(dbd);
+
  
      var selBM = $('<input class="map-select" list="dlBM"  size="35"  name="selBM">');
 
@@ -97,7 +98,7 @@ var  mapLeftTemplate = function() {
                             .css("font-size", "12px")
                             .css("margin", "5px 5px")
                             .css("padding","2px 2px")
-                            .css("background-color", "#bbcccc")
+                            .css("background-color",  "#2191c2" )
                             .attr('onclick','showQryParams(this);');
 
     var pDiv = $('<div id="dmServList"></div>')
@@ -163,11 +164,7 @@ var  mapLeftTemplate = function() {
     $("input[name=RepoList]").on("dblclick",function() {
         $("input[name=RepoList]").val("");
     });
-    /*
-    $("input[name=map-lyr-select]").on("dblclick",function() {
-        $("input[name=map-lyr-select]").val("");
-    });
-    */
+    
 
 }
 
@@ -200,18 +197,7 @@ var dmInit = function() {
 
         gDxMap = L.map('dataMap', {minZoom: 1 }).setView([41, -100.09], 6);   
         L.esri.basemapLayer('Streets').addTo(gDxMap);
-        /*
-        L.mapbox.accessToken = 'pk.eyJ1IjoiZ2FyeWh1ZG1hbiIsImEiOiJjaW14dnV2ZzAwM2s5dXJrazlka2Q2djhjIn0.NOrl8g_NpUG0TEa6SD-MhQ';
-        var Lurl = 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token='+L.mapbox.accessToken;
-        L.tileLayer(Lurl, {
-            // maxZoom: 18,
-            infoControl: false,
-            legendControl: false,
-            zoomControl: true, 
-            trackResize: true,
-            id: 'mapbox.streets'
-        }).addTo(gDxMap);
-        */
+
 
         gDxMap.on('ready',function() { 
             setTimeout(function(){ 
@@ -246,7 +232,12 @@ var dmInit = function() {
         if ( !gDxFGroup ) {
             gDxFGroup = new L.FeatureGroup();
             gDxFGroup.addTo(gDxMap);
-        }        
+        } 
+        // new tile group
+        if ( !gDxTGroup ) {
+            gDxTGroup = new L.layerGroup();
+            gDxTGroup.addTo(gDxMap);
+        }      
     }    
 }
 
@@ -272,18 +263,13 @@ var showQryParams = function(z) {
 
     // this is for receiving selected guids from search page !
     if ( z &&  typeof(z.id) !== "undefined" && z.id !== "mData" )  {
-        //if ( z.id )  {
 
-            for (var i in gExtents) {
-                var m = gExtents[i];
-                if ( m.guid == z.id ) {
-                    vz = m.extent;
-                }
+        for (var i in gExtents) {
+            var m = gExtents[i];
+            if ( m.guid == z.id ) {
+                vz = m.extent;
             }
-            //var zgd = gExtents[z.id];
-            
-        //}
-
+        }
     } else if ( bmi ) {
         // for saved maps bypass other params
         //showTile();
@@ -327,11 +313,13 @@ var showQryParams = function(z) {
 
     if ( rUrl ) {
         if ( cmi ) { 
-            rUrl = rUrl + '&cm='+cmi ;    
+            rUrl = rUrl + '&cm='+cmi;   
+            //rUrl = rUrl + '&cm='+encodeURIComponent(cmi);    
         }
 
         if ( rpi ) { 
-            rUrl = rUrl + '&r='+rpi ;     
+            rUrl = rUrl + '&r='+rpi;
+            //rUrl = rUrl + '&r='+encodeURIComponent(rpi);     
         }
     }
 
@@ -339,8 +327,9 @@ var showQryParams = function(z) {
         var bounds = gDxMap.getBounds();
         var northEast = bounds.getNorthEast().wrap(),
             southWest = bounds.getSouthWest().wrap();
-
-        var b = '&bbox='+ southWest.lng + ',' + southWest.lat + ',' + northEast.lng + ',' + northEast.lat;
+        var be = southWest.lng + ',' + southWest.lat + ',' + northEast.lng + ',' + northEast.lat;
+        //var b = '&bbox='+ southWest.lng + ',' + southWest.lat + ',' + northEast.lng + ',' + northEast.lat;
+        var b = '&bbox='+ be;
         rUrl = rUrl + b + '&filter='+gUseMapExtent;
     }
 
@@ -349,6 +338,8 @@ var showQryParams = function(z) {
     gResourceList.length = 0;
 
     if (rUrl) {  
+        //var rC = encodeURIComponent(rUrl);
+
         var jqxhr = $.get(rUrl, 
             {dataType : "jsonp",
                 crossDomain: true,
@@ -358,7 +349,7 @@ var showQryParams = function(z) {
             }).done( function(data) {
                 if (typeof(data) == "object" ) {  var dres = data;} 
                 else {   var dres = JSON.parse(data); }
-                console.log(data);
+               // console.log(data);
 
                 var dx = dres.rows;
                 var lid = '';
@@ -377,9 +368,8 @@ var showQryParams = function(z) {
                     gResourceList.push(rlo);
 
                     if ( rlo.lparams.startsWith("parameter") ) {
-                        //var baslink =  rlo.link.substr(0,rlo.link.indexOf("?"));
-                        //var parx = rlo.lparams.substr(11,rlo.lparams.length-1).split(',');
-                        console.log(' params  ' + rlo.lparams );
+                      
+                        //console.log(' params  ' + rlo.lparams );
 
                         if ( dti.substr(0,4) == 'ESRI' ) {
                             bldEsriSubLayers(rlo);
@@ -389,51 +379,7 @@ var showQryParams = function(z) {
                         }
 
                     }
-                        /*
-                  
-                        if ( parx.length == 1 ) {
-                            var ptype = parx[0].split(':');
-                            switch(dti) {
-
-                                case 'ESRI-M':
-                                   // var lb = rlo.link.indexOf("?")
-                                    rlo.link = baslink;
-                                    if ( ptype[0] == 'layers') {
-                                        rlo.link = baslink;
-                                        rlo.layer = ptype[1];
-                                        rlo.title =  rlo.title + ':' + ptype[1];
-                                        rlo.lparams = { layers: '0',
-                                                width: 800, height: 600, transparent: true, 
-                                                srs: 'EPSG%3A4326', format: 'image/png' };
-
-                                    }
-                                   
-                                   
-                                    break;
-                                case 'ESRI-F':
-                                   // var lb = rlo.link.indexOf("?")
-                                    rlo.link = baslink + '/0';
-                                    if ( ptype[0] == 'typeName') {
-                                        rlo.typeName = ptype[1];
-                                        rlo.title =  rlo.title + ':' + ptype[1];
-                                    }
-
-                                    break;
-                                case 'WMS':
-
-                                    break;
-                                case 'WFS':
-                                    break;    
-                            }
-
-                        } else {
-
-                            var subLayers = { id: rlo.id, viewstate: 'off',  subLayerA: [] };
-                        }   
-
-
-                    }
-                    */
+                       
                     if ( lid == rlo.id ) {
                         var tholder = '>>>  ' + ' ' + rlo.link.substring(0,40);
                     } else {
@@ -465,7 +411,7 @@ var showQryParams = function(z) {
                         .css("font-weight", "normal")
                         .css("margin", "5px 5px")
                         .css("padding","2px 2px")
-                        //.attr('onclick','showTile(this);')
+                     
                         .attr('onclick',mf)
                         .attr('onmouseover','preLax(this);')
                         .attr('onmouseout','postLax(this);');
@@ -482,27 +428,13 @@ var showQryParams = function(z) {
                         .css("margin", "5px 5px")
                         .css("padding","2px 2px")
                         .attr('onclick',mf)
-                        //.attr('onclick','showGeoserverLayer(this);')
+                       
                         .attr('onmouseover','preLax(this);')
                         .attr('onmouseout','postLax(this);');
 
                         $("#dmServList").append(wfsl);
                         $("#dmServList").append('</br>');
-                    } /*else {
-                        var esrl  =  $('<a id="rli-' + idType + '-' + rlo.id + '" >' + tholder + '.. (ESRI)</a>')
-                        .css("font-size", "11px")
-                        .css("font-weight", "normal")
-                        .css("margin", "5px 5px")
-                        .css("padding","2px 2px")
-                        .attr('onclick','showEsri(this);')
-                        .attr('onmouseover','preLax(this);')
-                        .attr('onmouseout','postLax(this);');
-
-                        $("#dmServList").append(esrl);
-                        $("#dmServList").append('</br>');   
-                    }
-                    */
-
+                    } 
                 } 
                 rlExtentView(); 
         });
@@ -517,25 +449,20 @@ var bldEsriSubLayers = function(o) {
        var baslink =  o.link.substr(0,o.link.indexOf("?"));
 
        if ( baslink.indexOf('/services/') > 1 && baslink.indexOf('/rest') < 1 ) {
-           if ( o.stype == 'ESRI WFS') {
+            if ( o.stype == 'ESRI WFS' ) {
               baslink = baslink.replace('\/services\/','\/rest\/services\/');
-           }
+            }
+
        }
        
        if ( baslink.indexOf('WFSServer') > 1 ) {
         baslink = baslink.replace('\/WFSServer','');
        }
 
-       /* KEEP service name form WMS
-       if ( baslink.indexOf('WMSServer') > 1 ) {
-        baslink = baslink.replace('\/WMSServer','');
-       }
-       */
-
        var subLayers = { id: o.id, viewstate: 'off',  subLayerA: [] };
        var paramsList = o.lparams.substr(12,o.lparams.length-2).split(',');
        for (var i in paramsList) {
-            if ( o.stype == 'ESRI WFS') {
+            if ( o.stype == 'ESRI WFS' ) {
                 var subLyrUrl = baslink + '/' + i;
             } else {
                 var subLyrUrl = baslink;
@@ -780,7 +707,7 @@ var showTile = function(o) {
         southWest = bounds.getSouthWest();
 
     var zbox = '&bbox='+ southWest.lng + ',' + southWest.lat + ',' + northEast.lng + ',' + northEast.lat;
-    //var tlx = 'http://geothermal.smu.edu:9000/geoserver/gtda/wms?';
+  
     var mo = { layers: 'gtda:wells',
                width: 800, height: 600, transparent: true, 
                srs: 'EPSG%3A4326', format: 'image/gif' };
@@ -956,7 +883,7 @@ var getGeoserverLayerList = function(o) {
 var getEsriLayerList = function(o) {
     var idArr = o.id.split('-')
     var lType = idArr[1];
-    var zid = idArr[2];
+    var zid = gSL.id; // idArr[2];
     //var zid = o.id.substr(4);
     if ( zid ) {
         var subLayers = { id: zid, viewstate: 'off',  subLayerA: [] };
@@ -980,6 +907,12 @@ var getEsriLayerList = function(o) {
             var domA = urlx.split('/');
             var dom = domA[0]+'//'+ domA[2];
 
+            var ssL = urlx.substr(0,5);
+            if ( ssL !== 'https') {   
+                var zProxy = 'https:'+ urlx.substring(5);
+                urlx = zProxy;
+            }
+    
             var settings = {
                 'cache': false,
                 'dataType': "jsonp",
@@ -1076,7 +1009,7 @@ var showEsri = function(o) {
     var zid = o.id.substr(4);
     if ( zid ) {
         var mob = gResourceList[zid];
-        var urlx =  mob.link ;
+        var urlx =  mob.link;
         var domA = urlx.split('/');
         var dom = domA[0]+'//'+ domA[2];
 
@@ -1101,15 +1034,15 @@ var showEsri = function(o) {
 
         $.ajax(settings).done(function (data) {
 
-            //console.log(data);
+           
             if (typeof(data) == "object" ) {  var dres = data;} 
             else {   var dres = JSON.parse(data); }
-            //console.log(data);
+         
            
             var dx = dres.layers;
             var lid = '';
             if ( dx.length > 0 ) {
-               // $("#gMoBox").empty();
+           
                 for (var i in dx) {
                     console.log(' Layers ' + dx[i].id + ' ' + dx[i].name);
                     var urlDx = urlx + '/' + dx[i].id;
@@ -1131,7 +1064,7 @@ var showEsri = function(o) {
                      $(o).append(gX);
                        
                 }
-               // $("#gMoBox").show();
+              
             } else {
 
                 $(o).css("font-size", "12px")
@@ -1157,29 +1090,7 @@ var showEsri = function(o) {
   
         });
         
-        /*
-        var jqxhr = $.get(urlx + '?f=pjson', 
-            {dataType : 'jsonp',
-                crossDomain: true,
-                xhrFields: { withCredentials: true } //, 
-                //headers: {  'Access-Control-Allow-Origin': dom }
-            }, function() {
-                console.log( "success - data layer" );
-            }).done( function(data) {
-                if (typeof(data) == "object" ) {  var dres = data;} 
-                else {   var dres = JSON.parse(data); }
-                console.log(data);
-    
-                var dx = dres.layers;
-                var lid = '';
-                for (var i in dx) {
-                    console.log(' Layers ' + dx[i].id + ' ' + dx[i].name);
-                }
-                urlx = urlx + '/0';
-
-                var tl = L.esri.featureLayer({ url: urlx, useCors: true }).addTo(gDxMap);
-            });
-        */
+   
         
     }
 
@@ -1221,8 +1132,14 @@ var geoserverSubLayer = function(o) {
         }
         zUrl = zUrl+bbox;
 
-        var proxyUrl = '/spatial/getGeoserverFeature?url='+encodeURIComponent(zUrl);
-        var jqxhr = $.get(proxyUrl,  {dataType : 'jsonp' }, function() {
+        //var proxyUrl = '/spatial/getGeoserverFeature?url='+encodeURIComponent(zUrl);
+        var ssL = zUrl.substr(0,5);
+        if ( ssL !== 'https') {   
+            var zProxy = 'https:'+ zUrl.substring(5);
+            zUrl = zProxy;
+        }
+
+        var jqxhr = $.get(zUrl,  {dataType : 'jsonp' }, function() {
                 console.log( "success - data layer" );
             }).done( function(data) {
                 if (typeof(data) == "object" ) {  var dres = data;} 
@@ -1284,13 +1201,106 @@ var geoserverSubLayer = function(o) {
     }
 }
 
-
 var esriShowTile = function(o) {
+
+    var idArr = o.id.split('-')
+    var zid = '0'; //idArr[1];
+    var zUrl = idArr[2];
+    var xUrl =  idArr[2];
+    var slname = o.text;
+
+    var domA = zUrl.split('/');
+    var dom = domA[0]+'//'+ domA[2];
+
+    if ( gResourceList[zid] ) {
+        var rlo = gResourceList[zid];
+        var subl  = gSubLayer[zid];
+    }
+
+    if ( rlo.title ) {
+        var kf = rlo.title  + '-' + $(o).text();
+        var mf = '<strong>' + rlo.title  + ' ' + $(o).text() + '</strong></br>';
+    } else {
+        kf =  $(o).text();
+        var mf = $(o).text() + '</br>';
+    }
+
+    var mlO = $('<option id="tlo-'+ zid + '" value="' + zid + '-' + $(o).text() + '" selected="selected">' + kf +  ' ( WMS )</option>');
+    $("#map-lyr-status").text("Loading");
+    $("#map-lyr-status").css("background","#88bb88");
+    $("#map-lyr-select").append(mlO);
+
+    if ( zUrl ) {
+
+        var ssL = zUrl.substr(0,5);
+        if ( ssL !== 'https') {   
+            var zProxy = 'https:'+ zUrl.substring(5);
+            zUrl = zProxy;
+        }
+
+        var mo = {
+            url: zUrl,
+            layers: zid,
+            version: 1.3,
+            transparent: true,
+            styles: 'default',
+            format: 'image/png',
+            height: 256,
+            width: 256,
+            attribution: "done",
+            //crs: "EPSG%3A4326",
+            "crossOrigin": true,
+            "crossDomain": true,
+            "method": "GET",
+            "headers": {
+                "accept": "application/json",
+                "accept": "text/html",
+                "accept": "image/jpeg",
+                "accept": "image/png",
+                "Access-Control-Allow-Origin":"*",
+                "Access-Control-Allow-Origin": dom
+            }, 
+            xhrFields: { withCredentials: true },
+              beforeSend: function(xhr){
+                xhr.withCredentials = true;
+              } 
+          };
+
+        gWmsLayer =  L.tileLayer.wms(zUrl, mo );
+        var et = 0;
+        gWmsLayer.addTo(gDxTGroup)
+                .on('tileerror', function(error,tile){  
+                    if ( et == 0 ) {
+                        alert('Tile Load error ' + zUrl);
+                        et = 1;
+                    }
+                    //console.log('tile load error ');
+                })
+                .on('load', function(evt) {
+                    $("#map-lyr-status").text("Loaded");
+                    $("#map-lyr-status").css("background","white");
+                    $("#map-lyr-status").text("Complete");
+                    $("#tlo-"+zid).attr("id","tlo-"+zid+"-"+gWmsLayer._leaflet_id);
+                }).bindPopup(function(evt) {
+                    var flx = evt.feature.properties;
+                    console.log(' tile click ');
+                });
+         
+
+    }
+
+}
+
+var esriShowTileOld = function(o) {
 
     var idArr = o.id.split('-')
     var zid = idArr[1];
     var zUrl = idArr[2];
+    var xUrl =  idArr[2];
     var slname = o.text;
+
+    var domA = zUrl.split('/');
+    var dom = domA[0]+'//'+ domA[2];
 
     if ( gResourceList[zid] ) {
         var rlo = gResourceList[zid];
@@ -1317,28 +1327,79 @@ var esriShowTile = function(o) {
             southWest = bounds.getSouthWest().wrap();
 
         var zbox = southWest.lng + ',' + southWest.lat + ',' + northEast.lng + ',' + northEast.lat;
-        zUrl = zUrl;
+        //use map extent by default didnt add
+        //zUrl = zUrl + '?f=json';
     
-        var mo = { width: 250,
+        var mo = { 
+            dataType: "jsonp",
+            //width: 250,
              layers: slname,
              height: 250, 
-             //bbox: zbox,
-             transparent: true, 
+             useCors: false,
+             transparent: 0, 
              srs: 'EPSG%3A4326', 
              format: 'image/png' 
             };
 
-        gWmsLayer = L.tileLayer.wms(zUrl, mo )
+        var ssL = zUrl.substr(0,5);
+        if ( ssL !== 'https') {   
+            var zProxy = 'https:'+ zUrl.substring(5);
+            zUrl = zProxy;
+        }
+    
+        mo  = { url: zUrl,
+            width: 250,
+            layers: slname,
+            height: 250, 
+           // useCors: false,
+            transparent: false, 
+            srs: 'EPSG%3A4326', 
+            format: 'image/png',
+          //  'cache': false,
+          //  'dataType': "jsonp",
+          //  "async": true,
+            "crossOrigin": true,
+            "crossDomain": true,
+            "method": "GET",
+            "headers": {
+                "accept": "text/html",
+                "Accept-Encoding": "gzip",
+                "Access-Control-Allow-Origin":"*",
+                "Access-Control-Allow-Origin": dom
+            }, 
+            xhrFields: { withCredentials: true },
+            beforeSend: function(xhr){
+                xhr.withCredentials = true;
+            }
+        }
+
+        /*
+        mo = { url: 'https://services.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer', 
+            width: 250,
+           // layers: slname,
+            height: 250, 
+            useCors: false }
+        */
+
+
+        gWmsLayer =  L.tileLayer.wms(zUrl, mo )
+        //gWmsLayer = L.esri.tiledMapLayer( mo )
+        //    url:  xUrl, 
+         //   maxZoom: 15
+        //  })
+        //gWmsLayer = L.esri.tiledMapLayer( mo )
             .addTo(gDxMap)
             .on('tileerror', function(error,tile){
                 var ec = error;
-                console.log(' error ' );
-                gWmsLayer.removeFrom(gDxMap);
-                $("#map-lyr-select option:selected").remove();
-                alert('ERROR for ' + rlo.title + ' data request to server ');
-                $("#map-lyr-status").text("");
+                var tx = tile;
+                console.log(' error ');
+               // gWmsLayer.removeFrom(gDxMap);
+               // $("#map-lyr-select option:selected").remove();
+               // alert('ERROR for ' + rlo.title + ' data request to server ');
+               // $("#map-lyr-status").text("");
             })
             .on('load', function(evt) {
+                var x = evt;
                 $("#map-lyr-status").text("Loaded");
                 $("#map-lyr-status").css("background","white");
                 $("#map-lyr-status").text("Complete");
@@ -1395,6 +1456,16 @@ var esriShowWFS = function(o) {
         var icnImg = gMarkerIcon[gMapLayerCount];
         var df, fc=0, 
             gt, pDesc, fldArray=[];
+
+        var ssL = zUrl.substr(0,5);
+
+        if ( ssL !== 'https') {
+            //var zProxy = '/spatial/getMapProxy?url='+encodeURIComponent(zUrl);
+            var zProxy = '/spatial/getMapProxy?url='+zUrl;
+            zProxy = 'https:'+ zUrl.substring(5);
+            console.log('zproxy ' + zProxy);
+            zUrl = zProxy;
+        }
 
         var tl = L.esri.featureLayer({ url: zUrl, useCors: false, cacheLayers: true,  simplifyFactor: 1,
                 onEachFeature: function (feature, layer) {
@@ -1722,58 +1793,16 @@ var showLayer = function(o) {
     var mf = '&maxFeatures=50';
     var af = '&outputFormat=application%2Fjson';
 
-    
-    //var lx = 'http://geothermal.smu.edu:9000/geoserver/gtda/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=gtda:wells&maxFeatures=50&outputFormat=application%2Fjson';
 
     lx = '/spatial/previewMap?dom='+dom+mf+srs+zbox;
 
-    //lx = 'http://geothermal.smu.edu:9000/geoserver/gtda/ows?service=WFS&version=1.0.0&request=GetFeature' + tn + mf + srs + zbox + af;
+   
     console.log(lx);
 
     var testURL = 'http://services.azgs.az.gov/ArcGIS/services/aasggeothermal/TXActiveFaults/MapServer/WFSServer?request=GetFeature&service=WFS&typeNames=ActiveFault&maxFeatures=10';
     var testURL = 'http://services.azgs.az.gov/arcgis/rest/services/aasggeothermal/AZWellHeaders/MapServer/0';
 
     var tl = L.esri.featureLayer({ url: testURL, useCors: true }).addTo(gDxMap);
-
-
-    /*
-    var xhr = new XMLHttpRequest();
-   
-    xhr.onreadystatechange = function() {
-       
-        console.log('readystate change ' + xhr.responseText)
-    }
-   
-    xhr.open('GET', lx, true);
-    xhr.withCredentials = "true";
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.send();
-    */
-    
-    /*  useing local service
-    var jqxhr = $.get(lx, 
-            {dataType : "jsonp",
-             crossDomain: true,
-             xhrFields: { withCredentials: true }, 
-            }, function() {
-                console.log( "success - data layer" );
-    }).done( function(data) {
-      if (typeof(data) == "object" ) {
-        var dres = data;
-     } else {
-        var dres = JSON.parse(data);
-     }
-      console.log(data);
-      gLayer = new L.GeoJSON();
-      gLayer.addData(dres);
-
-      gLayer.addTo(gDxFGroup);
-      //gDxMap.addLayer(gLayer);
-      gDxMap.fitBounds(gLayer.getBounds());
-
-
-    });
-    */
 
 }
 
@@ -1786,6 +1815,13 @@ var clearMap = function(o) {
         }
     });
 
+    gDxTGroup.eachLayer(function(lyr){
+        if ( lyr ) {
+            console.log(' layer remove ' + lyr._leaflet_id);
+            gDxTGroup.removeLayer(lyr);
+        }
+    });
+
     if (gLayer) {
         gDxMap.removeLayer(gLayer);
     }
@@ -1795,17 +1831,13 @@ var clearMap = function(o) {
     }
 
     $("#map-lyr-select").empty();
-
-    //gDxMap.clearLayers();
+    gDxMap.invalidateSize();
 
 }
 
 var showCMList = function() {
 
-    //if ( !l ) { l = 50 }
-
     var gUrl = '/spatial/getContentModels';
-
 
      var jqxhr = $.get(gUrl, function() {
        console.log( "success - content models" );
@@ -1820,9 +1852,7 @@ var showCMList = function() {
 
            var dx = dres.rows;
            for (var i in dx) {
-             
              var cname = dx[i].cmm;
-
              var cnum = dx[i].count;
              if ( i > 0 ) {
                  var cax = $('<div id="'+cname+'" class="nav-cm" />')
@@ -1830,7 +1860,6 @@ var showCMList = function() {
                  .css("height", "20px")
                  .css("margin-left", "10px")
                  .html('<option value = "' + cname  + ' (' + cnum  + ')" >')
-                 //.html('<a id="'+cname+'" style="cursor: pointer;" onclick="selectCM(this);" >' + cn + ' (' + cnum + ')</a></br>')
                      .css("font-size", "11px")
                      .css("color", "#222222")
                      .css("height", "14px")

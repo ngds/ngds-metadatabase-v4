@@ -18,7 +18,7 @@
                                 },
                     "guid" : "0000",
 					          "mdversion" : "",
-                    "datestamp" : "01/01/1999",
+                    "datestamp" : { "value": "01/01/1999", "path" : "", "nodeid": "" },
                     "format" : "ISO-USGIN",
                     "source" : "USGIN",
                     "version" : "1.2" };
@@ -30,7 +30,8 @@
 					
   var gMD, 
       gMP,
-	    gT,
+      gT,
+      gVr,
 	    gMDEdStack={ "guid" : "", "eda" : [] },
       gCWR={},
 	    gCMP={};
@@ -74,6 +75,8 @@
   var gVersions = [];
   var gEdState = 'off';
   var gkwid=-1;
+  var gHttpValid = ["200", "201", "202", "300", "301", "302", "303", "304", "305" ];
+
   
   function showSeaHis() {
 
@@ -92,9 +95,9 @@
  
   function kmu(o) {
 	   for (var k in o) {
-		 if (o[k] == k) {
-		   return k;
-		 }
+        if (o[k] == k) {
+          return k;
+        }
 	   }
 	   return null;
 	}
@@ -240,27 +243,49 @@ function showSaved(o) {
     var sTerm =  $("#gSearchBox").val();
     var guidA=[];
     var showState = $("#shoSavBtn").text();
+    var keez = Object.keys(localStorage);
     if ( showState == 'Saved' ) {
       $("#shoSavBtn").text('All');
       if ( sTerm ) {
+        // this doesnt really work, search terms wont show up in saved record values!
+        // just bring then all back
+        for (k in keez) {
+          var key = keez[k];
+          if (key != "SearchHistory" && key != "gDataMapBounds") {
+              guid = key.substr(3);
+              guidA.push(guid);  
+          }
+        }      
+        /*  
         $.each(localStorage, function(key, value){
             if ( sTerm == value ) {
               guid = key.substr(3);
               guidA.push(guid);
             }
         })
-
+        */
       } else {
+        for (k in keez) {
+            var key = keez[k];
+            if (key != "SearchHistory" && key != "gDataMapBounds") {
+                guid = key.substr(3);
+                guidA.push(guid);  
+            }
+        }
+        /*
         $.each(localStorage, function(key, value){
             if  ( key != "SearchHistory" ) {
               guid = key.substr(3);
               guidA.push(guid); 
             }
         })
+        */
       }
       if (guidA) {
         var guidStr = guidA.join(',');
         findRecords(0,guidStr);
+      } else {
+        alert ('No locally bookmarked records found !');
       }
     } else {
       $("#shoSavBtn").text('Saved');
@@ -329,7 +354,7 @@ function searchData(yorn) {
       var spinner = new Spinner(opts).spin(target);
 
       var jqxhr = $.get(sUrl, function() {
-        console.log( "findRecords success ..." );
+        var ssu = 'success findrecords'; 
       })
       .done(function(data) { 
             spinner.stop();
@@ -340,7 +365,9 @@ function searchData(yorn) {
             } else {
               var dres = JSON.parse(data);
             }
-             var dx = dres.rows; 
+
+            $("#gSearchBox").val(sTerms);
+            var dx = dres.rows; 
             var resCount = dx.length;
             var displaying = gSp + pgSize;
             $("#cb-title").html("Search Results for (" + sTerms + ") Records found: "+resCount)
@@ -383,7 +410,11 @@ function searchData(yorn) {
                 gExtents.push(ge);
 
               }
-              var linkz =  xtm.links.split('^');
+              
+              if ( xtm.links ) {
+                var linkz =  xtm.links.split('^');
+              }
+              
               var TotalFound = xtm.foundrec;
 
               if ( i == 0 && TotalFound !== 0 ) {
@@ -535,7 +566,7 @@ function searchData(yorn) {
                           });
                           m.setOpacity(.99);
                           m.setIcon(redeye);
-                        console.log(' marker in '+ i + ' ' + z + ':' + mic);
+                        //console.log(' marker in '+ i + ' ' + z + ':' + mic);
                         }
                       });                       
                     }, function() { 
@@ -549,7 +580,7 @@ function searchData(yorn) {
                               });
                              m.setOpacity(.75);
                              m.setIcon(norml);
-                            console.log(' marker out'+ i + ' ' + z + ':' + mic);
+                            //console.log(' marker out'+ i + ' ' + z + ':' + mic);
                             }   
                           });
                     });                    
@@ -564,10 +595,11 @@ function searchData(yorn) {
             }
 
             if ( gMarkers ) {
+              console.log(' guid ' + gs + ' bounds at 571 ' + JSON.stringify(gBounds));
               gFeatureGroup = L.featureGroup( gMarkers ).addTo(map);
               map.fitBounds(gFeatureGroup.getBounds());
               gBounds = map.getBounds();
-              console.log('bounds AFTER search ' + JSON.stringify(gBounds));
+             
             }
            
         //if ( sTerms ) { facetClear(".nav-category"); }
@@ -575,6 +607,7 @@ function searchData(yorn) {
         showDataTypes(15);
         showAuthors(5);
         showCM(5);
+        $("#gSearchBox").val(sTerms);
 
       });
 
@@ -1296,6 +1329,11 @@ function searchData(yorn) {
             lbf.contact.datestamp.value = ndval;
             lbf.contact.datestamp.path = mpath;
             lbf.contact.datestamp.nodeid = nodeid;
+          };
+          if ( ndnam == 'citation_date') { 
+            lbf.datestamp.value = ndval;
+            lbf.datestamp.path = mpath;
+            lbf.datestamp.nodeid = nodeid;
           };		 
           if ( ndnam == 'individualName') { 
             lbf.contact.name.value = ndval;
@@ -1347,7 +1385,8 @@ function searchData(yorn) {
 		 gVersions.length=0;
 		  
 		var jqxhr = $.get(sUrl, function() {
-			console.log( "success record view " + guid );
+      //console.log( "success record view " + guid );
+        var z = guid;
 		  })
 		  .done(function(data) { 
 			 if (typeof(data) == "object" ) {
@@ -1446,6 +1485,142 @@ function searchData(yorn) {
     });
   }
 
+  function mdValidate(o) {
+    var guid = gT.guid;
+    var ver = gT.mdversion;
+
+    var sUrl = '/action/validateMDRecord?guid='+guid;   
+    //if ( vers ) {
+    //  sUrl = sUrl+'&version='+vers;
+    //	    
+    gVr = {};
+
+    var jqxhr = $.get(sUrl, function() {
+        console.log( "success record view " + guid );
+        //var z = guid;
+		  })
+		  .done(function(data) { 
+			 if (typeof(data) == "object" ) {
+				 var dres = data;
+        } else {
+          var dres = JSON.parse(data);
+        }
+        gVr.rows = dres.rows;
+        console.log('here');
+
+        gVr.fda = [];  // index of elements
+        gVr.res = [];  // summary table
+        // res - needs - fd, fc, rs_id, state
+
+        for (k in gVr.rows ) {
+          var fd = gVr.rows[k].fd;
+          var rs = gVr.rows[k].rsid;
+          var rname = gVr.rows[k].ruleset_name;
+
+          var mp =  gVr.rows[k].mpath;
+          var nv = gVr.rows[k].node_value;
+          if ( gVr.fda.includes(fd) ) {
+               var iv = gVr.fda.indexOf(fd);
+               if ( iv > -1 ) {
+                 gVr.res[iv].count = gVr.res[iv].count+1;
+                 if ( mp && gVr.res[iv].vstate !== 'found' ) {
+                    gVr.res[iv].vstate = 'found';
+                 }
+               }
+          } else {
+            gVr.fda.push(fd);
+            var vox = {};
+            vox.fd = fd;
+            vox.rs = rs;
+            vox.rn = rname;
+            if ( !mp ) {
+              vox.count = 0;
+              vox.vstate = 'missing';
+            } else {
+              vox.count = 1;
+              vox.vstate = 'found';
+            }
+            gVr.res.push(vox);
+
+          }
+
+        }
+
+        valResDisplay();
+        
+      });
+
+      
+  } 
+  
+  function vrClose(o){
+    $("#valResults").empty();
+    $("#valResults").remove();
+    $("#mdValBtn").css("background","#0971B2");
+  }
+
+  function valResDisplay() {
+   
+    var c = $("#widget-box");
+    var vtop = $("#mdValBtn").position().top +'px';
+    var vl = $("#mdValBtn").position().left + 70 + 'px';
+    $("#mdValBtn").css("background","#888888");
+    if ( $('#valResults').length )  {
+      return;
+    }
+    var vb = $('<div id="valResults">')
+              .css("position","absolute")
+              .css("display","block")
+              .css("margin", "7px 7px 7px 7px;")
+              .css("padding","5px 5px")
+              .css("top",vtop)
+              .css("left",vl)
+              .css("opacity","1")
+              .css("background-color","#ffffff")
+              .css("border","2px solid #2191c2")
+              .css("width","350px");
+
+    var cBtn =  $('<a id="vrClose" class="res-tag" >Close</a>')
+              .css("font-size", "12px")
+              .css("margin", "1px 1px 1px 7px;")
+              .css("padding","5px 5px")
+              .css("display","inline:block")
+              .css("width","100px")
+              .css("background-color", "#2191c2")
+              .attr('onclick','vrClose(this);');
+
+    vh = $('<span >Metadata Validation</span>')
+              .css("font-size", "14px")
+              .css("font-weight", "bold")
+              .css("font-family","Arial");
+    vb.append(vh);         
+    vb.append(cBtn);
+    var vrtab = $('<table>');
+    for (k in gVr.res ) {
+      var vtr = $('<tr>');      
+      var vel = $('<td>'+gVr.res[k].fd+'</td>').css("font-size", "12px");
+      if ( gVr.res[k].rs == 12 && gVr.res[k].vstate == 'missing' ) {
+        vtr.css('background-color', '#cc7777');
+      }
+      if ( gVr.res[k].rs == 13 && gVr.res[k].vstate == 'missing' ) {
+        vtr.css('background-color', '#bb9977');
+      }
+      var vrl = $('<td>'+gVr.res[k].rn+'</td>').css("font-size", "12px");
+      var vct  = $('<td>'+gVr.res[k].count+'</td>').css("font-size", "12px");
+      var vst = $('<td>'+gVr.res[k].vstate+'</td>').css("font-size", "12px");
+      vtr.append(vel);
+      vtr.append(vrl);
+      vtr.append(vct);
+      vtr.append(vst);
+      vrtab.append(vtr);
+
+    }
+
+    vb.append(vrtab);
+    c.append(vb);
+
+  }
+
   function edState() {
 
     if ( kmu(gKey) ) {
@@ -1471,13 +1646,15 @@ function searchData(yorn) {
         }
 		
         $("#mdEditBtn").text("Save");
-        $("#mdCancelBtn").show();     
+        $("#mdValBtn").show(); 
+        $("#mdCancelBtn").show();    
         gEdState = 'on';
 
     } else if ( gEdState == 'on') {
         // submit changes
 		  saveEdits();
       $("#mdEditBtn").text("Edit");
+      $("#mdValBtn").hide();
       $("#mdCancelBtn").hide();
       $("#titleE").hide();
       $("#absE").hide();
@@ -1500,6 +1677,7 @@ function searchData(yorn) {
 
     } else if ( gEdState == 'off' ) {
       $("#mdEditBtn").hide();
+      $("#mdValBtn").hide();
       $("#mdCancelBtn").hide();
       $(".fas fa-edit").hide();
       $(".fas fa-plus").hide();	
@@ -1843,11 +2021,11 @@ function resNew(o) {
           var rlink = $("#rledit").val();
           var rtype = $("#rtNewSel").val();
           
-          var mr = JSON.stringify(gResource);
+          var mr = JSON.parse(JSON.stringify(gResource));
           mr.resourceUrl.value = rlink;
           mr.resourceName.value = rname;
           mr.resourceType.value = rtype;
-          gT.resource.push( JSON.parse(mr) );
+          gT.resource.push( mr );
               
           var newK = gT.resource.length-1;
 
@@ -1859,7 +2037,7 @@ function resNew(o) {
                     .css("background-color",lo.bgcolor);
           var rEd = $('<i id="resEdit-'+newK+'" class="fas fa-edit" onclick="resEdt(this);" style="color:#196fa6;font-size:16px; "></i>');
           var rDel = $('<i id="resdel-'+newK+'" class="fas fa-trash-alt" onclick=" resDel(this)" style="color:#196fa6;font-size:12px; margin-left: 5px;"></i>');
-          var rL = $('<div id="resdl">').css("margin", "10px" )
+          var rL = $('<div id="resdl-'+newK+'">').css("margin", "10px" )
                       .css("width", "700px");         
           $("#resdln").remove();
           $("#rnbx").remove();
@@ -1868,7 +2046,7 @@ function resNew(o) {
           rL.append(rLL);
           rL.append(rDel);
           $("#resdiv").append(rL);
-          urlCheck(rLL);
+          // urlCheck(rLL);
 		    }	
 	}   
 }
@@ -2344,9 +2522,11 @@ function resEdt(o) {
             ed = true;
             $("#mdEditBtn").text("Edit");
             $("#mdEditBtn").show();
+            $("#mdValBtn").show();
             gEdState = 'ready';
       } else {
           $("#mdEditBtn").hide();
+          $("#mdValBtn").hide();
           $("#mdCancelBtn").hide();
           $(".fas fa-edit").remove();
           $(".fas fa-plus").remove();	
@@ -2393,7 +2573,7 @@ function resEdt(o) {
               }
 
               var rLL = $('<a id="rn-'+k+'" href="'+ rlink + '" class="resource-item" target="_blank">' + rname + '</a>');
-              var rLP = $('<a id="rl-'+k+'"  onclick="previewer(this);" class="res-tag" >' + rtype +  '</a>')
+              var rLP = $('<a id="rl-'+k+'"  onclick="previewer(this);" class="res-tag" >' + lo.text +  '</a>')
                       .css("width",lo.width)
                       .css("color",lo.txtcolor)
                       .css("background-color",lo.bgcolor);
@@ -2406,7 +2586,7 @@ function resEdt(o) {
               rL.append(rLL);
               rL.append(rDel);
               gResources.append(rL);
-              urlCheck(rLL);
+              urlCheckCached(rLL);
           }
       }
 	
@@ -2465,6 +2645,14 @@ function resEdt(o) {
 	    gExtent.append(extEdit);		  
       gExtent.append('<h2 style="font-size: 12px; display: inline"  >Geographic Extent</h2></br>');
 
+      ro.extent.exists = true;
+      if ( ro.extent.north.value == "" && ro.extent.west.value == "" ) {
+          ro.extent.exists = false;
+      }
+
+      if ( ro.extent.north.value == 0 && ro.extent.west.value == 0 ) {
+        ro.extent.exists = false;
+      }
       if ( ro.extent.north.value == 0 && ro.extent.west.value == 0 ) {
         gExtent.append('<label class="md-label">Coordinates:</label><span class="md-value"> Not Provided</span></br>');
       } else {
@@ -2473,14 +2661,14 @@ function resEdt(o) {
         gExtent.append('<label class="md-label">East Bound:</label><span id="extE" class="md-value">'+ ro.extent.east.value +  '</span></br>');
         gExtent.append('<label class="md-label">West Bound:</label><span id="extW" class="md-value">'+ ro.extent.west.value +  '</span></br>');
       }
-      updateExtent();
+      updateExtent(ro.extent);
       var gMd = $('<div id="mdMetaInfo" >')
                 .css("margin", "2px" )
                 .css("background-color", "slate" )
                 .append('<h2 style="font-size: 12px;"  >Metadata</h2>');
 
       gMd.append('<label class="md-label">Original ID:</label><span class="md-value">'+ ro.guid + '</span></br>');
-      gMd.append('<label class="md-label">Index Date:</label><span class="md-value">'+ ro.datestamp + '</span></br>');
+      gMd.append('<label class="md-label">Index Date:</label><span class="md-value">'+ ro.datestamp.value + '</span></br>');
       gMd.append('<label class="md-label">Original Format:</label><span class="md-value"> '+ ro.format + '</span></br>');
       gMd.append('<label class="md-label">Source:</label><span class="md-value">'+ ro.source + '</span></br>');
       gMd.append('<label class="md-label">Version:</label><span class="md-value">'+ ro.version + '</span></br>');
@@ -2509,22 +2697,29 @@ function resEdt(o) {
   var findKW  = function(o) {
     if ( o.id ) {
       var ms = $("#gSearchBox").val()
-      $("#gSearchBox").val( ms + ' ' + o.id);
+      if ( ms.length > 1 ) {
+        $("#gSearchBox").val( ms + ' ' + o.id);
+      } else {
+        $("#gSearchBox").val(o.id);
+      }
       findRecords(0);
     }
   }
 
-  var urlCheck = function( urlink) {
+  var urlCheck = function(urlink) {
   // Readl time asynchronous check
+    //var guid = gT.guid;
     var urlString =  $(urlink).attr("href");
-    var hurl = '/url_status?' + 'url='+urlString ;
-    console.log('start url check');
+    var hurl = '/url_status?' + 'url='+urlString;
+    //var hurl = '/action/getUrlStatusCached?guid=' + guid + '&url='+urlString ;
+    //console.log('start url check');
       $.ajax({
           type: 'GET',
           url: hurl,
           dataType: 'json',
           contentType: "application/json",
           success: function(data, status) {
+            
             if ( data ) {      
               $(urlink).attr("class","aref-valid");            
             } else {             
@@ -2537,7 +2732,57 @@ function resEdt(o) {
       });
   }
 
-  var updateExtent = function () {
+  var urlCheckCached = function(urlink) { 
+    // for current record only 
+    var guid = gT.guid;
+    var urlString =  $(urlink).attr("href");
+
+    function fl(url, lo) {
+      if ( lo ) {
+        for (k in lo) {
+          if ( lo[k].url == url ) {
+            if ( gHttpValid.includes(lo[k].url_status) ) {
+              return "aref-valid";
+            } else {
+              return "aref-not";
+            }
+          }
+        }
+      } 
+      return "resource-item";
+    }
+
+    if ( gT.linkCheck ) {
+      $(urlink).attr("class",fl(urlString,gT.linkCheck)); 
+    } else {
+      var hurl = '/action/getUrlStatusCached?guid=' + guid + '&url='+urlString;
+      $.ajax({
+            type: 'GET',
+            url: hurl,
+            dataType: 'json',
+            contentType: "application/json",
+            success: function(data, status) {
+              if (typeof(data) == "object" ) {
+                var dres = data;
+              } else {
+                  var dres = JSON.parse(data);
+              }
+              gT.linkCheck = dres.rows;
+              $(urlink).attr("class",fl(urlString,gT.linkCheck)); 
+            }, 
+            error: function (jqXHR, status, err) {  
+              console.log('url check error');
+            }
+        });
+
+    }
+
+    
+    
+
+  }
+
+  var updateExtent = function (o) {
     if ( drawnItems ) {
       map.removeLayer(drawnItems);
     }
@@ -2550,28 +2795,30 @@ function resEdt(o) {
     }
     var sa = [180, 90, 45, 22,5, 11.25, 5.625, 2.8, 1.4 ];
     
-    var xs = gW -gE;
-    var ys = gN - gS;
-    var yl = gS + (ys)/2;
-    var xl = gE + (xs)/2;
-    if ( ys > xs ) { var scal = Math.abs(ys); } else { var scal = Math.abs(xs) }
-    var z = 4;
-    for ( k in sa ) {
-       if ( scal > sa[k] ) {
-         z = k;
-         break;
-       }
+    if ( o.exists ) {
+        var xs = gW -gE;
+        var ys = gN - gS;
+        var yl = gS + (ys)/2;
+        var xl = gE + (xs)/2;
+        if ( ys > xs ) { var scal = Math.abs(ys); } else { var scal = Math.abs(xs) }
+        var z = 4;
+        for ( k in sa ) {
+          if ( scal > sa[k] ) {
+            z = k;
+            break;
+          }
+        }
+        //var z = sa.findIndex(k => k < scal );
+        if ( z < 0 ) { z = 4 }
+        var center = new L.LatLng(yl, xl);
+        //map.panTo(center);
+        map.setView(center, z);
+        var bounds = [[ gS, gW], [ gN, gE ]];
+        rectangle = L.rectangle(bounds, {color: 'slateblue', weight: 1}).on('click', function (e) {
+          console.info(e);
+        }).addTo(map);
+        map.fitBounds(bounds);
     }
-    //var z = sa.findIndex(k => k < scal );
-    if ( z < 0 ) { z = 4 }
-    var center = new L.LatLng(yl, xl);
-    //map.panTo(center);
-    map.setView(center, z);
-    var bounds = [[ gS, gW], [ gN, gE ]];
-    rectangle = L.rectangle(bounds, {color: 'slateblue', weight: 1}).on('click', function (e) {
-      console.info(e);
-    }).addTo(map);
-    map.fitBounds(bounds);
 
 }
 
@@ -2667,7 +2914,7 @@ var showCategories = function(lim) {
     }
     
     var jqxhr = $.get(gUrl, function() {
-        console.log( "success - categories" );
+        var ssu = 'success categories'; 
       })
       .done(function(data) { 
 
@@ -2678,7 +2925,7 @@ var showCategories = function(lim) {
             }
 
             $(".nav-category").each(function() {
-              console.log('remove ' + $(this).attr('id') );
+              //console.log('remove ' + $(this).attr('id') );
               $( this ).remove();
             })
             var dx = dres.rows;
@@ -2739,7 +2986,7 @@ var selectCategory = function(oCat) {
      }
 
       var jqxhr = $.get(gUrl, function() {
-        console.log( "success - categories" );
+        var ssu = 'success authgor'; 
       })
       .done(function(data) { 
 
@@ -2809,7 +3056,7 @@ var selectCategory = function(oCat) {
     }
 
      var jqxhr = $.get(gUrl, function() {
-       console.log( "success - content models" );
+      var ssu = 'success cm'; 
      })
      .done(function(data) { 
 
@@ -2880,7 +3127,7 @@ var showDataTypes = function(l) {
     }
 
    var jqxhr = $.get(gUrl, function() {
-     console.log( "success - data types " );
+    var ssu = 'success datatypes'; 
    })
    .done(function(data) { 
 
@@ -2998,14 +3245,14 @@ var previewer = function(o) {
 
         lx = '/previewMap';
         var jqxhr = $.get(lx, {dataType : "jsonp"}, function() {
-          console.log( "success - data layer" );
+          var ssu = 'success previewMap'; 
         }).done( function(data) {
           if (typeof(data) == "object" ) {
             var dres = data;
          } else {
             var dres = JSON.parse(data);
          }
-          console.log(data);
+         // console.log(data);
           var tf = {  "type": "FeatureCollection",
                       "features": [
                         {   "type": "Feature",
@@ -3065,7 +3312,7 @@ var previewer = function(o) {
 
 
   } 
-  console.log('previewer: ' + dtype);
+  //console.log('previewer: ' + dtype);
 
 }
 
@@ -3073,10 +3320,11 @@ function logmein(o, cb) {
   var un = $("#luser").val();
   var pw =  $("#lpass").val();
   //var fcp = o.id;
+
   var xUrl = '/action/getToken?q='+un+'&p='+pw;
 
   var jqxhr = $.get(xUrl, function() {
-    console.log( "success - data types " );
+    var ssu = 'success gt'; 
   })
   .done(function(data) { 
 
@@ -3090,7 +3338,7 @@ function logmein(o, cb) {
         if ( dres.authtoken == dres.kv ) {
             gKey = {};
             gKey[dres.authtoken] = dres.kv;
-			gKey.agentRole = dres.agentrole;
+			      gKey.agentRole = dres.agentrole;
             $("#laname").text(un).css("font-size","12px")
 				.css("font-family","Arial, Lucida Grande, sans-serif");
             $("#loginBtn").text("Logout");

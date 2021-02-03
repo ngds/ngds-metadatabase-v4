@@ -1,0 +1,181 @@
+
+Admin Tools/Inspector Page provides tools to identify data download endpoints and verify quality for resource links found in the database.
+These identified endpoints are saved and available to ingestor API tool.
+
+If a resource link is not an endpoint, there are 2 main tools to identify the endpoint.
+
+1 - Catalog Tool - some repository catalogs have a straight forward translation of catalog page url to endpoint url based on
+    a unique identifer in the URL. Example:
+	
+	Catalog Page - https://www.osti.gov/biblio/12345
+	Has a download at - https://www.osti.gov/servlets/purl/12345
+
+2 - Crawl Tool - Some repository pages must be crawled to idnetify the links. The crawl tools uses specific identifiers in the page
+    to find the download url. See below for Specfics
+
+Base Link Operations - base links are in the metadata, and are represented by the first rule (base) in the list. This
+rule cannot be edited. The operations for this rule are Run Inspection, Update Results, Clear Results
+
+WorkFlow
+1 - Identify a catalog or set of records to be inspected
+2 - Create a rule that searches those records. View Rule Info to verify successful match
+3 - If its a crawl rule, run Crawler to process and save crawl results
+4 - Run Inspector to validate Rule quality. Only validated records (status 200) will be used.
+
+BUTTONS
+
+View Rules
+	+ Create a New Rule
+        [] - Checkbox - select a rule for processing
+        [pencil] - Edit rule
+        [trash] - Delete Rule
+
+View History - show the inspection action history (not working yet)
+
+ACTIONS
+Rule Info
+   For selected rule 
+	Show Count of links that matched rule in database
+	Button - that will show links for all matches
+
+	Shows resource_inspection table results - number of records that appear for that rule, the number with a good 200 status
+
+	Button - shows resource_links, orig_url, endpoint_url, status, size of page
+
+	Shows the number of links that have stale inspection results
+
+Run Crawler - Executes Crawler on selected Crawl Rule. Only works on Crawl Rules. Inserts found links
+              in resource_inspection table.
+
+Run Inspection - Executes HTTP Get Header for each endpoint for all Rule Types and saves in resource_inspection table
+- Updates Crawl Rule records 
+- Inserts for Link or Catalog Rules - good links only
+- Inserts all results for Base Links
+
+Update Results - uses the stale inspection links, and re-inspect those, updating the results table
+
+Clear Results - removes all inspection results for the selected rule
+
+Refresh Cache - the ingestion api requires a very performance heavy query to provide results quickly. 
+To fix this, the results are cached in a materialized view called "ingestion". When inspections are
+performed this cache is not automatically updated, so the Refreshe Cach button should be run periodically
+
+BASE Rule - is the baseline inspection for the resource_links found in the database.
+
+LINK or Catalog RULES
+Info on how to build LINK or CATALOG Rule
+Process Action: Run Inspection - Finds all the resource links in the database that match the Base, and create a endpoint url  
+using the [0] identity parameter. For each link, it performs a HTTP GET HEADER request, returning and saving the
+	HTTP.StatusCode
+	ContentType
+	ContentLength 
+
+in the resource_inspection table, with a timestamp. Currently only saves records that return "Good" StatusCode 200. 
+These links are available to the ingestor api.
+
+Parameters
+BASE
+- url template to search for - with [0] identifying the id replacement string
+  https://www.osti.gov/biblio/[0]
+
+ENDPOINT 
+- replacement url + [0] using the ID resolved from the base
+
+CRAWL RULES
+
+Crawler Uses scraperjs node npm module. Crawl rules must "Run Crawler", then "Run Inspection" to complete workflow.
+ 
+Action: Run Crawler
+
+- Identify all resource links in the database that match the Base.
+- Crawls each identified page according to the crawl parameters in endpoint, Find Element, and Replacement Attribute
+- Records each link found bye the crawl in the resource_inspection table, it is incomplete at this point
+
+        resource_link.guid - is the 
+	resource_link.orig_url - the starting url that is the catalog page
+	resource_link.ident_url - is the url found by the crawler
+        resource_link.proc_name - identifies that Rule that generated this record
+        resource_link.v_date - the run date of the rule
+
+Action: Run Inspection
+- Only run after Run Crawler has completed
+- For each record, gets the resource_link.ident_url and performs a HTTP GET HEADER request.
+- Updates the record with:
+	HTTP.StatusCode
+	ContentType
+	ContentLength 
+	http_last_mod
+
+Crawl Rule Parameters
+
+BASE
+- url to search on - with [0] on the id replacement string
+ENDPOINT 
+- for link or catalog rule, catalog
+	- replacement url + [0] using the ID from the base
+- for crawl rule 
+	- replacement base url is the start up to + \/ 
+	- filter url is everything after the \/. The crawler will only return urls that match the start of the filter
+          (for example /file )
+FIND ELEMENT
+- only used for crawl rules
+- is the jquery like search parameter in the crawled page. Can identify by element type, class, or id
+- element types can be searched like this
+  	"a" or " " input[name=destURL]"
+- classes can be search for if the start with a ".", examples
+   	".downloadlink" will return all elements of that class
+- specific elements by id can be identified with "#"
+        "#biblio=related"
+
+- a space indicates a nested hierarchy. For example
+	"#biblio-related p" 
+  	will return paragraphs that are children of "biblio-related"
+	- NOTE: class that have spaces in them require an extra double quote around them so it wont try to nest
+		"pure-button button-success fulltext-link"
+
+- Slash "/" allows specification of element type and class. Example
+	"a/pure-button button-success fulltext-link" will return a tages that are in the class ...
+        - Note: for these type of elements dont use double quotes on the class item
+
+RETURN ATTRIBUTE
+- Returns the attribute for the found element, Examples
+	".attr('href')" for an a tag
+        ".text()" for a paragraph
+        ".val()" for an input elmement
+         ".attr('title')" for title attribute
+
+Database Changes
+
+- View New stale_resource_inspections - used to identify out of date resource_inspections
+- Updated Materialized View - inspection - to include inspected new endpoints
+- function New inspect_rule_links3 - returns matched records on catalog rules needed for inspection run
+- function New crawl_rule_links - returns matched crawl rul records need for crawl run and crawl inspection
+- function New refresh_resource_link_cache - updates the ingestion cache
+- 
+Node Application Changes
+/action/ingestion - modified - add guid parameter to allow testing
+
+New calls
+/action/getInspectionMap - get the list of inspection/crawl rules
+/action/getInspectionLinks - get the list of links that match a rule
+/action/getStaleInspectionLinks - returns the list of inspection links that are out of date,
+they are older than the lastest version of a metadata record
+
+/action/getInspectionResults - get the inspection results for a rule - info for each link
+/action/runInspection - runs an inspection for a rule. Does a GET http header request.
+/action/runCrawler - for a crawl rule, retrieve the list of links, and crawls each page
+/action/runInspectionUpdate - runs a GET http header request for stale inspections and updates 
+/action/delInspectionResults - clears all inspection records for a rule
+/action/runCacheRefresh - causes the ingestion materialized view to be updated
+
+Rule Editing CRUD Functions
+/action/deleteInspectionMapItem - delete rule
+/action/saveInspectionMapItem - New rule
+/action/updateInspectionMapItem - edit rule
+
+Batch Edit Tool Changes
+
+
+
+
+

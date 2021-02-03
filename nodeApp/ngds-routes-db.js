@@ -12,14 +12,23 @@ var crypto = require('crypto');
 var xml2js = require('xml2js');
 var  fs = require("fs");
 const util = require('util');
-const pyUrl = 'http://test.geothermaldata.org:8000/';
+var request = require('request');
+var scraperjs = require('scraperjs');
 
+//var bodyParser = require('bodyparser');
+
+const pyUrl = 'http://test.geothermaldata.org:8000/';
 
 const connectionString = '@';
 const client = new pg.Client(connectionString);
 
+const pyCon = '@';
+//const pyClient = new pg.Client(pyCon);
+
 var gKeystack = [];
-var gNACL = '5d097fe1065645c8';
+var gNACL = '@';
+
+var gTasks = [];
 
 var genRandomString = function(length){
     return crypto.randomBytes(Math.ceil(length/2))
@@ -141,99 +150,153 @@ function noodle() {
 
 }
 
-function find_records(qry,rOff, rLim,sortby,guids) {
-	// primary text search 
+function batchRecordQuery(fld, qry, guids) {
+
+	if ( guids ) {
+		sqlStr = 'select * from batchguidqry(\''+fld+'\',\'%' + qry + '%\',\''+guids+'\')';
+	} else {
+		sqlStr = 'select * from batchqry(\''+fld+'\',\'%' + qry + '%\')';
+	}
+	
+	console.log('batch query ' + sqlStr);
+	var qUrl = 'http://127.0.0.1:8082/query?q='+encodeURI(sqlStr);
+	var qr = require('request');
+	var body = '';
+	return new Promise(function(resolve, reject){
+		qr.get(qUrl)
+		.on ('response',function(response) {         		
+		})
+		.on ('data', function(chunk) {
+			body += chunk;
+		}).on ('end', function() {
+			resolve(body);
+		});		 
+	});
+
+
+}
+
+async function testfind(q) {
+	// this example uses pg-pool service
+	var sqlStr = 'Select * from mdview2 where version_id=1000';
+
+
+	console.log('test '+ encodeURI(sqlStr) );
+
+	var qUrl = 'http://127.0.0.1:8082/query?q='+encodeURI(sqlStr);
+
+	var qr = require('request');
+	var body = '';
+	return new Promise(function(resolve, reject){
+		qr.get(qUrl)
+		.on ('response',function(response) {         		
+		})
+		.on ('data', function(chunk) {
+			body += chunk;
+		}).on ('end', function() {
+			//console.log('done'+JSON.stringify(body));
+			resolve(body);
+		});		 
+	});
+}
+
+async function poolQry(q) {
+	// call able poolquery
+	var sqlStr = 'Select * from mdview2 where version_id=1000';
+
+	console.log('test '+ encodeURI(q) );
+
+	var qUrl = 'http://127.0.0.1:8082/query?q='+encodeURI(q);
+
+	var qr = require('request');
+	var body = '';
+	return new Promise(function(resolve, reject){
+		qr.get(qUrl)
+		.on ('response',function(response) {         		
+		})
+		.on ('data', function(chunk) {
+			body += chunk;
+		}).on ('end', function() {
+			resolve(body);
+		});		 
+	});
+}
+
+
+async function find_records(qry,rOff, rLim, sortby,guids) {
+//  This call uses the ngds-pysearch.js at 8080
 
 	if ( isNaN(rOff) ) { rOff = 0 }
+	if ( isNaN(rLim) ) { rLim = 10 }
 
-	if ( guids ) {
-		var gA = guids.split(',');
-		for (i in gA) {
-			gA[i] = '\'' + gA[i] + '\'';
-		}
-		guids = gA.join(',')
-	}
-
-    var sort = 'date_modified desc';
+	var sort = 'date_modified%20desc';
 	if ( sortby ) {
 		switch(sortby) {
-			case '0': sort = 'date_modified desc'; break;
-			case '1': sort = 'title desc'; break;
-			case '2': sort = 'title asc'; break;
-			case '3': sort = 'date_modified desc'; break;
-			default: sort = 'date_modified desc'; break;
+			case '0': sort = 'date_modified%20desc'; break;
+			case '1': sort = 'title%20desc'; break;
+			case '2': sort = 'title%20asc'; break;
+			case '3': sort = 'date_modified%20desc'; break;
+			default: sort = 'date_modified%20desc'; break;
+		}
+	}
+    
+	if ( guids ) {
+		var qUrl = 'http://127.0.0.1:8080/qGuids?guids='+guids+'&l='+rLim+'&o='+rOff+'&s='+sort;
+	} else {
+		if ( qry !== '%' ) {
+			var qUrl = 'http://127.0.0.1:8080/qfind?q='+qry+'&l='+rLim+'&o='+rOff+'&s='+sort;
+		} else {
+			var qUrl = 'http://127.0.0.1:8080/qNew?l='+rLim+'&o='+rOff;
 		}
 	}
 
-  if ( qry !== '%' ) {
-             
-	  var qA = qry.split(' ');
-	  var qs = '\'{';
-	  for (var i in qA) {
-		  var strm = '"%' + qA[i] + '%"';
-		//if ( i == 0) { qs = qs + strm + ','}
-		  if ( i < qA.length - 1) {
-			  qs = qs + strm + ',';
-		  } else {
-			  qs = qs + strm;
-		  }     	
-	  }
-	  qs = qs + '}\'::text[]';
-	
+	var qr = require('request');
+	console.log('test ' + qUrl);
 
-	if ( guids ) {
-		sqlStr = 'with cv as ( select identifier as guid, title, organization,'
-		+ 'abstract, date_modified, wkt_geometry, links from public.records where identifier in (' + guids + ') ),'
-		+ ' rc as ( select count(*) as foundrec from cv ) '
-		+ 'select guid, foundrec, title as citation_title, date_modified as create_date, '
-		+ 'abstract,organization, wkt_geometry, links from cv, rc order by ' + sort + ' limit ' + rLim + ' offset ' + rOff;
-
-	} else {
-		sqlStr = 'with cv as ( select identifier as guid, title, organization,'
-		+ 'abstract, date_modified, wkt_geometry, links from public.records where anytext iLike ALL (' + qs + ') ),'
-		+ ' rc as ( select count(*) as foundrec from cv ) '
-		+ 'select guid, foundrec, title as citation_title, date_modified as create_date, '
-		+ 'abstract,organization, wkt_geometry, links from cv, rc order by ' + sort + ' limit ' + rLim + ' offset ' + rOff;
-	}
-	
-
-  } else {
-	// no query terms just bring back the latest
-
-	if ( guids ) {
-		sqlStr = 'with cv as ( select identifier as guid, title, organization,'
-		+ 'abstract, date_modified, wkt_geometry, links from public.records where identifier in (' + guids + ') ),'
-		+ ' rc as ( select count(*) as foundrec from cv ) '
-		+ 'select guid, foundrec, title as citation_title, date_modified as create_date, '
-		+ 'abstract,organization, wkt_geometry, links from cv, rc order by ' + sort + ' limit ' + rLim + ' offset ' + rOff;
-
-	} else {  
-		sqlStr = 'with cv as ( select identifier as guid, title, organization,'
-			  + 'abstract, date_modified, wkt_geometry, links from public.records ),'
-			  + ' rc as ( select count(*) as foundrec from cv ) '
-			  + 'select guid, foundrec, title as citation_title, date_modified as create_date, '
-			  + 'abstract,organization, wkt_geometry, links from cv, rc order by ' + sort + ' limit ' + rLim + ' offset ' + rOff;
-	}
-
-  }   
-    //console.log('finder ' + sqlStr);
-	return new Promise(function(resolve, reject){
-		client.query(sqlStr, (err, res) => {
-			  if ( typeof(res) !== "undefined" ) {
-				//console.log('finder .. ' + JSON.stringify(res));
-			  	resolve(res);
-
-			  } else {
-				reject("error noodle");	  	
-			  }
+	var body = '';
+	return new Promise(function(resolve, reject){ 
+		qr.get(qUrl)
+		.on ('response',function(response) {   
+			//console.log('response');       		
+		})
+		.on ('data', function(chunk) {
+			//console.log('sending');
+			body += chunk;
+		}).on ('end', function() {
+			//console.log('done'+JSON.stringify(body));
+			resolve(body);
 		});
-		     
 	});
+ 
+}
+
+async function fetchUrlCache(guid,url) {
+	// get cached resource link status checks by guid
+	
+	var sqlStr = 'select * from getUrlCheck(\''+guid+'\',\'x\')'; 
+	var qUrl = 'http://127.0.0.1:8082/query?q='+encodeURI(sqlStr);
+	var qr = require('request');
+	var body = '';
+	
+
+	return new Promise(function(resolve, reject){
+		qr.get(qUrl)
+		.on ('response',function(response) {         		
+		})
+		.on ('data', function(chunk) {
+			body += chunk;
+		}).on ('end', function() {
+			//console.log('returns '+ JSON.stringify(body));
+			resolve(body);
+		});		 
+	});
+
 
 }
 
 function record_show(qry, vid ) {
-	
+	// This uses the node app ngds-pg-pool at port 8082
+
 	if ( vid > 0 ) {
 		var vSql = 'with cv as ( select v.mdv_id, v.source_schema_id  as sid, v.version_id ' 
              + ' from md_record r, md_version v where v.md_id = r.md_id and '
@@ -257,20 +320,27 @@ function record_show(qry, vid ) {
              + ' union '
 			 + ' select node_id, fed_elem as node_name, node_value, q.map_path from mp q, som s ' 
 			 + ' where q.map_path like s.relmapath'
-      
-	var sqlStr = vSql + sqStr;
 	
-	//console.log('record show guid ' + sqlStr);
+		 
+	var sqlStr = vSql + sqStr;
+
+	var sqlStr = 'select * from md_vms(\''+qry+'\','+vid+')';
+
+	var qUrl = 'http://127.0.0.1:8082/query?q='+encodeURI(sqlStr);
+	var qr = require('request');
+	var body = '';
 	return new Promise(function(resolve, reject){
-		client.query(sqlStr, (err, res) => {
-			  if ( typeof(res) !== "undefined" ) {
-			  	//console.log('record show success');//JSON.stringify(res));
-			  	resolve(JSON.stringify(res));
-			  } else {
-				reject("error noodle");	  	
-			  }
-		});     
+		qr.get(qUrl)
+		.on ('response',function(response) {         		
+		})
+		.on ('data', function(chunk) {
+			body += chunk;
+		}).on ('end', function() {
+			resolve(body);
+		});		 
 	});
+
+	
 
 }
 
@@ -280,38 +350,44 @@ function categories(climit, qry) {
     	climit = "5";
     }
 
-  var sqlStr = '';
+    var sqlStr = '';
 
-  if ( qry ) { 
-	var qA = qry.split(' ');
-	var qs = '\'{';
-	for (var i in qA) {
-		var strm = '"%' + qA[i] + '%"';
-	 
-		if ( i < qA.length - 1) {
-			qs = qs + strm + ',';
-		} else {
-			qs = qs + strm;
-		}     	
+	if ( qry ) { 
+		var qA = qry.split(' ');
+		var qs = '\'{';
+		for (var i in qA) {
+			var strm = '"%' + qA[i] + '%"';
+		
+			if ( i < qA.length - 1) {
+				qs = qs + strm + ',';
+			} else {
+				qs = qs + strm;
+			}     	
+		}
+		qs = qs + '}\'::text[]';
+		
+		sqlStr = 'select distinct(kw) as node_value, count(kw) as count from ( select unnest(string_to_array(keywords,\',\')) as kw from public.records '
+				+ ' where anytext iLike ALL (' + qs + ') ) pr group by kw order by 2 desc limit ' + climit;
+	} else {
+		sqlStr = 'select distinct(kw) as node_value, count(kw) as count from ( select unnest(string_to_array(keywords,\',\')) as kw from public.records '
+			+ ' ) pr group by kw order by 2 desc limit ' + climit;
 	}
-	qs = qs + '}\'::text[]';
 	
-	sqlStr = 'select distinct(kw) as node_value, count(kw) as count from ( select unnest(string_to_array(keywords,\',\')) as kw from public.records '
-			+ ' where anytext iLike ALL (' + qs + ') ) pr group by kw order by 2 desc limit ' + climit;
-  } else {
-	sqlStr = 'select distinct(kw) as node_value, count(kw) as count from ( select unnest(string_to_array(keywords,\',\')) as kw from public.records '
-		+ ' ) pr group by kw order by 2 desc limit ' + climit;
-  }
-	
+	var qUrl = 'http://127.0.0.1:8082/query?q='+encodeURI(sqlStr);
+	var qr = require('request');
+	var body = '';
 	return new Promise(function(resolve, reject){
-		client.query(sqlStr, (err, res) => {
-			  if ( typeof(res) !== "undefined" ) {
-			  	resolve(JSON.stringify(res));
-			  } else {
-				reject("error in categories");	  	
-			  }
-		});	     
+		qr.get(qUrl)
+		.on ('response',function(response) {         		
+		})
+		.on ('data', function(chunk) {
+			body += chunk;
+		}).on ('end', function() {
+			resolve(body);
+		});		 
 	});
+
+
 
 }
 
@@ -343,7 +419,6 @@ function authors(climit,qry ) {
 	}
 
 	
-	//console.log('authors ' + sqlStr);
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
@@ -394,7 +469,6 @@ function contentModels(climit, qry, srt ) {
 
 	}
 
-	//console.log('content model facet ' + sqlStr);
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
@@ -433,7 +507,6 @@ function dataTypeFacets(climit, qry) {
 		+ ' group by ext order by 2 desc limit ' + climit;
 	}
 		
-	//console.log('data types facet ' + sqlStr);
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
@@ -463,15 +536,17 @@ function fetchTypeAhead(lim,qry) {
 
 }
 
-function fetchInspection(lim,off) {
+function fetchInspection(lim,off, guid) {
 
 	if ( lim == -1 ) {
 		var tSql = 'select jso from inspection order by date_modified desc';
+	} else if (guid ) {
+		var tSql = 'select jso from inspection where identifier = \''+guid+'\'';
 	} else {
 		if ( off == -1 ) {off = 0;  }
 		var tSql = 'select jso from inspection order by date_modified desc limit + ' + lim + ' offset ' + off;
 	}
-	//console.log (' inspect ' + tSql );
+	console.log (' inspect ' + tSql );
 	return new Promise(function(resolve, reject){
 		client.query(tSql, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
@@ -499,7 +574,7 @@ function fetchMapServers() {
 				 + '		or lurl ilike \'%wfs%\' or lurl ilike \'%wms%\' '
 				 + '		or lurl ilike \'%mapserver%\') z '
 				 + ' group by dmm order by dmm';
-    //console.log('map s ' + sqlStr);
+   
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 				if ( typeof(res) !== "undefined" ) {
@@ -515,8 +590,9 @@ function fetchMapServers() {
 
 function fetchAuth(u,p,s ) {
 
-    var sqlStr = 'select name, apikey, agent_id, password from users where name = \'' + u +'\' and password = \'' + p +'\' order by 1'; 
-    //console.log(' sql ' + sqlStr);
+	var sqlStr = 'select name, apikey, agent_id, password from users where name = \'' 
+				+ u +'\' and password = \'' + p +'\' order by 1'; 
+    console.log(' sql ' + sqlStr);
     return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 				if ( typeof(res) !== "undefined" ) {
@@ -529,6 +605,739 @@ function fetchAuth(u,p,s ) {
 	});
 }
 
+function fetchUsers(u) {
+
+	var sqlStr = 'select user_id, name, agent_id, created, fullname,email  '
+				+ ' from users where state = \'active\'';
+
+	console.log('fetch u '+ sqlStr);
+
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+					resolve(res);
+				} else {
+					reject("error in user query");	  	
+				}
+		});	     
+	});
+
+}
+
+function fetchInspectMap(o) {
+
+	var sqlStr = 'select * from resource_inspect_map order by rimid';
+	console.log('fetch im '+ sqlStr);
+
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+					resolve(res);
+				} else {
+					reject("error in im query");	  	
+				}
+		});	     
+	});
+
+}
+
+function saveInspectMapItem(type,burl,selpath,te,el) {
+
+	var sqlStr = 'insert into resource_inspect_map '
+				+ '(rimid, proctype, bas_url, sel_path, elem_text, elem_lookup) values ('
+				+ 'nextval(\'res_ins_map_rimid_seq\'),\''+type+'\',\''+burl+'\',\''+selpath+'\',\''
+				+ te+'\',\''+el+'\') returning rimid';
+
+	console.log('save im '+ sqlStr);
+
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+					resolve(res);
+				} else {
+					reject("error in im query");	  	
+				}
+		});	     
+	});
+}
+
+function updateInspectMapItem(rid, type,burl,selpath,te,el) {
+
+	var sqlStr = 'update resource_inspect_map set proctype = \''+type+'\''
+				+ ',bas_url = \''+burl+'\''
+				+ ',sel_path = \''+selpath+'\''
+				+ ',elem_text = \''+te+'\''
+				+ ',elem_lookup = \''+el+'\' where rimid = '+rid;
+
+	console.log('save im '+ sqlStr);
+
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+					resolve(res);
+				} else {
+					reject("error in im query");	  	
+				}
+		});	     
+	});
+}
+
+function deleteInspectMapItem(rid) {
+
+	var sqlStr = 'delete from resource_inspect_map where rimid = ' + rid;
+	console.log('delete im '+ sqlStr);
+
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+			if ( typeof(res) !== "undefined" ) {
+				resolve(res);
+			} else {
+				reject("error in im query");	  	
+			}
+		});	     
+	});
+}
+
+function fetchInspectionLinks(r, ctype ) {
+	
+	if ( ctype == 'catalog' || ctype == 'link') {
+		var s = 'select * from inspect_rule_links3('+r+')';
+	} else if ( ctype == 'crawl') {
+		var s = 'select * from crawl_rule_links('+r+')';
+	} else if ( ctype == 'base' ) {
+		var s = 'select identifier, lurl from resource_links';
+	}
+	
+	console.log(s);
+	return new Promise(function(resolve, reject){
+		client.query(s, (err, res) => {
+			if ( typeof(res) !== "undefined" ) {
+				resolve(res);
+			} else {
+				reject("error in im query");	  	
+			}
+		});	     
+	});
+}
+
+function fetchStaleInspectionLinks(r, ctype, rv ) {
+	
+	var rtype = '*';
+	if ( rv == 'count' ) {
+		rtype = 'count(*)'
+	}
+	if ( ctype == 'catalog' || ctype == 'link') {
+		var s = 'select '+rtype+' from stale_resource_inspections where proc_name = \'RunInspect rule_id-'+r+'\'';
+	} else if ( ctype == 'crawl') {
+		var s = 'select '+rtype+' from stale_resource_inspections where proc_name = \'RunCrawl rule_id-'+r+'\'';
+	} else if ( ctype == 'base' ) {
+		var s = 'select '+rtype+' from stale_resource_inspections where proc_name = \'base\'';
+	}
+	
+	console.log(s);
+	return new Promise(function(resolve, reject){
+		client.query(s, (err, res) => {
+			if ( typeof(res) !== "undefined" ) {
+				resolve(res);
+			} else {
+				reject("error in im query");	  	
+			}
+		});	     
+	});
+}
+function fetchInspectionResults(r, ctype) {
+	if ( ctype == 'catalog') {
+		var s = 'select * from resource_inspection where proc_name = \'RunInspect rule_id-'+r+'\'';
+	} else if ( ctype == 'crawl') {
+		var s = 'select * from resource_inspection where proc_name = \'RunCrawl rule_id-'+r+'\'';
+	} else if ( ctype == 'base') {
+		var s = 'select * from resource_inspection where proc_name = \'base\'';
+	}
+	console.log(s);
+	return new Promise(function(resolve, reject){
+		client.query(s, (err, res) => {
+			if ( typeof(res) !== "undefined" ) {
+				resolve(res);
+			} else {
+				reject("error in im query");	  	
+			}
+		});	     
+	});
+}
+
+function refreshCache() {
+
+	var s = 'select * from refresh_resource_link_cache()';
+
+	return new Promise(function(resolve, reject){
+		client.query(s, (err, res) => {
+			if ( typeof(res) !== "undefined" ) {
+				resolve(res);
+			} else {
+				reject("error in im query");	  	
+			}
+		});	     
+	});
+
+}
+
+function delInspection(r, ctype ) {
+
+	if ( ctype == 'catalog' || ctype == 'link') {
+		var s = 'delete from resource_inspection where proc_name = \'RunInspect rule_id-'+r+'\'';
+	} else if ( ctype == 'crawl') {
+		var s = 'delete from resource_inspection where proc_name = \'RunCrawl rule_id-'+r+'\'';
+	} else if ( ctype == 'base') {
+		var s = 'delete from resource_inspection where proc_name = \'base\'';
+	}
+
+    console.log(' delete results '+s);
+	return new Promise(function(resolve, reject){
+		client.query(s, (err, res) => {
+			if ( typeof(res) !== "undefined" ) {
+				resolve(res);
+			} else {
+				reject(err);
+			}
+		});
+	});
+}
+
+function execInspectionUpdate(r,ctype) {
+
+	if ( ctype == 'catalog' || ctype == 'link') {
+		var s = 'select * from stale_resource_inspections where proc_name = \'RunInspect rule_id-'+r+'\'';
+	} else if ( ctype == 'crawl') {
+		var s = 'select * from stale_resource_inspections where proc_name = \'RunCrawl rule_id-'+r+'\'';
+	} else if ( ctype == 'base') {
+		var s = 'select * from stale_resource_inspections where proc_name = \'base\'';
+	}
+
+	console.log('Inspection Update '+s);
+	return new Promise(function(resolve, reject){
+		client.query(s, (err, res) => {
+			if ( typeof(res) !== "undefined" ) {
+				var rowrec = res.rows;
+				var rc = 0;
+
+				var iTask = {};
+				iTask.type = 'inspect';
+				iTask.rule_id = r;
+				iTask.rows = rowrec.length;
+				iTask.curent = rc;
+				iTask.timestamp = Date.now();
+				iTask.status = 'running';
+				gTasks.push(iTask);
+				console.log('returned '+rowrec.length);
+
+				var tid = setInterval(inspRow,500);
+                console.log('start ' + rc + ' ' + rowrec.length + ' ' + msd);
+				function inspRow() {
+					var ux = rowrec[rc];
+					ux.rule_id = r;
+					ux.ctype = ctype;
+					rc++;
+					iTask.curent = rc;
+					var dx = Date.now() - msd;
+					msd = Date.now();
+					console.log('>>>>> Row '+rc+' Time '+dx)
+					var zed = lcheck(ux);
+					if ( rc == rowrec.length) {
+						console.log('clear at ' +rc);
+						iTask.status = 'complete';
+						clearInterval(tid);
+					}
+				}
+
+				
+			}
+		});
+	});
+
+	function lucheck(u) {
+       
+		var hurl = u.lurl;
+		
+		var rex = require('request');
+		if ( hurl.indexOf('//ftp') > 0 ) {
+			console.log(' FTP link ' + hurl );
+			var zx = 'FTP Link not checked '+ hurl;
+
+		} else {
+			
+			rex(hurl, {method: 'HEAD'}, function (err, rsp, body){
+				if ( typeof(rsp) !== "undefined" && typeof(rsp.statusCode) !== "undefined") {
+					
+					var zx = 'Response : ' + hurl + ' status: ' + rsp.statusCode;
+					console.log('link update check '+hurl+' '+rsp.statusCode)
+					u.rsp = rsp;
+					updateCheck(u);
+	
+				} else if ( typeof(err) !== "undefined" ) {
+					console.log('Inspect update link error ' + hurl + ' Error ' + err) ;
+					var zx = err;
+                    u.err = err;
+
+				} else {
+					console.log('No Response, no Error '+hurl)
+				}
+			});
+		}
+		return zx;
+	}
+
+	function updateCheck(o) {
+
+		console.log('Saving update check  for '+ o.lurl );
+		
+		var coty = o.rsp.headers["content-type"];
+		var coln = o.rsp.headers["content-length"];
+		var sc = o.rsp.statusCode;
+		var rid = o.rid;
+		
+		if ( typeof(coty) == 'undefined') { coty = 'undefined'; }
+		if ( typeof(coln) == 'undefined') { coln = 0; }
+
+		var s = 'update resource_inspection set content_type = \'' + coty + '\','
+				+ 'url_status = \'' + sc + '\', http_cont_len = '+ coln
+				+ ', v_date = current_timestamp'
+				+ ', http_last_mod = current_timestamp where rid = '+rid;
+
+		return new Promise(function(resolve, reject){
+			client.query(s, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+					resolve(res);
+				} else {
+					reject(err);
+				}
+			});
+		});
+	}
+}
+
+function runCrawler(r) {
+
+	var s = 'select * from crawl_rule_links('+r+')' 
+			+ 'where identifier not in '
+			+ '(select guid from resource_inspection where proc_name = \'RunCrawl rule_id-'+r+'\')';
+    
+	console.log('Crawler '+s);
+	return new Promise(function(resolve, reject){
+		client.query(s, (err, res) => {
+			if ( typeof(res) !== "undefined" ) {
+				var rowrec = res.rows;
+				var rc = 0;
+				var rx = rowrec.length;
+				var cTask = {};
+				cTask.type = 'crawl';
+				cTask.rule_id = r;
+				cTask.rows = rx;
+				cTask.curent = rc;
+				cTask.status = 'running';
+				cTask.timestamp = Date.now();
+				gTasks.push(cTask);
+	
+				var	msd = Date.now();
+				var tid = setInterval(crawlRow,500);
+				
+				function crawlRow() {
+					var ux = rowrec[rc];
+					ux.rule_id = r;
+				
+					rc++;
+					var dx = Date.now() - msd;
+					msd = Date.now();
+					console.log('>>>>> Row '+rc+' Time '+dx);
+					cTask.current = rc;
+					var zed = crawlPage(ux,rc);
+					if ( rc == rowrec.length) {
+						console.log('stopped at row ' +rc);
+						clearInterval(tid);
+						cTask.status = 'complete';
+					}
+				}
+					  	
+			}
+		});
+	});
+
+	function CrawlerJobSetup(ruleId) {
+
+		var act_def = 9;
+
+		var s = 'insert into collection_activity(ca_id,set_id,ca_type, '
+				+ 'create_date,end_date,activity_id, agent_id,'
+				+ 'parent_caid, status, version_state,action_date )'
+				+ ' values (nextval(\'collection_activity_id_seq\'),'+ruleId+',\'crawler\','
+				+ 'current_timestamp,null,'+act_def
+				+ ',1,null,\'new\',\'new\',current_timestamp) returning ca_id';
+
+		console.log('collection activity insert set id '+s);
+		return new Promise(function(resolve, reject){
+			client.query(s, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+		            console.log('response '+JSON.stringify(res) );
+					var act_id = res.rows[0].ca_id;
+					jobqueBuild(ruleId,act_id);
+					resolve(res);
+				} else if ( err ) {
+					reject( err );
+				} else {
+				reject("col activity insert error");	  	
+				}
+			});     
+		});
+	}
+
+	function jobqueBuild(rule_id,ca_id,p ) {
+		var act_def = 9; // crawler activity defi id
+		var proc_def = 13; // crawler process def id
+
+		var s = 'insert into cap_jobque (pjq_id,pd_id,ca_id,'
+				+ 'ad_id,jobtype,status,created,completed)'
+				+ ' values (nextval(\'pjq_seq\'),'+proc_def+','+ca_id
+				+ ','+act_def+',\'node-client\',\'new\',current_timestamp, null )'
+				+ 'returning pjq_id';
+		console.log('job queue insert crawler '+ca_id+' '+rule_id);		
+		return new Promise(function(resolve, reject){
+			client.query(s, (err, res) => {	  
+				  if ( typeof(res) !== "undefined" ) {
+					resolve(res);
+				  } else if ( err ) {
+					  reject( err );
+				  } else {
+					reject("jobque insert error");	  	
+				  }
+			});     
+		});	
+
+	}
+
+
+	function crawlPage(u, rc) {
+		console.log('Crawl Page - count '+ rc + ' elem ' + u.crawl_element+' '+u.rel_path+' '+typeof(u.crawl_element));
+		var dataclass = u.crawl_element;
+		dataclass = u.crawl_element.replace(/A39/g, "\'");
+		var linkfilter = u.rel_path;
+		linkfilter = u.rel_path.replace(/A39/g, "\'");
+		
+		if ( dataclass.indexOf('/') > 0 ) {
+			var dca = dataclass.split('/');
+			var datatype = dca[0];
+			var typeclass = dca[1];
+			console.log(dataclass+dca[0]+dca[1]+'Datatype '+datatype+ ' typeclass '+typeclass)
+	
+		} else {
+			var datatype = dataclass;
+		}
+
+		var rv = '$(this)'+u.content_value.replace(/A39/g, "\'");
+		console.log('static scrape ' + u.lurl + ' ' + typeclass + ' ' + rv);
+        
+		scraperjs.StaticScraper.create(u.lurl)
+			.catch(function(err) {
+				console.log('Crawl Error '+rc+ ' ' + u.lurl + ' ' + JSON.stringify(err));
+			})
+			.scrape(function($) {
+				return $(datatype).map(function() {
+					function lf(l,d) {
+						var x = l.length;
+						if ( x > 1 ) {
+							if ( d.substr(0,x) == l ) {
+								return d;
+							}
+						} else {
+							return d;
+						}
+					}
+					
+					if ( typeclass ) {	
+						if ( $(this).attr('class') == typeclass ) {
+							var zd = eval(rv); 
+							var tx = lf(linkfilter, zd);
+							
+							return tx;
+							
+						}
+					} else {
+						var zd = eval(rv); 
+						var tx = lf(linkfilter, zd);
+						return tx;
+						
+					}	
+				}).get();
+			})
+			.then(function(links,utils) {
+				links.forEach(function(link) {
+					console.log('What to do '+ u.crawl_base+' '+link+' '+link.substr(0,4));
+
+					if ( link.substr(0,4) == 'http' || link.substr(0,3) == 'ftp' ) {
+						var nl = link;
+					} else {
+						var nl = u.crawl_base+link;
+					}
+					
+					
+					u.ident_url = nl;
+					saveCrawLink(u);
+				})
+				
+			});
+	}
+
+	function saveCrawLink(o) {
+
+		var proc = 'RunCrawl rule_id-'+o.rule_id;
+		
+		var s = 'INSERT INTO public.resource_inspection ('
+			+ ' rid, guid, parentid, orig_url, content_type, '
+			+ 'v_date, proc_name, url_status, ident_url, '
+			+ ' http_cont_len, http_last_mod) '
+			+ ' VALUES (nextval(\'res_insp_rid_seq\'), '
+			+ '\'' + o.identifier + '\',null,'
+			+  '\'' + o.lurl + '\',\'\','
+			+  'current_timestamp,\''+proc+'\',\'\',\''+o.ident_url+'\', 0, null)';
+
+			console.log('crawl saveLink '+ o.identifier+' '+o.lurl+' '+proc+' '+o.ident_url);
+
+			return new Promise(function(resolve, reject){
+				client.query(s, (err, res) => {
+					if ( typeof(res) !== "undefined" ) {
+						resolve(res);
+					} else {
+						reject(err);
+					}
+				});
+			});
+	}
+}
+
+function fetchJobStatus(r) {
+	var jSO = {};
+	jSO.rule_id = r;
+	jSO.jobs = [];
+	for (k in gTasks) {
+		if ( gTasks[k].rule_id == r ) {
+			jSO.jobs.push(gTasks[k]);
+		}
+	}
+	return jSO;
+}
+
+function runInspection(r,ctype) {
+	var gRz = [];
+	
+	console.log('runInspection '+r+ctype);
+	
+	if ( r == 0 ) {
+		return;
+		var s = 'insert into collection_activity ';
+	} else {
+		if ( ctype == 'link' || ctype == 'catalog') {
+			var s = 'select * from inspect_rule_links3('+r+')';
+		} else if ( ctype == 'crawl' ) {
+			var s = 'select * from resource_inspection where ' 
+					 + ' proc_name = \'RunCrawl rule_id-'+r+'\''
+					 + ' and http_last_mod < (NOW() - INTERVAL \'12 hours\')';
+		} else if ( ctype == 'base') {
+			var s = 'select * from resource_links';
+			         
+		}
+	}
+
+   
+	return new Promise(function(resolve, reject){
+		client.query(s, (err, res) => {
+			if ( typeof(res) !== "undefined" ) {
+				var rowrec = res.rows;
+				var rc = 0;
+				
+				var iTask = {};
+				iTask.type = 'inspect';
+				iTask.rule_id = r;
+				iTask.rows = rowrec.length;
+				iTask.curent = rc;
+				iTask.timestamp = Date.now();
+				iTask.status = 'running';
+				gTasks.push(iTask);
+
+				var msd = Date.now();
+				
+				var tid = setInterval(inspRow,500);
+                console.log('start ' + rc + ' ' + rowrec.length + ' ' + msd);
+				function inspRow() {
+					var ux = rowrec[rc];
+					ux.rule_id = r;
+					ux.ctype = ctype;
+					rc++;
+					iTask.curent = rc;
+					var dx = Date.now() - msd;
+					msd = Date.now();
+					console.log('>>>>> Row '+rc+' Time '+dx)
+					var zed = lcheck(ux);
+					if ( rc == rowrec.length) {
+						console.log('clear at ' +rc);
+						iTask.status = 'complete';
+						clearInterval(tid);
+					}
+				}
+
+				
+			} else {
+				console.log("error in im query");	  	
+			}
+		});	     
+	});
+
+	async function lcheck(u) {
+		var exTm = Date.now();
+	    if ( u.ctype == 'catalog' || u.ctype == 'link' ) {
+			var hurl = u.sel_url;
+		} else if ( u.ctype == 'crawl') {
+			var hurl = u.ident_url;
+		} else if ( u.ctype == 'base') {
+			var hurl = u.lurl;
+		}
+
+		var rex = require('request');
+		if ( hurl.indexOf('//ftp') > 0 ) {
+			console.log(' FTP link ' + u.lurl );
+			var zx = 'FTP Link not checked '+ u.lurl;
+
+		} else {
+			console.log('request for ' +hurl);
+			rex(hurl, {method: 'HEAD'}, function (err, rsp, body){
+				if ( typeof(rsp) !== "undefined" && typeof(rsp.statusCode) !== "undefined") {
+					
+					var zx = 'Response : ' + hurl + ' status: ' + rsp.statusCode;
+					console.log('lcheck '+hurl+' '+rsp.statusCode+' '+u.ctype+' time '+(Date.now() - exTm))
+					u.rsp = rsp;
+
+					if ( u.ctype == 'link' || u.ctype == 'catalog' ) {
+						if ( rsp.statusCode == '200') {
+							saveCheck(u);
+						}	
+					}
+
+					if ( u.ctype == 'base') {
+						saveCheck(u);
+					}
+
+					if ( u.ctype == 'crawl') {
+						updateCrawlCheck(u);
+						console.log('Execution Time ' + (Date.now() - exTm) );
+					}
+	
+				} else if ( typeof(err) !== "undefined" ) {
+					console.log('Inspect link error ' + hurl + ' ' + JSON.stringify(err)) ;
+					var zx = err;
+                    u.err = err;
+
+				} else {
+					console.log('No Response, no Error '+hurl)
+				}
+			});
+		}
+	
+		return zx;
+	}
+
+	function updateCrawlCheck(o) {
+		console.log('Inspection update crawl check '+ o.ident_url );
+		
+		var coty = o.rsp.headers["content-type"];
+		var coln = o.rsp.headers["content-length"];
+		var sc = o.rsp.statusCode;
+		var rid = o.rid;
+		
+		if ( typeof(coty) == 'undefined') { coty = 'undefined'; }
+		if ( typeof(coln) == 'undefined') { coln = 0; }
+
+		var s = 'update resource_inspection set content_type = \'' + coty + '\','
+				+ 'url_status = \'' + sc + '\', http_cont_len = '+ coln
+				+ ', http_last_mod = current_timestamp where rid = '+rid;
+
+		return new Promise(function(resolve, reject){
+			client.query(s, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+					resolve(res);
+				} else {
+					reject(err);
+				}
+			});
+		});
+	}
+
+	function saveCheck(o) {
+		console.log('Inspection savecheck  '+ o.sel_url );
+		var guid = o.identifier;
+		var coty = o.rsp.headers["content-type"];
+		var coln = o.rsp.headers["content-length"];
+		var sc = o.rsp.statusCode;
+		
+		var cmd = 'RunInspect rule_id-'+o.rule_id;
+
+		if ( typeof(coty) == 'undefined') { coty = 'undefined'; }
+		if ( typeof(coln) == 'undefined') { coln = 0; }
+
+		if (o.ctype == 'base' ) {
+			var iSql = 'insert into resource_inspection ('
+					+ 'guid, parentid, orig_url, content_type, v_date, proc_name,url_status,'
+					+ 'ident_url,http_cont_len, http_last_mod)'
+					+ ' values (\''+ guid + '\',null,\'' + o.lurl + '\',\''+ coty
+					+ '\',current_timestamp,\'base\',\''+sc+'\',\'\','+ coln + ',current_timestamp)';
+		} else if (o.ctype == 'catalog' || o.ctype == 'link' ) {
+			var iSql = 'insert into resource_inspection ('
+					+ 'guid, parentid, orig_url, content_type, v_date, proc_name,url_status,'
+					+ 'ident_url,http_cont_len, http_last_mod)'
+					+ ' values (\''+ guid + '\',null,\'' + o.lurl + '\',\''+ coty
+					+ '\',current_timestamp,\''+cmd + '\',\''+sc+'\',\''+o.sel_url
+					+ '\','+ coln + ',current_timestamp)';
+		}
+		
+		return new Promise(function(resolve, reject){
+			client.query(iSql, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+					resolve(res);
+				} else {
+					reject(err);
+				}
+			});
+		});
+	}
+
+	function saveError(o) {
+		console.log('Inspection SaveError  '+ o.sel_url );
+		var guid = o.identifier;
+		var coty = 'error';
+		var errno = o.err.errno;
+		var ec = o.err.code;
+		var eaddr = o.err.address;
+		var prt = o.err.port;
+		var cmd = 'RunInspect rule_id-'+o.rule_id;
+		var sc = errno + ':' + ec + ' ' + eaddr + ':' + prt;
+		var coln = 0;
+
+		var iSql = 'insert into resource_inspection ('
+					+ 'guid, parentid, orig_url, content_type, v_date, proc_name,url_status,ident_url,'
+					+ 'http_cont_len, http_last_mod)'
+					+ ' values (\''+ guid + '\',null,\'' + o.lurl + '\',\''+ coty
+					+ '\',current_timestamp,\''+ cmd + '\',\''+sc+'\',\''+o.sel_url
+					+ '\','+ coln + ',current_timestamp)';
+
+		return new Promise(function(resolve, reject){
+			client.query(iSql, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+					resolve(res);
+				} else {
+					reject(err);
+				}
+
+			});
+		});
+	}
+}
+
 function createUser(uo) {
   
   var tdate = Date.now();
@@ -537,7 +1346,7 @@ function createUser(uo) {
   var sqlStr = 'insert into users (user_id, name, apikey, agent_id, created, password, fullname, email,state) values '
               + ' (nextval(\'user_id_seq\'),\'' + uo.uname + '\',\'' + gNACL + '\',' + uo.rp + ',current_timestamp,\'' 
               + pwh.passwordHash + '\',\'' + uo.fn + '\',\'' + uo.em + '\',\'active\')';
-  //console.log(' sql ' + sqlStr);
+  console.log(' sql ' + sqlStr);
   return new Promise(function(resolve, reject) {
     client.query(sqlStr, (res, err) => {
     
@@ -552,8 +1361,6 @@ function createUser(uo) {
   }); 
   
 }
-
-
 
 async function getVersions(guid) {
 	
@@ -595,7 +1402,7 @@ async function delRecordVersion(guid, version) {
 	}	
 }
 
-function fetchRecordJson(guid, v ) {
+async function fetchRecordJson(guid, v ) {
 	
 	if ( !v || v==0 ) {
 		var sqlStr = 'with cv as (select v.mdv_id from md_record r, md_version v where v.md_id = r.md_id and' 
@@ -622,6 +1429,206 @@ function fetchRecordJson(guid, v ) {
 	});
 }
 
+async function fetchCollections(ctype) {
+	if ( ctype ) {
+		var sqlStr = 'select set_id, set_name, create_date, set_description from collections where set_type = \'' + ctype + '\''
+		+ ' and status in ( \'active\',\'complete\' ) order by create_date desc'; 
+
+	} else {
+		var sqlStr = 'select set_id, set_name, create_date, set_description from collections '
+		+ ' where set_type = \'batch-edit\''
+		+ ' and status in ( \'active\',\'complete\' ) order by create_date desc'; 
+
+	}
+
+    console.log(' sql ' + sqlStr);
+    return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+					resolve(res);
+				} else {
+					console.log(' fetchcollections err ' + err);
+					reject("error in collection query");	  	
+				}
+		});	     
+	});
+
+}
+
+async function fetchValidation(guid, fid,sid,mdv) {
+
+	function getValidation(fid,sid,mdv) {
+		var sqlStr = 'select * from mdv_validate(10,'+sid+','+mdv+')';
+		console.log('fetch validation sql '+ sqlStr);
+		return new Promise(function(resolve, reject){
+			client.query(sqlStr, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+					resolve(res);
+				} else {
+					reject("schemas error");	  	
+				}
+			});     
+		});
+	}
+
+	function getGuidValidataion(guid) {
+		var sqlStr = 'select v.mdv_id as mdv_id, v.source_schema_id as sid, v.version_id as version_id' 
+             + ' from md_record r, md_version v where v.md_id = r.md_id and '
+			 + ' r.guid = \'' + guid +'\'  and v.end_date is null';
+		console.log('fetch guid validation sql '+ sqlStr);
+		return new Promise(function(resolve, reject){
+			client.query(sqlStr, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+					var trx = res.rows;
+					var sid = trx[0].sid;
+					var mdv = trx[0].mdv_id;
+					var vid = trx[0].version_id;
+					var fid = 10;
+					resolve(getValidation(fid,sid,mdv));
+				} else {
+					reject("guid validation error");	  	
+				}
+			});     
+		});	 
+
+	}
+
+	console.log(' xxx ' + guid + fid + sid + mdv)
+	if ( guid == 'x') {
+		return(getValidation(fid,sid,mdv));
+	} else {
+		return(getGuidValidataion(guid));
+	}
+
+}
+
+async function fetchGuidValidation(guid) {
+
+	var sqlStr = 'select v.mdv_id as mdvid, v.source_schema_id as sid, v.version_id as version_id' 
+             + ' from md_record r, md_version v where v.md_id = r.md_id and '
+			 + ' r.guid = \'' + guid +'\'  and v.end_date is null';
+		return new Promise(function(resolve, reject){
+			client.query(sqlStr, (err, res) => {
+				if ( typeof(res) !== "undefined" ) {
+					var trx = res.rows;
+					var sid = trx[0].sid;
+					var mdv = trx[0].mdv_id;
+					var vid = trx[0].version_id;
+					var fid = 10;
+					resolve(fetchValidation(fid,sid,mdv));
+					//var vr = fetchValidation(fid,sid,mdv);
+					//vr.schema_id = sid;
+					//vr.mdv_id = mdv;
+					//vr.version_id = vid;
+					//resolve(vr);
+
+				} else {
+					reject("guid validation error");	  	
+				}
+			});     
+		});
+
+
+}
+
+async function fetchSchemas(sid) {
+
+	if (sid == 0 || typeof(sid) == "undefined" ) {
+		var sqlStr = 'select * from schemaCount';
+	} else {
+		var sqlStr = 'select * from schemapv(' + sid + ')';
+	}
+
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+			  if ( typeof(res) !== "undefined" ) {
+			  	resolve(res);
+			  } else {
+				reject("schemas error");	  	
+			  }
+		});     
+	});
+
+}
+
+async function saveSchemaElem(sid, qt, fe, type, varule, mpath) {
+	console.log('Save Schema new elem '+ sid + ' ' + qt );
+
+	var sqlStr = 'select * from scmap_insert ('
+		+ sid +',\''+qt+'\',\''+fe+'\',\''+type+'\','+varule+',\''+mpath+'\')';
+
+	console.log('Save Schema sql '+ sqlStr);
+
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+			  if ( typeof(res) !== "undefined" ) {
+			  	resolve(res);
+			  } else {
+				reject("schemas error");	  	
+			  }
+		});     
+	});
+
+}
+
+async function updateSchemaElem(sid, map_id, moid, varule, mpath) {
+
+	var sqlStr = 'select * from scmap_update ('
+		+ sid +','+map_id+','+moid+','+varule+',\''+mpath+'\')';
+
+	console.log('update schema element '+ sqlStr);
+
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+			  if ( typeof(res) !== "undefined" ) {
+			  	resolve(res);
+			  } else {
+				reject("schemas error");	  	
+			  }
+		});     
+	});
+}
+
+async function delSchemaElem(sid, map_id, moid) {
+
+	if ( moid == 0 ) {
+		sqlStr = 'delete from schema_map where map_id = '+map_id;
+	} else {
+		if ( moid > 0 ) {
+			sqlStr = 'delete from schema_object_map where moid = '+moid;
+		}
+	}
+	console.log('delete schema element '+ sqlStr);
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+			  if ( typeof(res) !== "undefined" ) {
+			  	resolve(res);
+			  } else {
+				reject("schemas error");	  	
+			  }
+		});     
+	});
+}
+
+async function makeNewSchema(sname,authsource) {
+
+	sqlStr = 'insert into schemas (schema_id, schema_name, format, version, ' 
+			+ 'auth_source,create_date,federated_id, status )'
+			+ 'values ( nextval(\'schema_seq\'),\''+ sname + '\',\'user-interface\','
+			+ '1,\''+ authsource + '\',current_timestamp,10,\'active\') returning schema_id';
+
+	console.log('create new  '+ sqlStr);
+
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+			  if ( typeof(res) !== "undefined" ) {
+			  	resolve(res);
+			  } else {
+				reject("schemas error");	  	
+			  }
+		});     
+	});
+}
 
 
 function makeMDJson2(r, p, t) {
@@ -685,8 +1692,10 @@ function fetchRecEdJson(guid,ed) {
 				  if ( typeof(res) !== "undefined" ) {
 					var ds = res.rows;
 					var elk = edById(ed);
-					//console.log('data a' + JSON.stringify(elk) );
+					console.log('edit stack ' + JSON.stringify(elk) );
+					//var jr = f(ds, 0, elk);
 					var jr = editMDJson(ds, 0, elk);
+					//console.log('process '+JSON.stringify(jr));
 					if ( jr ) {
 						//console.log('fje json ' );
 						resolve(mdeWrite(guid, jr));
@@ -725,63 +1734,80 @@ function fetchRecEdJson(guid,ed) {
 		});
 	}
 
-	async function pyCswInsert (mGuid, xmlBody) {
-
-		return new Promise(function(resolve, reject) {
-			//console.log('XML ' + xmlBody);
-			var	hurl = pyUrl + '?service=CSW&version=2.0.2&request=Transaction&TransactionSchemas='
-					   + 'http://www.isotc211.org/2005/gmi';
-			var bl = xmlBody.length;
-			var options = {url: hurl, 
-				method: "POST",
-				body : xmlBody,
-				headers: {
-					'sendImmediately': true,
-					contentType: "text/xml",
-					contentLength: bl
-				}
-			};
-			
-			var pyRequest = require('request'); 
-			var pyResponse = function(err, httpResponse, body) {
-				var n = new Date();
-				if (err) {
-					//console.log('pycsy failed:' + mGuid + ' ' + err);				
-					reject("pycsw error " + mGuid);  	
-					
-				} else {
-					console.log('PYCSW update for :' + mGuid );
-					//console.log(util.inspect(httpResponse, {showHidden: false, depth: null}))
-					resolve(httpResponse);
-					
-				}
-			}
-			pyRequest.post(options, pyResponse);
-		})
-		.catch(err => { 
-				console.log('pyCswInsert error caught ' 
-							+ mGuid + ' ' + bl +' ' + JSON.stringify(err) );
-			});
-	
-	}
 	return frj(guid, ed);
 }
 
+async function pyCswInsert (mGuid, xmlBody) {
+
+	return new Promise(function(resolve, reject) {
+		//console.log('pyCSW Insert XML ' + xmlBody);
+		var	hurl = pyUrl + '?service=CSW&version=2.0.2&request=Transaction&TransactionSchemas='
+					+ 'http://www.isotc211.org/2005/gmi';
+		var bl = xmlBody.length;
+		var options = {url: hurl, 
+			method: "POST",
+			body : xmlBody,
+			headers: {
+				'sendImmediately': true,
+				contentType: "text/xml",
+				contentLength: bl
+			}
+		};
+		
+		var pyRequest = require('request'); 
+		var pyResponse = function(err, httpResponse, body) {
+			var n = new Date();
+			if (err) {
+				console.log('pycsy failed:' + mGuid + ' ' + err);				
+				reject("pycsw error " + mGuid);  	
+				
+			} else {
+				console.log('PYCSW update for :' + mGuid );
+				//console.log(util.inspect(httpResponse, {showHidden: false, depth: null}))
+				resolve(httpResponse);
+				
+			}
+		}
+		pyRequest.post(options, pyResponse);
+	})
+	.catch(err => { 
+			console.log('pyCswInsert error caught ' 
+						+ mGuid + ' ' + bl +' ' + JSON.stringify(err) );
+	});
+
+}
+	
 function edById(e) {
-    var  x = {};
+	var edo = {};
+	var  x = {};
+	var newX = {};
+	var delX = {};
+	var nk=0;
+	var dk = 0;
+
 	for (var k in e.eda) {
 		var p = e.eda[k].path;
 		var v = e.eda[k].value;
 		var a = e.eda[k].action;
 		var n = e.eda[k].nodeid;
-		if ( a = 'edit' ) {
+		if ( a =='edit' ) {
 			x[n] = v;
+		} else if ( a == 'new' ) {
+			newX[nk] = e.eda[k];
+			nk++;
+			
+		} else if ( a == 'delete' ) {
+			delX[n] = p;
 		}
 	}
-	return x;
+	edo.edit = x;
+	edo.new = newX;
+	edo.del = delX;
+
+	return edo;
 }
 
-function editMDJson(r, p, edStack) {
+function editMDJson(r, p, ed) {
 	
 	var lj = {};
 	var eda = [];
@@ -796,7 +1822,7 @@ function editMDJson(r, p, edStack) {
 				var propname = r[k].node_name; 
 			}
 			if ( r[k].node_value == '{}' ) {
-				lj[propname] = editMDJson(r,np, edStack);
+				lj[propname] = editMDJson(r,np, ed);
 				
 			} else if ( r[k].node_value == '[]' ) {
 				// children of arrays - skip the layer that has the number index -
@@ -806,13 +1832,12 @@ function editMDJson(r, p, edStack) {
 						var subp = r[v].node_id;
 						var z = {}; 
 						if ( r[v].node_value == '{}' ) {
-							z = editMDJson(r,subp,edStack);													
+							z = editMDJson(r,subp,ed);													
 						} else {
 							var nx = r[v].node_id;
-							if ( edStack[nx] ) {
-								z = edStack[nx].replace(/(^")|("$)/g, '');
-							} else {
-								
+							if ( ed.edit[nx] ) {
+								z = ed.edit[nx].replace(/(^")|("$)/g, '');
+							} else {	
 								z = r[v].node_value.replace(/(^")|("$)/g, '');
 							}	
 						}
@@ -822,9 +1847,9 @@ function editMDJson(r, p, edStack) {
 			} else {
 				// end point
 				var nx = r[k].node_id;
-				if ( edStack[nx] ) {
+				if ( ed.edit[nx] ) {
 					//console.log('endpoint - found edit ' + nx + ' NEW ' + edStack[nx] + ' Old ' + r[k].node_value  );
-					lj[propname] = edStack[nx].replace(/(^")|("$)/g, '');
+					lj[propname] = ed.edit[nx].replace(/(^")|("$)/g, '');
 				} else {
 					lj[propname] = r[k].node_value.replace(/(^")|("$)/g, '');
 				}		
@@ -834,6 +1859,219 @@ function editMDJson(r, p, edStack) {
 	return lj;
 }
 
+function processCollection(cb) {
+
+	var i = cb.col_id;
+	var a = cb.action;
+	var f = cb.field_name;
+	var q = cb.query_text;
+	var s = cb.search_text;
+	var r = cb.replace_text;
+	var c = cb.collection;
+
+	var zed = {};
+	zed.field_name = f;
+	zed.search_text = s;
+	zed.replace_text = r;
+	zed.count = c.length;
+
+	function collectionBld(o) {
+		
+		var zed = {};
+		zed.field_name = o.field_name;
+		zed.search_text = o.search_text;
+		zed.replace_text = o.replace_text;
+		zed.count = o.collection.length;
+
+		if ( o.col_id == 'new') {
+			var sqlStr = 'insert into collections(set_id,set_name,set_type,status,create_date,end_date,user_id,'
+					+ 'activity_definition_id, source_url, set_description, schema_id, url_params)'
+					+ 'values(nextval(\'collections_id_seq\'),\''+ o.field_name + '-'+ o.query_text 
+					+ '\',\'batch-edit\',\'active\',current_timestamp,null, '
+					+ '1,6,\'test.geothermaldata.org\',\'' + o.action + ':'+ o.search_text + ':-:' + o.replace_text + '\',11,\''
+					+ JSON.stringify(zed)+'\'::json) returning set_id';
+
+		} else {
+			//update to existing collection
+			caBld(o,s)
+			
+		}
+
+        console.log('collection edit inserrt');
+		return new Promise(function(resolve, reject){
+			client.query(sqlStr, (err, res) => {
+				console.log('col edit qry '+err + ' ' + res);
+				  if ( typeof(res) !== "undefined" ) {
+					var set_id = res.rows[0].set_id;
+					console.log('col edit set id '+set_id );
+					caBld(o,set_id);
+					resolve(res);
+				  } else if ( err ) {
+					  reject( err );
+				  } else {
+					reject("collection insert error");	  	
+				  }
+			});     
+		});	
+		
+	}
+
+	function caBld(o,s) {
+		var sqlStr = 'insert into collection_activity(ca_id,set_id,ca_type, create_date,end_date,activity_id, agent_id,'
+					+ 'parent_caid, status, version_state,action_date )'
+					+ ' values (nextval(\'collection_activity_id_seq\'),'+s+',\'collection\',current_timestamp,null,'
+					+ '6,1,null,\'new\',\'new\',current_timestamp) returning ca_id';
+
+		console.log('collection activity insert set id '+s);
+		return new Promise(function(resolve, reject){
+			client.query(sqlStr, (err, res) => {
+				  
+				if ( typeof(res) !== "undefined" ) {
+					var a = res.rows[0].ca_id;
+					//console.log('col act id'+ s + a);
+					jqBld(o,s,a,9);
+					resolve(res);
+				} else if ( err ) {
+					reject( err );
+				} else {
+				reject("col activity insert error");	  	
+				}
+			});     
+		});	
+	}
+
+	function jqBld(o,s,a, p ) {
+		// 2 jq - one for db,  one for pycsw
+		//var pd = 9;
+
+		var sqlStr = 'insert into cap_jobque (pjq_id,pd_id,ca_id,ad_id,jobtype,status,created,completed)'
+					+ ' values (nextval(\'pjq_seq\'),'+p+','+a+', 6,\'node-client\',\'new\',current_timestamp, null )'
+					+ 'returning pjq_id';
+		console.log('job queue insert '+a+' '+p);			
+		return new Promise(function(resolve, reject){
+			client.query(sqlStr, (err, res) => {	  
+				  if ( typeof(res) !== "undefined" ) {
+					var q = res.rows[0].pjq_id;
+					console.log('new jq  ' + q);
+					if ( p == 9 ) {
+						//jqBld(o,s,a,10);
+						bce_insert_rows(o,s,a,q);
+						//process_rows(o,s,a,q);
+					}
+
+					if ( p == 10 ) {
+						//process pycsw
+						processs_pycsw(o,s,a,q);
+
+					}
+					
+					resolve(res);
+				  } else if ( err ) {
+					  reject( err );
+				  } else {
+					reject("jobque insert error");	  	
+				  }
+			});     
+		});	
+
+	}
+
+	function bce_insert_rows(o,s,a,q) {
+		var c = o.collection;
+		var cl = c.length-1;
+		for (k in c) {
+			console.log(' rows '+a+ ' ' + q )
+			bce_row(a,q,c[k]);
+			if (k == cl) {
+				process_rows(o,s,a,q);
+			}
+		}
+	}
+	
+	function bce_row(a,q,r) {
+		var sqlStr = 'select * from batch_edit_colrec('+a+','+q+',\'['+JSON.stringify(r) + ']\'::json)';
+		console.log('bcerow caID '+a+' JobQ ID: '+q);
+		return new Promise(function(resolve, reject){
+			client.query(sqlStr, (err, res) => {	
+				//console.log('process row ' + err + ' ' + res);  
+				if ( typeof(res) !== "undefined" ) {
+				//jqBld(o,s,a,10);
+					resolve(res);
+				} else if ( err ) {
+					console.log('process row err: ' + err)
+					reject( err );
+				} else {
+					reject("job process row error");	  	
+				}
+			});     
+		});
+	}
+
+	function process_rows(o,s,a,q) {
+	
+		var sqlStr = 'select * from batch_edit_process('+a+','+q+')';
+		console.log('process rows: ' + a+' '+q);
+		
+		return new Promise(function(resolve, reject){
+			client.query(sqlStr, (err, res) => {	
+				console.log('process rows ' + err + ' ' + JSON.stringify(res));  
+				  if ( typeof(res) !== "undefined" ) {
+			        jqBld(o,s,a,10);
+					resolve(res);
+				  } else if ( err ) {
+					  reject( err );
+				  } else {
+					reject("job process error");	  	
+				  }
+			});     
+		});
+		
+	}
+
+	async function processs_pycsw(o,s,a,q) {
+		console.log('pycsw '+a+' '+q);
+		
+		var col = o.collection;
+		var rpc = 0;
+
+		for (k in col) {	
+			var guid = col[k].guid;
+			var cur = await fetchRecordJson(guid);
+			if ( cur !== null) {
+				var cw = wrapUpdateJson(cur);
+				var xm = jToXML(cw);
+				pyCswInsert (guid, xm);
+				rpc++;
+			} 
+		}
+        procCapStatus(o,s,a,q);
+		return rpc;
+	}
+
+	function procCapStatus(o,s,a,q) {
+
+		var c = o.collection;
+		var sqlStr = 'select * from batch_edit_status('+s+','+a+','+q+',\'complete\')';
+		console.log('process cap_records complete rows ' + a+' '+q);
+		
+		return new Promise(function(resolve, reject){
+			client.query(sqlStr, (err, res) => {	
+				//console.log('status update ' + err + ' ' + res);  
+				  if ( typeof(res) !== "undefined" ) {
+					resolve(res);
+				  } else if ( err ) {
+					  console.log('pcr error'+err);
+					  reject( err );
+				  } else {
+					reject("job process error");	  	
+				  }
+			});     
+		});	
+	}
+	
+	collectionBld(cb);
+	return zed;
+}
 
 // * Logging functions with err
 function routelog(req,lp, ore) {
@@ -884,14 +2122,14 @@ router.get('/', async function(req, res) {
 });
 
 router.get('/dataset', async function(req, res) {
-	var lp = '/dataset';
+	var lp = '/action/dataset';
 	routelog(req, lp);
 	var rid = req.query.id;
 	
     if ( rid.length ) {
-		res.redirect('http://test.geothermaldata.org/?guid='+rid);
+		res.redirect('https://test.geothermaldata.org/?guid='+rid);
     } else {
-		res.redirect('http://test.geothermaldata.org');
+		res.redirect('https://test.geothermaldata.org');
     }  	
 });
 
@@ -944,6 +2182,100 @@ router.get('/getCategories', async function(req, res) {
     }  	
 });
 
+router.get('/validateMDRecord', async function(req, res) {
+	var lp = '/action/validateMDRecord';
+	routelog(req, lp);
+	var guid = req.query.guid;
+	var fid = req.query.fid;
+	var sid = req.query.sid;
+	var mdv = req.query.mdv;
+	if (typeof(guid) == 'undefined' ) { guid = 'x' }
+	console.log('validate '+fid+sid+mdv+guid);
+	var s = await fetchValidation(guid,fid,sid,mdv);
+
+    if ( s ) {
+    	res.send(s);	
+    } else {
+    	res.send('No validation returned');	
+    }  	
+});
+
+router.get('/getSchemas', async function(req, res) {
+	var lp = '/getSchemas';
+	routelog(req, lp);
+	
+	var sid = req.query.sid;
+	
+	var s = await fetchSchemas(sid);
+	
+    if ( s ) {
+    	res.send(s);	
+    } else {
+    	res.send('No Schemas');	
+    }  	
+});
+
+router.get('/saveSchemaElem', async function(req, res) {
+	var lp = 'action/saveSchemaElem';
+	routelog(req, lp);
+	// q='+q+'&sid='+eid+'&fe='+fd+'&type='+sty+'&vr='+vt+'&mp='+mp
+	var action = req.query.action;
+	var sid = req.query.sid;
+	var qt = req.query.q;
+	var fe = req.query.fe;
+	var type = req.query.type;
+	var varule = req.query.vr;
+	var mpath = req.query.mp;
+	var mapid = req.query.mapid;
+	var moid = req.query.moid;
+	console.log(' save '+ sid + qt + fe);
+	if ( action == 'new' ) {
+		var s = await saveSchemaElem(sid, qt, fe, type, varule, mpath);
+	} else {
+		var s = await updateSchemaElem(sid, mapid, moid, varule, mpath);
+	}
+	
+	
+    if ( s ) {
+    	res.send(s);	
+    } else {
+    	res.send('No Schemas');	
+    }  	
+});
+
+router.get('/deleteSchemaElem', async function(req, res) {
+	var lp = '/action/deleteSchemaElem';
+	routelog(req, lp);
+	var mapid =  req.query.mapid;
+	var moid =  req.query.moid;
+	var sid = req.query.sid;
+
+
+	console.log('delete '+ sid + mapid + moid);
+	var s = await delSchemaElem(sid, mapid, moid);
+	
+    if ( s ) {
+    	res.send(s);	
+    } else {
+    	res.send('No Schemas');	
+    }  	
+});
+
+router.get('/createNewSchema', async function(req, res) {
+	var lp = '/action/createNewSchema';
+	routelog(req, lp);
+	var sname =  decodeURIComponent(req.query.name);
+	var authsource = decodeURIComponent(req.query.auth);
+
+	var s = await makeNewSchema(sname, authsource);
+	
+    if ( s ) {
+    	res.send(s);	
+    } else {
+    	res.send('No Schemas');	
+    }  	
+});
+
 router.get('/getAuthors', async function(req, res) {
 	var lp = '/getAuthors';
 	routelog(req, lp);
@@ -959,21 +2291,35 @@ router.get('/getAuthors', async function(req, res) {
     }  	
 });
 
+router.get('/getCollections', async function(req, res) {
+	var lp = '/action/getCollections';
+	routelog(req, lp);
+	
+	var ctype = req.query.ctype;
+
+    var cols = await fetchCollections(ctype);
+    if ( cols ) {
+    	res.send(cols);	
+    } else {
+    	res.send('No Collections');	
+    }  	
+});
+
 router.get('/getToken', async function(req, res) {
 	var lp = '/getToken';
 	routelog(req, lp);
 	var quark = req.query.q;
 	var lib = req.query.p;
+  console.log('GT - 1' + quark + lib);
   var pwh = saltHashPassword(lib);
   var pwh = sha512(lib,'5d097fe1065645c8');
-
-  
+  console.log(pwh.salt);
   var px = await fetchAuth(quark, pwh.passwordHash, pwh.salt);
   if ( px ) { 
 
 	var dres = px.rows; 
 	var kv = dres[0];
-	var authtoken = 'A'+kv.apikey.substr(0,6) + 'E' + kv.password.substr(0,12); 
+	var authtoken = ''; 
 	gKeystack.push(authtoken);
 	var cms = {};
 	cms.authtoken  = authtoken;
@@ -999,7 +2345,6 @@ router.get('/createUser', async function(req, res ) {
   u.em = req.query.em;
   u.rp = req.query.a;
   
-  
   if ( gKeystack.indexOf(u.token) > -1 ) {
 	var cur = await createUser(u);
  
@@ -1010,6 +2355,222 @@ router.get('/createUser', async function(req, res ) {
 	}    
   }
   
+});
+
+router.get('/getUsers', async function(req, res ) {
+	var lp = '/getUsers';
+	routelog(req, lp);
+
+	utoken = req.query.t;
+	var vex = gKeystack.indexOf(utoken);
+   
+	if ( vex >= 0 ) {	
+		var cur = await fetchUsers(utoken);
+		if ( cur == null) {
+			res.send('No response');	
+		} else {
+			res.send(cur);	
+		}    
+	}
+  
+});
+
+router.get('/getInspectionMap', async function(req, res ) {
+	var lp = '/action/getInspectMap';
+	routelog(req, lp);
+
+	var cur = await fetchInspectMap();
+	if ( cur == null) {
+		res.send('No response');	
+	} else {
+		res.send(cur);	
+	}    
+  
+});
+
+router.get('/getInspectionLinks', async function(req, res ) {
+	var lp = '/action/getInspectionLinks';
+	routelog(req, lp);
+
+	var ruleId = req.query.rid;
+	var ctype = req.query.ctype;
+
+	var cur = await fetchInspectionLinks(ruleId, ctype);
+	if ( cur == null) {
+		res.send('Error');	
+	} else {
+		res.send(cur);	
+	}    
+});
+
+router.get('/getStaleInspectionLinks', async function(req, res ) {
+	var lp = '/action/getStaleInspectionLinks';
+	routelog(req, lp);
+
+	var ruleId = req.query.rid;
+	var ctype = req.query.ctype;
+	var retype = req.query.retype;
+
+	var cur = await fetchStaleInspectionLinks(ruleId, ctype,retype);
+	if ( cur == null) {
+		res.send('Error');	
+	} else {
+		res.send(cur);	
+	}    
+});
+
+
+router.get('/getInspectionResults', async function(req, res ) {
+	var lp = '/action/getInspectionResults';
+	routelog(req, lp);
+
+	var ruleId = req.query.rid;
+	var ctype = req.query.ctype;
+
+	var cur = await fetchInspectionResults(ruleId, ctype);
+
+	
+	if ( cur == null) {
+		res.send('Error');	
+	} else {
+		res.send(cur);	
+	}    
+});
+
+router.get('/runInspection', async function(req, res ) {
+	var lp = '/action/runInspection';
+	routelog(req, lp);
+
+	var ruleId = req.query.rid;
+	var ctype = req.query.ctype;
+	
+	var cur = runInspection(ruleId, ctype);
+	var rco = {};
+	var rcrow = {"Status" : "Started"};
+	rco.rows = [];
+	rco.rows.push(rcrow);
+	res.send(rco);
+  
+});
+
+router.get('/getRuleJobStatus', async function(req, res ) {
+	var lp = '/action/getRuleJobStatus';
+	routelog(req, lp);
+
+	var ruleId = req.query.rid;
+
+	var cur = await fetchJobStatus(ruleId);
+	res.send(cur);
+  
+});
+
+router.get('/runCrawler', async function(req, res ) {
+	var lp = '/action/runCrawler';
+	routelog(req, lp);
+
+	var ruleId = req.query.rid;
+
+	var cur = runCrawler(ruleId);
+	var rco = {};
+	var rcrow = {"Status" : "Started"};
+	rco.rows = [];
+	rco.rows.push(rcrow);
+	res.send(rco);	
+
+});
+
+router.get('/runInspectionUpdate', async function(req, res ) {
+
+	var lp = '/action/runInspectionUpdate';
+	routelog(req, lp);
+
+	var rid = req.query.rid;
+	var ctype = req.query.ctype;
+    console.log('whats wrong' + rid + ' '+ctype);
+	var cur = await execInspectionUpdate(rid,ctype);
+	var rco = {};
+	var rcrow = {"Status" : "Started"};
+	rco.rows = [];
+	rco.rows.push(rcrow);
+	res.send(rco);	
+})
+
+router.get('/delInspectionResults', async function(req, res ) {
+	var lp = '/action/delInspectionResults';
+	routelog(req, lp);
+	var rid = req.query.rid;
+	var ctype = req.query.ctype;
+
+	var cur = await delInspection(rid, ctype);
+	if ( cur == null) {
+		res.send('Error');	
+	} else {
+		res.send(cur);	
+	}    
+});
+
+router.get('/runCacheRefresh', async function(req, res ) {
+	var lp = '/action/runCacheRefresh';
+	routelog(req, lp);
+
+	var cur = await refreshCache();
+	if ( cur == null) {
+		res.send('Error');	
+	} else {
+		res.send(cur);	
+	}    
+});
+
+router.get('/deleteInspectionMapItem', async function(req, res ) {
+	var lp = 'action/deleteInspectionMapItem';
+	routelog(req, lp);
+	var rid = req.query.rid;
+	var cur = await deleteInspectMapItem(rid);
+	if ( cur == null) {
+		res.send('No response');	
+	} else {
+		res.send(cur);	
+	}    
+  
+});
+
+router.get('/saveInspectionMapItem', async function(req, res ) {
+	var lp = 'action/saveInspectionMapItem';
+	routelog(req, lp);
+	var type = req.query.t;
+	var burl = decodeURIComponent( req.query.b );
+	var selpath = decodeURIComponent( req.query.s );
+	var te = req.query.e;
+	var el = req.query.l;
+	
+	var cur = await saveInspectMapItem(type,burl,selpath,te,el);
+	if ( cur == null) {
+		res.send('No response');	
+	} else {
+		res.send(cur);	
+	}     
+});
+
+router.get('/updateInspectionMapItem', async function(req, res ) {
+	var lp = 'action/updateInspectionMapItem';
+	routelog(req, lp);
+	var rid = req.query.r;
+	var type = req.query.t;
+	var burl = decodeURIComponent( req.query.b );
+	var selpath = decodeURIComponent( req.query.s );
+	var te = decodeURIComponent( req.query.e );
+	var el = decodeURIComponent( req.query.l );
+	console.log('Params >' + te + el + burl + selpath);
+	if (rid ) {
+		var cur = await updateInspectMapItem(rid,type,burl,selpath,te,el);
+		if ( cur == null) {
+			res.send('No response');	
+		} else {
+			res.send(cur);	
+		} 
+	}  else {
+		res.send('Missing Identifier');
+	}  
 });
 
 router.get('/editRecord', async function(req, res ) {
@@ -1045,6 +2606,16 @@ router.post('/updateMdRecord', async (request, response) => {
 	var edStack = request.body;
 	var guid = edStack.guid;
 	var cur = await fetchRecEdJson(guid,edStack);
+	response.json(cur);
+	
+  });
+
+router.post('/batchUpdateCollection', async (request, response) => { 
+	var lp = '/batchUpdateCollection';
+	routelog(request, lp);
+	var colBody = request.body;
+	//var guid = edStack.guid;
+	var cur = await processCollection(colBody);
 	response.json(cur);
 	
   });
@@ -1117,6 +2688,21 @@ router.get('/getRecordVersions', async function(req, res) {
     }  	
 });
 
+router.get('/getBatchQuery', async function(req, res) {
+	var lp = '/getBatchQuery';
+	routelog(req, lp);
+
+	var qry = req.query.q;
+	var fld = req.query.fld;
+	var guids = req.query.guids;
+
+    var cms = await batchRecordQuery(fld, qry, guids);
+    if ( cms ) {
+    	res.send(cms);	
+    } else {
+    	res.send('No Data Types');	
+    }  	
+});
 
 router.get('/getContentModels', async function(req, res) {
 	var lp = '/getContentModels';
@@ -1171,14 +2757,37 @@ router.get('/getMapServers', async function(req, res) {
     }  	
 });
 
+router.get('/testfind', async function(req, res) {
+	var lp = '/testfind';
+	routelog(req, lp);
+
+	var qry = req.query.qry;
+
+    var fms = await testfind(qry);
+    if ( fms ) {
+    	res.send(fms);	
+    } else {
+    	res.send('No test find ');	
+	}  	
+	
+});
+
 router.get('/ingestion', async function(req, res) {
 	var lp = '/ingestion';
 	routelog(req, lp);
 	var lm = req.query.limit;
 	var of = req.query.offset;
+	var guid = req.query.guid;
+
 	if ( !lm ) { lm = -1 }
-    if ( !of ) { of = -1 }
-	var fms = await fetchInspection(lm,of);
+	if ( !of ) { of = -1 }
+	if ( guid ) {
+		lm = 1;
+		var fms = await fetchInspection(lm,of,guid);
+	} else {
+		var fms = await fetchInspection(lm,of);
+	}
+	
     if ( fms ) {
     	res.send(fms);	
     } else {
@@ -1187,6 +2796,22 @@ router.get('/ingestion', async function(req, res) {
 
 });
 
+router.get('/getUrlStatusCached', async function(req, res) {
+	var lp = '/action/getUrlStatusCached';
+	routelog(req, lp);
+  	var exists = true;
+	//res.send(exists);
+	
+	var guid = req.query.guid;
+  	var urlToCheck = req.query.url;
+	var urlVal = await fetchUrlCache(guid, urlToCheck);
+	if ( urlVal ) {
+		res.send(urlVal);
+	} else {
+		res.send('UrlCheck no response')
+	}
+	
+});	
 
 // generic debuggint tool
 router.get('/getData', (request, response) => {
@@ -1275,7 +2900,7 @@ router.get('/harvest', (request, response) => {
 
 router.get('/harvestSourceInfo', (request, response) => {
 	var lp = '/harvestSourceInfo';
-	routelog(req, lp);
+	routelog(request, lp);
     var hsid = request.query.hsid;
     //var sqlStr = 'Select * from collections where set_id = '+ hsid;
     var sqlStr = 'select set_id, set_name, c.status, c.user_id, c.create_date, '  
@@ -1313,7 +2938,9 @@ router.get('/harvestSourceList', (request, response) => {
 	routelog(request, lp);
     // retrieve list of harvest sources
 	var sqlStr = 'Select set_id, set_name, source_url from collections '
-	            + ' where status = \'active\' and set_type = \'harvest\'';
+				+ ' where status = \'active\' and set_type = \'harvest\'';
+
+	sqlStr = 'select * from harvest_source_hdr';
 
     client.query(sqlStr, (err, res) => {
     	if ( typeof(res) !== "undefined" ) {	
@@ -1322,9 +2949,24 @@ router.get('/harvestSourceList', (request, response) => {
 			response.json('Error'); 
 	  	}
 	})
-
  });
 
+ router.get('/harvestJobs', (request, response) => {
+	var lp = '/action/harvestJobs';
+	routelog(request, lp);
+	var hsid = request.query.setid;
+
+	var sqlStr = 'select * from harvest_job_history '
+				+ ' where set_id = ' + hsid;
+
+	client.query(sqlStr, (err, res) => {
+		if ( typeof(res) !== "undefined" ) {	
+				response.json(res);  
+			} else {
+				response.json('Error: '+ err); 
+			}
+	})
+ });
 
 router.get('/newCollectionActivity', (request, response) => {
 	var lp = '/newCollectionActivity';

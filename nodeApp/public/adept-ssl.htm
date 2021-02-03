@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adept Search</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
+<link rel="stylesheet" href="https://kit-free.fontawesome.com/releases/latest/css/free.min.css" media="all">
+<link rel="stylesheet" href="/css/ngds.css" />
+<link rel="stylesheet" href="/css/dds.css" />
+<link rel="shortcut icon" href="/img/nico.ico" />
+
+<script src="/js/jquery.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="/js/adeptUI.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/json2html/1.2.0/json2html.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.json2html/1.2.0/jquery.json2html.min.js"></script>
+<link href="/css/spin.css" type="text/css" rel="stylesheet" />
+<script src="/js/spin.js"></script>
+
+<style>
+
+    .a:hover {
+        color:rgb(58, 85, 81);
+        font-weight: bold;
+    }
+
+    .shitem[title]:hover:after {
+        content: attr(title);
+        position: absolute;
+    }
+    
+    .ui-datepicker-header {
+        background: #80bbbb;
+	    color: #222222;
+    }
+    .ui-datepicker table {
+        width: 80%;
+        font-size: .7em;
+        border-collapse: collapse;
+        margin: 0 0 .4em;
+    }
+    .ui-datepicker th {
+        padding: .4em .2em;
+        text-align: center;
+        font-weight: bold;
+        border: 0;
+    }
+    .ui-datepicker td {
+        border: 0;
+        padding: 1px;
+    }
+    .ui-datepicker .ui-datepicker-buttonpane {
+	background-image: none;
+	margin: .2em 0 0 0;
+	padding: 0 .2em;
+	border-left: 0;
+	border-right: 0;
+	border-bottom: 0;
+    }
+    .ui-datepicker .ui-datepicker-buttonpane button {
+        font-size: 11px;
+        font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+        float: right;
+        margin: .2em .2em .4em;
+        cursor: pointer;
+        padding: .2em .6em .3em .6em;
+        width: auto;
+        overflow: visible;
+    }
+    .ui-datepicker select.ui-datepicker-month,
+    .ui-datepicker select.ui-datepicker-year {
+        width: 45%;
+        font-size: 12px;
+        font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    }
+    #ui-datepicker-div {
+        width: 260px;
+    }
+
+    .ui-selectmenu-menu-item-header {
+    text-decoration: underline;
+    }
+
+    .ui-selectmenu-menu-item-content {
+    font-style: italic;
+    }
+
+    .hl {
+        background: yellow;
+        font-weight: bold;
+    }
+
+    .jtd {
+        font-size: 12px;
+        font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+    }
+
+    .spf {
+        font-size: 16px;
+        font-family: "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+        font-style: italic;
+        font-weight: normal;
+        color:rgb(41, 97, 122);
+
+    }
+
+    .ud-hr { margin:2px; 
+        font-size: 18px; 
+        font-family: calibri; 
+        font-weight: bold; 
+        color: rgb(41,97,122);
+    }
+
+    .ud-sh { margin:5px; 
+        font-size: 14px; 
+        font-family: calibri; 
+        font-weight: bold;
+    }
+
+    .ud-tx { margin:5px; 
+        font-size: 14px; 
+        font-family: calibri; 
+        font-weight: normal;
+    }
+
+    .md-label {
+        font-size: 12px;
+    }
+
+    table {
+        border: solid 1px;
+        border-color: rgb(28, 65, 61);
+        background-color:rgb(132, 155, 170);
+    }
+    td {
+        font-size: 12px; 
+        font-family: calibri; 
+        font-weight: normal;
+        margin: 0px;
+        color:rgb(58, 85, 81);
+        background-color:rgb(255, 255, 255);
+    }
+
+    th {
+        font-size: 14px; 
+        font-family: calibri; 
+        font-weight: bold;
+        margin: 0px;
+        background-color:rgb(58, 67, 78);
+        color: rgb(132, 155, 165);
+    }
+
+</style>
+<script>
+
+    var sSrchUrl = "";
+    var sPage = 0;
+    var gSp = 0;
+
+    //var gFeatureGroup;
+    //var gBounds;
+    var gExtents=[];
+    var gMdRecord=false;
+    var gSearchHistory=[];
+    var gSavedGuids=[];
+	var sType ="";
+    var sOff = 0;
+    var pgSize = 25;
+    var curID = "";
+
+  var init=true;
+  var gDefaultDict = 'ngds';
+
+  var opts = {
+        lines: 10, // The number of lines to draw
+        length: 38, // The length of each line
+        width: 17, // The line thickness
+        radius: 45, // The radius of the inner circle
+        scale: .3, // Scales overall size of the spinner
+        corners: 1, // Corner roundness (0..1)
+        color: 'white', // CSS color or array of colors
+        background: 'white',
+        fadeColor: 'transparent', // CSS color or array of colors
+        speed: 1, // Rounds per second
+        rotate: 0, // The rotation offset
+        animation: 'spinner-line-fade-quick', // The CSS animation name for the lines
+        direction: 1, // 1: clockwise, -1: counterclockwise
+        zIndex: 2e9, // The z-index (defaults to 2000000000)
+        className: 'spinner', // The CSS class to assign to the spinner
+        top: '30%', // Top position relative to parent
+        left: '50%', // Left position relative to parent
+        shadow: '0 0 1px transparent', // Box-shadow for the lines
+        position: 'absolute' // Element positioning
+        };
+
+    var target = $("#rec-results");
+    var spinner = new Spinner(opts);
+    var sR;
+    var mous=0;
+    var gTApre='';
+    var gTA =[];
+    var gTAK=0;
+
+    function appInit() {
+
+        window.onbeforeunload = function() { 
+            console('back button');
+            return "Your work will be lost."; 
+        };
+
+        window.addEventListener("hashchange", function(e) {
+            console.log('hash back event');
+            // ...
+        })
+        var guid;
+        var query = window.location.href.split('?')[1]; 
+        var isMap = false;
+        var t = 0;
+        $(".dp-ui").datepicker( {
+            changeMonth: true,
+            changeYear: true,
+            showButtonPanel: true,
+            dateFormat: 'mm-dd-yy',
+            onClose: function(dateText, inst) { 
+                $(this).datepicker('setDate', new Date(inst.selectedYear, inst.selectedMonth, 1));
+            
+            }
+        }).attr("size","12")
+            .attr("autocomplete","off")
+            .css("font-size","14px")
+            .css("margin-top","5px")
+            .css("margin-bottom","5px")
+            .on("dblclick",function() {
+                $.datepicker._clearDate(this);
+                $(this).val("");
+            });
+
+        $("#gSearchBox").val("");
+        
+		if (query) {
+			var params = query.split('&');
+			var pairs = {};
+			for (var i = 0, len = params.length; i < len; i++) {
+			  var pair = params[i].split('=');
+              pairs[pair[0]] = pair[1];
+              if ( pair[0] == 'page' && pair[1] == 'dataMap') {
+                isMap = true;
+              }
+
+			  if ( pair[0] == "guid" ) {
+			    guid = pair[1];
+				console.log('incoming guid - ' + pair[1] );
+			  }
+			}
+        }
+    
+        var sh = localStorage.getItem("adSearchHistory");
+
+        if ( sh ) {
+            gSearchHistory = sh.split('|');
+        }
+
+        if ( guid ) {
+			var o = { "id": guid };
+			gMdRecord=true;
+			mdView(o);
+		} else {
+            findRecords(0);
+
+		}
+
+        $("#app").on('mouseover',function(){
+            //console.log('1'+ t++);
+            $("#SearchHistory").css("display","none");      
+        });
+
+        $("#userLoginBtn").click(function() {
+           logmein(this, userMenu);
+        });
+
+        $("#cb").on('mouseover',function(){
+            //console.log('2'+ t++);
+            $("#SearchHistory").css("display","none");      
+        });
+        /*
+        $("#leftSearch").on('mouseover',function(){
+            if ( mous == 1) {
+                $("#SearchHistory").css("display","none");
+                mous = 0;
+            }
+        });
+        */
+
+        $("#searchBtn").on('mouseover',function(){
+            //console.log('3'+ t++);
+            $("#SearchHistory").css("display","none");      
+        });
+
+        $("#widget-box").on('mouseover',function(){   
+            //console.log('4'+ t++);   
+            $("#SearchHistory").css("display","none");      
+        });
+
+        $("#search-tool-div").on('mouseover',function(){
+            //console.log('5'+ t++);
+            $("#SearchHistory").css("display","none");      
+        });
+
+        $("#gPubName").on("dblclick",function() {
+            $("#gPubName").val("")
+        });
+
+        $("#gSearchTitle").on("dblclick",function() {
+            $("#gSearchTitle").val("")
+        });
+        
+        $("#gSearchDOI").on("dblclick",function() {
+            $("#gSearchDOI").val("")
+        });
+        
+        $("#gSearchDocid").on("dblclick",function() {
+            $("#gSearchDocid").val("")
+        });        
+
+        $("#gAFName").on("dblclick",function() {
+            $("#gAFName").val("");
+            $("#gALName").val("");
+        });
+        
+        $("#gALName").on("dblclick",function() {
+            $("#gAFName").val("");
+            $("#gALName").val("");
+        });  
+
+        $("#gSearchBox").on('mouseover',function() {
+            gTApre='';
+            showSeaHis();
+        }).bind('mousewheel', function(e){
+            if(e.originalEvent.wheelDelta /120 > 0) {
+                var ssu = 'scrolling up !';
+            }
+            else{
+                var ssu = 'scrolling down !';
+            }
+        }).on('mouseout',function(){
+            var ssu = 'sb mouseoout';
+           
+        }).on("keyup", function(e) {
+
+            if (e.keyCode == 32 || e.keyCode == 13) {
+                gTApre='';
+                $(".ta item").each(function() { $(this).remove() })
+             
+            } else {
+                if ( e.keyCode > 47 && e.keyCode < 91) {
+                    gTApre = gTApre+e.key;
+                }
+            }
+
+            if ( e.keyCode == 8) { 
+                gTApre = gTApre.slice(0,-1);
+                if ( gTApre.length == 0 ) {
+                    showSeaHis();
+                }
+            }
+           
+            if ( gTApre.length > 2 ) {
+                //console.log(' pre len ' + gTApre.length);
+                if ( e.keyCode > 47 && e.keyCode < 91 ) {
+                    $("#sHistoryItems").empty();
+                    getTA();
+                }
+               
+            } else {
+                $(".ta-item").each(function() { $(this).remove() });
+                gTA.length=0;
+            }
+
+            if (e.keyCode == 38 ) { //UP ARROW
+                if ( gTAK > 0 ) { gTAK--; }
+
+                $(".sh-item").each(function() {
+                    //console.log( ' id ' +  $(this).attr("id") );
+
+                    if ( $(this).attr("id") == 'sh-'+gTAK ) {
+                        $(this).css("font-weight","bold");
+                        $(this).css("font-size","14px");
+                    } else {
+                        $(this).css("font-weight","normal");
+                        $(this).css("font-size","12px");
+                    }
+                });
+
+                $(".ta-item").each(function() {
+
+                    if ( $(this).attr("id") == 'ta-'+gTAK ) {
+                        $(this).css("font-weight","bold");
+                        $(this).css("font-size","14px");
+                    } else {
+                        $(this).css("font-weight","normal");
+                        $(this).css("font-size","12px");
+                    }
+                });
+            } 
+            
+            if (e.keyCode == 39 ||  e.keyCode == 9 ) { //RIGHT ARROW  TAB autocomplete
+         
+                $(".sh-item").each(function() {
+                    if ( $(this).attr("id") == 'sh-'+gTAK ) {
+                        var cp =  $("#gSearchBox").val();
+                        $("#gSearchBox").val(cp + ' ' + $(this).text());
+                    } 
+                    $(this).css("font-weight","normal");
+                    $(this).css("font-size","12px");
+
+                });
+
+                gTAK = 0;
+                gTApre ='';
+            } 
+
+            if ( e.keyCode == 40 ) { //DOWN ARROW
+                var kl = gSearchHistory.length + gTA.length;
+
+                if ( gTAK > kl ) { gTAK = 0 } else { gTAK ++; }
+
+                $(".sh-item").each(function() {
+                   // console.log(' down arrow ' + $(this).attr("id") + gTAK);
+                    if ( $(this).attr("id") == 'sh-'+gTAK ) {
+                        $(this).css("font-weight","bold");
+                        $(this).css("font-size","14px");
+                    } else {
+                        $(this).css("font-weight","normal");
+                        $(this).css("font-size","12px");
+                    }
+                });
+
+                $(".ta-item").each(function() {
+                    //console.log(' down arrow ' + $(this).attr("id") + gTAK);
+                    if ( $(this).attr("id") == 'ta-'+gTAK ) {
+                        $(this).css("font-weight","bold");
+                        $(this).css("font-size","14px");
+                    } else {
+                        $(this).css("font-weight","normal");
+                        $(this).css("font-size","12px");
+                    }
+                });
+            } 
+
+
+            if (e.keyCode == 13) {
+                gTApre='';
+                //console.log('Search box enter');
+                console.log('6'+ t++);
+                $("#SearchHistory").css("display","none");
+                findRecords(0);   
+            }
+        }).on("dblclick",function() {
+            gTApre='';
+            $("#gSearchBox").val("")
+        });
+
+        $("#SearchHistory").on('mouseover',function() {
+            mous = 1;
+        }).on('mouseout',function() { 
+            if ( mous == 1) {
+                //$("#SearchHistory").css("display","none");
+                mous = 0;  
+            }
+            
+        });   
+
+    }
+
+</script>
+</head>
+<body  onload="appInit()">
+        <div class="g-app" id="app" style="position: sticky;">
+            <nav class="navbar navbar-inverse"> 
+                <ul class="nav navbar-nav" style="float: left; width: 600px">
+                    <li class="nav-item">
+                    <img src="/img/adept-logo10.png" width="158px" height="52px">
+                    </li> 
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://test.geothermaldata.org/adept"  >Automated Data Extraction PlaTform</a>
+                    </li>
+                    <li class="nav-item">
+                            <a class="nav-link" onclick="searchData();" >Search</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="myDataTab" onclick="savedData();" style="display: none;">My Data</a>
+                    </li>
+                </ul>   
+
+                <div class="g-tools pull-right" style="width: 200px;">
+                    <span class="nav navbar-nav">
+                        <a class="navbar-text" href="http://geothermaldata.org/help" target="_blank" rel="noopener noreferrer" style="color:#dcdcdc"  >Help</a> 
+                    </span>
+                   
+                     <span class="nav navbar-nav"> 
+                        <a class="navbar-text" id="loginBtn" href="#loginPanel" style="color:#dcdcdc" onclick="toggleLogin(this, userMenu);" >Login</a>  
+                        <span class="nav navbar-nav" id="laname"></span>
+                    </span>
+                </div>
+            </nav>
+        </div>
+        <div id="leftSearch" class="g-search-pane-left" style="margin:5px;" > 
+            Text Search Terms(s)</br>
+            <input type="text" class="form-control" style="height:25px;" id="gSearchBox" 
+                    placeholder="Enter Search terms" autofill="off" autocomplete="new-password" autofocus size="30" />
+            <button id="searchBtn" class="arrow-button"  
+                        style="height: 30px;" 
+                        onclick="findRecords(0)"><i class="fa fa-search"></i></button></br>
+            <div style="margin-top:7px;">
+            <a id="showSearchBtn" onclick="showSearchUrl(this)" class="tag" >Show Url</a>
+            <a id="saveSearchBtn" onclick="saveSearch(this)" class="tag" style="display: none;" >Save</a>
+            <a id="clearSearhBtn" onclick="clearSearch(this)" class="tag" >Clear</a>
+            </div>
+            <span id="saveSetGrp" style="font-size: 14px; font-weight:bold; font-family: calibri;  
+            margin: 3px 3px; background-color: #ffffff; display: none;">Local Saved Sets
+            <select id="selSavedSets" 
+            style="font-family: calibri; font-weight:bold; border-style:solid 1px; border-color:rgb(132, 155, 165) ; background-color: rgb(208, 230, 240); margin: 4px 0px" onchange="getSavedSetOpt(this)"></select></br>
+            <a id="clearHistoryBtn" onclick="clearHistory(this)" class="tag" >Clear</a>
+            <a id="shoSavBtn" onclick="showSaved(this)" class="tag" >Show</a>
+        </span>  
+            <p class="dijitTitlePaneTextNode"><i id="authB" class="fa fa-angle-right"></i>
+                <span id="opt-search-field" onclick="optionView(this);"
+                style="font-size: 14px; font-weight:bold; background-color: #e8e8e8; ">Optional Search Fields</span></p>
+            <div id="search-tool-div" style="margin: 2px; display: none;">
+                <input type="text" class="form-control" style="height:25px;" id="gPubName" 
+                    placeholder="Enter Publication ..." autofill="off"  autofocus size="30" />
+                    <button id="pubWildBtn" class="arrow-button" style="font-size: 14px;  width:25px; height: 25px; padding: 0px 4px;" 
+                            onclick="wildcard(this)"><i class="fa fa-equals"></i></button></br>
+                <input type="text" class="form-control" style="height:25px;" id="gSearchTitle" 
+                    placeholder="Enter Title ..." autofill="off"  autofocus size="30" />
+                    <button id="titleWildBtn" class="arrow-button" style="font-size: 14px; width:25px; height: 25px;padding: 0px 4px;" 
+                        onclick="wildcard(this)"><i class="fa fa-equals"></i></button></br>
+                <input type="text" class="form-control" style="height:25px;" id="gSearchDOI" 
+                    placeholder="Enter DOI #" autofill="off"  autofocus size="25" /></br>  
+                <input type="text" class="form-control" style="height:25px;" id="gSearchDocid" 
+                    placeholder="Enter Docid #" autofill="off"  autofocus size="25" /></br> 
+                Author</br> 
+                <input type="text" class="form-control" style="height:25px;" id="gAFName" 
+                    placeholder="First name" autofill="off"  autofocus size="12" />
+                <input type="text" class="form-control" style="height:25px;" id="gALName" 
+                    placeholder="Last name" autofill="off" autofocus size="18" /> 
+            </div>
+
+            <p class="dijitTitlePaneTextNode"><i id="authB" class="fa fa-angle-right"></i>
+                <span id="date-tool-div" onclick="optionView(this);"
+                        style="font-size: 14px; font-weight:bold; background-color: #e8e8e8; ">Date Selection</span></p>
+            <div id="date-select-div" style=" margin: 10px 2px; display: none;">
+                <span style="font-size: 14px; font-weight:bold; font-family: calibri; padding: 5px; margin: 3px 3px; background-color: #ffffff; ">
+                    <a id="recBtn" onclick="recentClk(this)" class="tag" >Recent</a></html></br>
+                    Acquired Date</br>
+                    Min <input type="text" class="dp-ui" id="mindA-datepicker"></br>
+                    Max <input type="text" class="dp-ui" id="maxdA-datepicker"></br>
+                    Published Date</br>
+                    Min <input type="text" class="dp-ui" id="mindP-datepicker"></br>
+                    Max <input type="text" class="dp-ui" id="maxdP-datepicker"></br>
+
+                </span>
+            </div>
+            <p class="dijitTitlePaneTextNode" >
+                <i id="CatB" class="fa fa-angle-right"></i> 
+                <span id="pubview" onclick="optionView(this);"
+                    style="font-size: 14px; font-weight:bold; background-color: #e8e8e8; ">Publishers</span></p>
+            <div class="dijitTitlePaneTextNode" id="PubList"></div>   
+            <p class="dijitTitlePaneTextNode">
+                <i id="jrnB" class="fa fa-angle-right"></i> 
+                <span id="jrnView" onclick="journalView(this);" 
+                style="font-size: 14px; font-weight:bold; background-color: #e8e8e8; ">Journals</span></p>
+            <!--div class="dijitTitlePaneTextNode" id="JournalList"></div-->
+            <p class="dijitTitlePaneTextNode">
+                <i id="dtB" class="fa fa-angle-right"></i> 
+                <span id="setview" onclick="optionView(this);" 
+                style="font-size: 14px; font-weight:bold; background-color: #e8e8e8; ">Datasets</span></p>
+            <div class="dijitTitlePaneTextNode" id="SetList"></div>   
+            <p class="dijitTitlePaneTextNode">
+                <i id="dicB" class="fa fa-angle-right"></i> 
+                <span id="dictview" onclick="optionView(this);" 
+                style="font-size: 14px; font-weight:bold; background-color: #e8e8e8; ">Dictionaries</span></p>
+            <div class="dijitTitlePaneTextNode" id="DictList"></div>                             
+        </div>
+
+        <div id="SearchHistory" style="height:300px; width: 240px; background: #eeeeee; border: 1px; 
+                position: absolute; top: 120px; left: 15px; overflow-x: hidden; overflow-y: scroll; display: none;">
+            <span id="shTitle" style="font-size: 12px; font-weight:bold; font-family: calibri;  margin: 5px 5px; background-color: #e8e8e8; ">Search History</span>
+            <div id="sHistoryItems" class="g-search-pane-left" stype="margin:5px;"></div> 
+        </div> 
+
+        <div id="cb" class="g-search-pane-right" style="margin:5px;">
+            <span id="cb-title" style="font-size: 14px; font-weight: bold">Adept Search Results</span>
+            <span id="cb-page" style="display:none"></span>
+            <div id="rec-results" style="background-color: white; margin:5px;" ></div>
+           
+        </div>
+             
+        <div id="widget-box" class="g-search-pane-right" style="display: none;">
+            <a href="http://test.geothermaldata.org/adept" ><i class="fa fa-home" style="font-size: 20px; color: #196fa6"></i></a>
+            <span id="widget-title" class="dijitTitlePaneTextNode"  style="margin:2px; font-size: 16px;"> / Dataset</span>
+            <button id="goSearchBtn" class="arrow-button" onclick="bactoSearch(this)">Return to Search</button>
+            <div id="widget-view"></div>
+        </div>
+        
+         <div id="leftUserData" class="g-search-pane-left" style="width: 200px; margin:5px; display: none;" > 
+            <span class="ud-hr" >User Components</span></br> 
+            <a id="scbtn" class="res-tag" onclick="collectionMan(this);" 
+                style="font-size: 12px; padding: 5px; width: 100px; background-color: rgb(33, 145, 194);">Saved Sets</a></br>
+            <a id="dbtn" class="res-tag" onclick="dictionaryMan(this);" 
+                style="font-size: 12px; padding: 5px; width: 100px; background-color: rgb(33, 145, 194);">Dictionaries</a>
+            </br>
+            <a id="tsbtn" class="res-tag" onclick="testSetMan(this);" 
+                style="font-size: 12px; padding: 5px; width: 100px; background-color: rgb(33, 145, 194);">Test Sets</a></br>
+            <a id="appbtn" class="res-tag" onclick="appMan(this);" 
+                style="font-size: 12px; padding: 5px; width: 100px; background-color: rgb(33, 145, 194);">Applications</a>  </br>
+            
+            <a id="uploadbtn" class="res-tag" onclick="uploadMan(this);" 
+                style="font-size: 12px; padding: 5px; width: 100px; background-color: rgb(33, 145, 194);">Upload Document</a></br>
+            <a id="statusbtn" class="res-tag" onclick="statusMan(this);" 
+                style="font-size: 12px; padding: 5px; width: 100px; background-color: rgb(33, 145, 194);">Status</a></br>
+            <span class="ud-hr">Interfaces </span></br> 
+            <a id="cosmosbtn" class="res-tag" onclick="cosmosMan(this);" 
+                style="font-size: 12px; padding: 5px; width: 100px; background-color: rgb(33, 145, 194);">COSMOS</a>  </br>
+            <a id="cosmosbtn" class="res-tag" onclick="cosmosMan(this);" 
+                style="font-size: 12px; padding: 5px; width: 100px; background-color: rgb(33, 145, 194);">Cyverse</a>  </br>
+         </div>
+
+         <div id="rightUserData" class="g-search-pane-right" style="left: 220px; margin:5px; display: none;">
+            <a href="http://test.geothermaldata.org/adept" ><i class="fa fa-home" style="font-size: 20px; color: #196fa6"></i></a>
+            <span id="rud-title" class="dijitTitlePaneTextNode"  style="margin:2px; font-size: 16px;"> / User Data Functions</span>
+            <button id="rud-goSearchBtn" class="arrow-button" onclick="bactoSearch(this)">Return to Search</button>
+            <span id="rud-page" style="display:none"></span>
+            <div id="rud-results" style="background-color: white; margin:5px;" >
+                <span class="ud-hr">User Components</span>
+                <p class="ud-tx"> <span class="ud-sh">Saved Sets</span> are made up of zero or more saved searches 
+                    (which identify a group of citations) and/or additional identified citation records. Saved Sets
+                    are created in this tab, then populated by saving searches and citations on the Search page.
+                    Saved Sets can be used as the source for the creation of "Test Sets", which are a data product 
+                    identified in the GeoDeepDive system used in ML processing. 
+                    
+                    The <b>Request Test Set</b> button sends the Saved Set data to GeodeepDive for processing. When the 
+                    Test Set is complete, GeoDeepDive system returns the results, which then appears in the Test Set tab.
+                </p></br>         
+                <p class="ud-tx"> 
+                    <span class="ud-sh">Dictionaries</span> are a collection of search terms, and can be either Geodeepdive
+                    identified Dictionaries, or user constructed 
+                    dictionaries. Dictionaries can also be used as the source for the creation of "Test Sets", which
+                    are a data product identified in the GeoDeepDive system used in ML processing.
+                    The <b>Request Test Set</b> button sends the Saved Set data to GeodeepDive for processing. When the 
+                    Test Set is complete, GeoDeepDive system returns the results, which then appears in the Test Set tab.
+                </p></br>               
+                <p class="ud-tx"> 
+                    <span class="ud-sh">Test Sets</span> are data products (usually the full-text of a document) provided by the 
+                    GeoDeepDive System. Test sets can only be requested by authorized users and are identified by GDD API Keys. 
+                    Test sets are made up of text samples from various citations that conform to a specific search criteria 
+                    (a dictionary or saved set). These test documents are meant to aid in application development by giving 
+                    users a broad, random sample of full-text documents that meet their search criteria.</br>
+
+                    The <b>Sync with CyVerse</b> button will automatically send the test-set information (the api-key and 
+                    test-set name) to a user’s CyVerse data store. From the CyVerse Data store, the API key can easily be 
+                    used to download the test-sets directly into into CyVerse Applications (such as RStudio or Jupyter Notebooks), 
+                    where the user can experiment with developing a full-text analysis application.
+                    
+                    
+                </p> </br>              
+                <p class="ud-tx">
+                    <span class="ud-sh">Applications</span> are user identified machine learning algorithms</p></br>              
+                <p class="ud-tx">
+                    <span class="ud-sh">Upload Document</span>
+                    provides capability to allow authorized users to upload documents (citations) to the GeoDeepDive system.</p></br>  
+                <p class="ud-tx">
+                    <span class="ud-sh">Status</span>
+                    provides a transaction history and current state of all requests and processes in the Adept, GeoDeepDive,
+                    Cyverse, and COSMOS Systems.</p></br>  
+                <span class="ud-hr">Interfaces</span>
+                <p class="ud-tx"> 
+                    <span class="ud-sh">Cyverse</span>establishes connectivity, access, and interfaces to Cyverse system</p></br>  
+                <p class="ud-tx">
+                    <span class="ud-sh">COSMOS</span>establishes connectivity, access, and interfaces to COSMOS system</p></br>  
+            </div>
+           
+        </div>
+
+
+        <div id="loginDiv"
+            style="position: absolute; top: 75px; left: 800px; margin: 6px; height: 140px; width: 200px; 
+                background-color: #005e95; border-radius: 3px; display: none;">
+            <div style="margin:5px;"> 
+            <span style="margin:5px 15px; font-family: Helvetica Neue Light, Helvetica Neue, 
+                Helvetica, Arial; color: white; font-size: 14px; font-weight: bold">Login</span>
+            </div>
+            <div style="margin:5px 15px;">
+                <input class="form-control" placeholder="Username" id="luser"></br>
+                <input  id="lpass" class="form-control" placeholder="Password" type="password">
+            </div>
+            
+            <div style="margin:5px 5px; text-align: center;">
+                <a id="userLoginBtn" class="tag" type="submit" style="margin: 2px;">Login</a>
+                <a class="tag" type="submit"  onclick="toggleLogin();"  style="margin:2px;">Cancel</a>
+                </br>
+                <a onclick="register();" style="margin:2px; color: #bbbbbb;">Register</a>
+                <a onclick="resetPw();" style="margin:2px; color: #bbbbbb;">Forgot Password ?</a>
+            </div>
+        </div>
+
+        <div id="regDiv"
+            style="position: absolute; top: 75px; left: 300px; margin: 6px; height: 400px; width: 400px; 
+                background-color: #005e95; border-radius: 3px; display: none;">
+            <div id="regForm" style="background-color: #ffffff; margin:5px;padding:5px;" ></div>
+        </div>
+
+
+
+
+          
+            
+</body>
