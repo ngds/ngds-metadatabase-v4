@@ -111,15 +111,26 @@
         
         var guid;
         var query = window.location.href.split('?')[1]; 
+        var isMap = false;
+        var isSearch = false;
 
         $("#gSearchBox").val("");
+        //$("#gSearchBox").disableAutofill();
         
 		if (query) {
 			var params = query.split('&');
 			var pairs = {};
 			for (var i = 0, len = params.length; i < len; i++) {
 			  var pair = params[i].split('=');
-			  pairs[pair[0]] = pair[1];
+              pairs[pair[0]] = pair[1];
+              if ( pair[0] == 'page' && pair[1] == 'dataMap') {
+                isMap = true;
+              }
+              if ( pair[0] == 'search' ) {
+                var qryStr = decodeURIComponent(pair[1]);
+                isSearch = true;
+              }
+
 			  if ( pair[0] == "guid" ) {
 			    guid = pair[1];
 				console.log('incoming guid - ' + pair[1] );
@@ -132,7 +143,7 @@
         if ( sh ) {
             gSearchHistory = sh.split('|');
         }
-      
+        //$("#sortBtn").text(gSortTypes[gSortOrder]);
         $("#sortBtn").text("Modified Date");
 
         mapInit();
@@ -141,10 +152,18 @@
 			gMdRecord=true;
 			mdView(o);
 		} else {
-			findRecords(0);
+            if ( isMap ) {
+                dataMapView();
+            } else if ( isSearch ) {
+                $("#gSearchBox").val(qryStr);
+                findRecords(0); 
+            } else {
+                findRecords(0);
+            }
 		}
 
         $("#app").on('mouseover',function(){
+            //console.log('cb mouse over');
             $("#SearchHistory").css("display","none");      
         });
 
@@ -152,7 +171,8 @@
            logmein(this, userMenu);
         });
 
-        $("#cb").on('mouseover',function(){          
+        $("#cb").on('mouseover',function(){
+            
             $("#SearchHistory").css("display","none");      
         });
 
@@ -166,7 +186,8 @@
             $("#SearchHistory").css("display","none");      
         });
 
-        $("#searchMap").on('mouseover',function(){          
+        $("#searchMap").on('mouseover',function(){
+           
             $("#SearchHistory").css("display","none");      
         });
 
@@ -184,7 +205,8 @@
             var ssu = 'sb mouseoout';
            
         }).on("keyup", function(e) {
-           
+            //console.log(' key ' + gTAK + ' ' + gTApre + ' ' + e.key);
+
             if (e.keyCode == 32 || e.keyCode == 13) {
                 gTApre='';
                 $(".ta item").each(function() { $(this).remove() })
@@ -201,7 +223,7 @@
                     showSeaHis();
                 }
             }
- 
+            //console.log(' pre len ' + gTApre.length);
             if ( gTApre.length > 2 ) {
                 console.log(' pre len ' + gTApre.length);
                 if ( e.keyCode > 47 && e.keyCode < 91 ) {
@@ -218,7 +240,7 @@
                 if ( gTAK > 0 ) { gTAK--; }
 
                 $(".sh-item").each(function() {
-                   
+                    //console.log( ' id ' +  $(this).attr("id") );
 
                     if ( $(this).attr("id") == 'sh-'+gTAK ) {
                         $(this).css("font-weight","bold");
@@ -263,7 +285,7 @@
                 if ( gTAK > kl ) { gTAK = 0 } else { gTAK ++; }
 
                 $(".sh-item").each(function() {
-                   
+                   // console.log(' down arrow ' + $(this).attr("id") + gTAK);
                     if ( $(this).attr("id") == 'sh-'+gTAK ) {
                         $(this).css("font-weight","bold");
                         $(this).css("font-size","14px");
@@ -274,7 +296,7 @@
                 });
 
                 $(".ta-item").each(function() {
-                  
+                    //console.log(' down arrow ' + $(this).attr("id") + gTAK);
                     if ( $(this).attr("id") == 'ta-'+gTAK ) {
                         $(this).css("font-weight","bold");
                         $(this).css("font-size","14px");
@@ -288,7 +310,7 @@
 
             if (e.keyCode == 13) {
                 gTApre='';
-              
+                //console.log('Search box enter');
                 $("#SearchHistory").css("display","none");
                 findRecords(0);   
             }
@@ -298,24 +320,31 @@
         });
 
         $("#SearchHistory").on('mouseover',function() {
-           
+            //console.log('SH mouseover');
               mous = 1;
         }).on('mouseout',function() { 
              mous = 0;
-           
+             //console.log('sh mouseout');
+            // $("#SearchHistory").css("display","none");
         });
+
+        //showCM();
+        //showDataTypes();
+        
     }
 
     function  mapInit() {
        
 		$("#showMap").show(); 
-        map = L.map('showMap', { minZoom: 1 }); 
+        map = L.map('showMap', { minZoom: 1 }); //.setView([42, -100.09], 6);
         L.esri.basemapLayer('Streets').addTo(map);
 
         map.on('ready',function() { 
             setTimeout(function(){ 
-                map.invalidateSize();         
+                map.invalidateSize();
+                //map.fitBounds(initExtent);
             }, 200);
+            //console.log('ready map')
         });
 
         map.on('click', function() {
@@ -334,7 +363,7 @@
                     <img src="/img/ngds-logo.png" height="48px">
                     </li> 
                     <li class="nav-item">
-                       
+                        <!--a class="nav-link" href="#searchPanel" onclick="searchData();" >National Geothermal Data System</a-->
                         <a class="nav-link" href="http://geothermaldata.org"  >National Geothermal Data System</a>
                     </li>
                     <li class="nav-item">
@@ -417,7 +446,8 @@
         </div>
 
         <div id="SearchHistory" style="height:300px; width: 240px; background: #eeeeee; border: 1px; position: absolute; top: 105px; left: 15px; overflow-x: hidden; overflow-y: scroll; display: none;">
-  
+            <!--span style="font-size: 12px; font-weight:bold; font-family: calibri;  margin: 5px 5px; background-color: #e8e8e8; ">Sort </span>
+            <a id="sortBtn" onclick="sortPick(this)" class="tag" ></a></br-->
             <span id="shTitle" style="font-size: 12px; font-weight:bold; font-family: calibri;  margin: 5px 5px; background-color: #e8e8e8; ">Search History</span>
             <div id="sHistoryItems" class="g-search-pane-left" stype="margin:5px;"></div> 
         </div> 
@@ -426,7 +456,7 @@
             <span id="cb-title" style="margin:5px; font-size: 14px; font-weight: bold">NGDS Search Results</span>
             <span id="cb-page" style="display:none"></span>
             <div id="rec-results" style="background-color: white; margin:5px;" ></div>
-           
+            <!--div id="rec-results" style="background-color: white; margin:5px; width: 800px; height: 700px; overflow-y: scroll" ></div-->
         </div>
              
         <div id="widget-box" class="g-search-pane-right" style="display: none;">
@@ -453,7 +483,7 @@
                 <button id="mapSaveBtn" class="arrow-button" onclick="saveMap(this)">Save Map</button>
                 <button id="mapClrBtn" class="arrow-button" onclick="clearMap(this)">Clear</button>
                 <label class="lablX" for="map-lyr-list">Active Map Layers</label>
-              
+                <!--datalist id="mapLayers"></!--datalist-->
                 <select id="map-lyr-select" onchange="pickLayer(this)" style="width: 420px;" ></select>
 
                 <i class="fa fa-search-plus" id="zoomLayerBtn" onclick="zoomToLayer(this)" style="font-size:16px; color: #0971B2;"></i>
@@ -493,7 +523,10 @@
             <input class="form-control" placeholder="Username" id="luser"></br>
             <input  id="lpass" class="form-control" placeholder="Password" type="password">
             </br>
-           
+            <!--label class="checkbox" for="field-remember">
+            <input id="field-remember" type="checkbox" name="remember" value="63072000" checked="" style="margin:4px;  font-family: Arial, Helvetica">
+                Remember me
+            </label-->
         </div>
         <div style="margin:5px 15px;">
             <a id="userLoginBtn" class="tag" type="submit" style="margin:4px;">Login</a>

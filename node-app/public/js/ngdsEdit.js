@@ -1,5 +1,7 @@
 /*
 UI module for md Editing, new Contributions and Collections
+Added inspection module 2/4/2021
+
 */
 
 var gCoLst = [];
@@ -12,6 +14,7 @@ var gCSD = {}; // current schema detail
 var gFSD = {};
 var gEdBuf = {};
 var gGuid = [];
+var gHJ = {};
 
 var edView = function (o) {
 
@@ -33,7 +36,6 @@ var edView = function (o) {
           lpTemplate();
         }            
     }
-
 
 }
 
@@ -69,11 +71,22 @@ var lpTemplate = function(o) {
         .css("background-color", "#2191c2")
         .attr('onclick','harvestMan(this);');
 
+    var lBtn =  $('<a id="hbtn" class="res-tag" >Inspector</a>')
+        .css("font-size", "12px")
+        .css("margin", "1px 1px 1px 7px;")
+        .css("padding","5px 5px")
+        .css("display","inline:block")
+        .css("width","100px")
+        .css("background-color", "#2191c2")
+        .attr('onclick','inspectMan(this);');
+
     $("#ed-l-admin").append(hBtn);
     $("#ed-l-admin").append('</br>');
     $("#ed-l-admin").append(uBtn);
     $("#ed-l-admin").append('</br>');
     $("#ed-l-admin").append(noBtn);
+    $("#ed-l-admin").append('</br>');
+    $("#ed-l-admin").append(lBtn);
 
     var nBtn =   $('<a id="" class="res-tag" >Add New Record</a>')
                             .css("font-size", "12px")
@@ -111,14 +124,15 @@ var lpTemplate = function(o) {
                             .css("background-color", "#2191c2")
                             .attr('onclick','validate(this);');
 
-  
+    //$(selCol).selectmenu();
+    //var selColD = $('<datalist id="selCol" >');
     var scl = $('<p>Previous Edit Collections</p>')
         .css("font-family","Arial")
         .css("font-size","12px")
         .css("font-color","12px");
 
     var co = $('<option value="Midx">Collection Text</option>');
-
+    //var selCol = $('<input list="selCol" name="Col" onchange="pickEdit(this)" placeholder="Previous Edits ...">');
     var selCol = $('<select id="selCol" name="selCol" onchange="pickEdit(this)"></select>')
                         .css("font-family","Arial")
                         .css("font-size","12px")
@@ -127,7 +141,7 @@ var lpTemplate = function(o) {
                         .css("width","150px");
     selCol.append(co);
 
-  
+    //selColD.append(co);
     
     $("#ed-l-widget").append(nBtn);
 
@@ -138,7 +152,10 @@ var lpTemplate = function(o) {
     $("#ed-l-widget").append('</br>');
     $("#ed-l-widget").append(bBtn);
     $("#ed-l-widget").append('</br>');
-
+    //$("#ed-l-widget").append(scl);
+    //$("#ed-l-widget").append(selCol);
+    //getCollectionList('selCol','batch-edit');
+   // $("#ed-l-widget").append(selColD);
 
    $("#editFrame").empty();
    var hb = $('<h4>Recent Admin Activities</h4>');
@@ -163,6 +180,895 @@ var harvestMan = function(o) {
     harvestSourceList();
 
 }
+/* INGESTOR Inspection system to find and test endpoints */
+var gSelRuleId = 0;
+var gInspectMap = [];
+var gInspectLinks = [];
+var gInspectResults = [];
+var gStaleInspectLinks = [];
+
+var inspectMan = function(o) {
+
+    var htxt = 'Resource Link Inspection Tools';
+    $("#editFrame").empty();
+    var hb = $('<h4>' + htxt+ '</h4>');
+    $("#editFrame").append(hb);
+    var dig = $('<div id="inspSrc"></div>');
+    
+    var xBtn =  $('<a id="vrb" class="adm-tag" >View Rules</a>')
+                            .css("width","100px")
+                            .css("font-size","14px")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','inspectMap(this);');
+    
+    var hBtn =  $('<a id="vhb" class="adm-tag" >View History</a>')
+                            .css("width","100px")
+                            .css("font-size","14px")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','showHistory(this);');
+
+    var iBtn =  $('<a id="execCrawler" class="adm-tag" >Run Crawler</a>')
+                            .css("width","80px")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','runCrawler(this);');
+
+    var sBtn =  $('<a id="" class="adm-tag" >Rule Info</a>')
+                            .css("width","80px")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','ruleMetrics(this);');
+
+    var zBtn =  $('<a id="execInspector" class="adm-tag" >Run Inspection</a>')
+                            .css("width","80px")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','runInspector(this);');
+
+    var uBtn =  $('<a id="updateInspection" class="adm-tag" >Update Results</a>')
+                            .css("width","80px")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','refreshInspectResults(this);');
+
+    var cBtn =  $('<a id="clearInspection" class="adm-tag" >Clear Results</a>')
+                            .css("width","80px")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','delInspectionResults(this);');
+
+    var pBtn =  $('<a id="refreshCache" class="adm-tag" >Refresh Cache</a>')
+                            .css("width","80px")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','refreshCache(this);');
+
+    dig.append(xBtn);                       
+    dig.append(hBtn);
+    dig.append('</br><span><b>Actions</b></span>');
+    dig.append(sBtn);
+    dig.append(iBtn);
+    dig.append(zBtn);
+    dig.append(uBtn);
+    dig.append(cBtn);
+    dig.append(pBtn);
+
+    $("#editFrame").append(dig);
+    //showInspectLog();
+ 
+}
+
+var runInspector = function(o) {
+    // Inspector runs a html head validation for specified records
+    var pt = '';
+    gInspectMap.forEach(function(im) {
+        if ( im.rimid == gSelRuleId ) {
+            pt = im.proctype;
+        }
+    });
+
+    if ( gSelRuleId ) {
+        var hUrl = '/action/runInspection?rid='+gSelRuleId+'&ctype='+pt;
+    } else {
+        var hUrl = '/action/runInspection?rid=0';
+    }
+
+    var jqxhr = $.get(hUrl, function() {
+        console.log( "inspection Map List" );
+    })
+    .done(function(data) { 
+        console.log('exec inspect '+data);
+        if ( gSelRuleId ) {
+            alert('Resource Link Inspection Started for Rule Id '+gSelRuleId);
+        } else {
+            alert('Resource Link Inspection Started for all links');
+        }
+    }); 
+}
+
+var runCrawler = function(o) {
+    // Crawler walks thru the specified pages in rule using critieria to find
+    // additional links.
+    if ( gSelRuleId ) { 
+        for (k in gInspectMap) {
+            var im = gInspectMap[k];
+            if ( im.rimid == gSelRuleId ) {
+                if ( im.proctype == 'crawl' ) {
+                    var hUrl = '/action/runCrawler?rid='+gSelRuleId;
+                    var jqxhr = $.get(hUrl, function() {
+                        console.log( "Crawler Activivated" );
+                    })
+                    .done(function(data) { 
+                        if (typeof(data) == "object" ) {
+                            var dres = data;
+                        } else {
+                            var dres = JSON.parse(data);
+                        }
+                        if ( dres.rows ) {
+                            alert ('Crawler Running ');
+                        } else {
+                            alert ('Crawler Error Indicated');
+                        }
+                    });
+
+                } else {
+                    alert ('Only Rules of Type "Crawl" should use the crawler, just use Inspect for other rule types.'); 
+                }
+            }
+        }   
+    } else {
+        alert ('Select an Inspection Rule first. ');
+    }
+    
+
+}
+
+var refreshCache = function(o) {
+
+    var hUrl = '/action/runCacheRefresh';
+    var jqxhr = $.get(hUrl, function() {
+        console.log( "refresh materialized view" );
+    })
+    .done(function(data) { 
+        if (typeof(data) == "object" ) {
+            var dres = data;
+        } else {
+            var dres = JSON.parse(data);
+        }
+        alert('Inspection Results Cache Refresh Status '+dres.rows[0].refresh_resource_link_cache)
+        console.log(JSON.stringify(dres));
+    });
+
+}
+
+var delInspectionResults = function(o) {
+    
+    var ctype = '';
+    if ( gSelRuleId ) { 
+        for (k in gInspectMap) {
+            var im = gInspectMap[k];
+            if ( im.rimid == gSelRuleId ) {
+                ctype = im.proctype;
+            }
+        }
+    }
+
+    var hUrl = '/action/delInspectionResults?rid='+gSelRuleId+'&ctype='+ctype;
+    var jqxhr = $.get(hUrl, function() {
+        console.log( "inspection results clear" );
+    })
+    .done(function(data) { 
+        if (typeof(data) == "object" ) {
+            var dres = data;
+        } else {
+            var dres = JSON.parse(data);
+        }
+        console.log(JSON.stringify(dres));
+    });
+
+}
+
+var refreshInspectResults = function(o) {
+
+    var ctype = '';
+    if ( gSelRuleId ) { 
+        for (k in gInspectMap) {
+            var im = gInspectMap[k];
+            if ( im.rimid == gSelRuleId ) {
+                ctype = im.proctype;
+            }
+        }
+    }
+
+    var hUrl = '/action/runInspectionUpdate?rid='+gSelRuleId+'&ctype='+ctype;
+    var jqxhr = $.get(hUrl, function() {
+        console.log( "inspection update" );
+    })
+    .done(function(data) { 
+        if (typeof(data) == "object" ) {
+            var dres = data;
+        } else {
+            var dres = JSON.parse(data);
+        }
+        console.log(JSON.stringify(dres));
+    });
+}
+
+var ruleMetrics = function(o) {
+
+    $("#metDiv").remove();
+    var md = $('<div id="metDiv"></div>');
+    var hb = $('<h4>Rule Status </h4>');
+    var jts = $('<span id="jts">Job Status : </span>');
+    var spr = $('<span id="mil">Links found in Database :</span>');
+    var spl = $('<span id="lir">Endpoint Inspection Results: Working - 0, Error - 0</span></br>');
+    var stal = $('<span id="stal">Inspection Links Out of Date: 0 </span>');
+
+    md.append(hb);
+    
+    var jBtn =  $('<a id="jtStat" class="res-tag" >Job Status</a>')
+                        .css("font-size", "12px")
+                        .css("margin", "1px 1px 1px 1px;")
+                        .css("padding","5px 5px")
+                        //.css("display","inline:block")
+                        .css("background-color", "#2191c2")
+                        .attr('onclick','jobState(this);');
+
+    var vBtn =  $('<a id="vwLinks" class="res-tag" >View Links</a>')
+                            .css("font-size", "12px")
+                            .css("margin", "1px 1px 1px 1px;")
+                            .css("padding","5px 5px")
+                            //.css("display","inline:block")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','showLinks(this);');
+
+    var rBtn =  $('<a id="vwLinks" class="res-tag" >View Inspection</a>')
+                            .css("font-size", "12px")
+                            .css("margin", "1px 1px 1px 1px;")
+                            .css("padding","5px 5px")
+                            //.css("display","inline:block")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','showResults(this);');
+
+    md.append(jBtn);
+    md.append(jts); 
+    md.append('</br>');
+
+    md.append(vBtn);
+    md.append(spr); 
+    md.append('</br>');
+    md.append(rBtn);
+    md.append(spl);
+    md.append('</br>');
+    md.append(stal);
+    $("#editFrame").append(md);
+
+    var ctype = '';
+    if ( gSelRuleId ) { 
+        for (k in gInspectMap) {
+            var im = gInspectMap[k];
+            if ( im.rimid == gSelRuleId ) {
+                ctype = im.proctype;
+            }
+        }
+    }
+
+    var hUrl = '/action/getInspectionLinks?rid='+gSelRuleId+'&ctype='+ctype;
+    var jqxhr = $.get(hUrl, function() {
+        console.log( "inspection Map List" );
+    })
+    .done(function(data) { 
+        if (typeof(data) == "object" ) {
+            var dres = data;
+        } else {
+            var dres = JSON.parse(data);
+        }
+        gInspectLinks = dres.rows;
+        $("#mil").text('Links in Database : '+ gInspectLinks.length);
+        
+    });
+
+    var hUrl = '/action/getInspectionResults?rid='+gSelRuleId+'&ctype='+ctype;
+    var jqxhr = $.get(hUrl, function() {
+        console.log( "inspection results" );
+    })
+    .done(function(data) { 
+        if (typeof(data) == "object" ) {
+            var dres = data;
+        } else {
+            var dres = JSON.parse(data);
+        }
+        gInspectResults = dres.rows;  
+        var gl = 0;
+        for (k in gInspectResults) {
+            var r = gInspectResults[k];
+            if ( r.url_status == '200' ) {
+                gl++;
+            }
+        }
+        $("#lir").text('Endpoint Inspection - Total: '+gInspectResults.length+' Good: '+gl);
+    });
+
+    var hUrl = '/action/getStaleInspectionLinks?rid='+gSelRuleId+'&ctype='+ctype+'&retype=count';
+    var jqxhr = $.get(hUrl, function() {
+        console.log( "stale inspection Map List" );
+    })
+    .done(function(data) { 
+        if (typeof(data) == "object" ) {
+            var dres = data;
+        } else {
+            var dres = JSON.parse(data);
+        }
+        gInspectStaleLinks = dres.rows;
+        $("#stal").text('Inspection Links Out of Date: '+ gInspectStaleLinks[0].count);
+        
+    });
+
+
+}
+
+var jobState = function(o) {
+
+    if ( gSelRuleId ) { 
+        var hUrl = '/action/getRuleJobStatus?rid='+gSelRuleId;
+        var jqxhr = $.get(hUrl, function() {
+            console.log( "Rule job status results" );
+        })
+        .done(function(data) { 
+            if (typeof(data) == "object" ) {
+                var dres = data;
+            } else {
+                var dres = JSON.parse(data);
+            }
+            var jobResults = dres.jobs;  
+            var gl = 0;
+            if ( jobResults.length > 0 ) {
+                var cj = jobResults[jobResults.length-1];
+                if ( cj.current ) {
+                    var cjc = cj.current;
+                } else {
+                    var cjc = cj.curent;
+                }
+                $("#jts").text('Job Status: '+cj.status +' Count: '+cjc+'/'+cj.rows );
+
+            } else {
+
+                $("#jts").text('Job Status: No Jobs Runs');
+            }
+            
+            
+        });
+
+
+    }
+
+}
+
+var showResults = function(o) {
+    $("#slTab").remove();
+    $("#ilTab").remove();
+
+    if (gInspectResults ) {
+        var tbx =  $('<table id="ilTab" style="bgcolor:light-gray; width: 80%"></table>');
+        var tho = $('<tr>');
+        var td1 = $('<th >Guid</th>');
+        var td2 = $('<th style="width"300px;">Url</th>');
+        var td3 = $('<th style="width"300px;">Endpoint URL</th>');
+        var td4 = $('<th >Status</th>');
+        var td5 = $('<th >Date</th>');
+        tho.append(td1);
+        tho.append(td2);
+        tho.append(td3);
+        tho.append(td4);
+        tho.append(td5);
+        tbx.append(tho);
+
+        for (k in gInspectResults) {
+            var im = gInspectResults[k];
+            var tro = $('<tr>');
+            var td1 = $('<td style="font-size:11px;">'+im.guid+'</td>');
+            var lu = '<a style="font-size:10px;" href="'+im.orig_url+'" target="_blank">'+im.orig_url+'</a>';
+            var td2 = $('<td>'+lu+'</td>');
+
+            var ide = $('<i id="ie'+k+'" class="fas fa-edit" onclick="editInspLink(this)"></i>')
+                .css('font-size','10px')
+                .css('margin','1px 1px')
+                .css('color','#0971b2');
+            var ilu = '<a id="ib'+k+'" style="font-size:10px;" href="'+im.ident_url+'" target="_blank">'+im.ident_url+'</a>';
+
+            var td3 = $('<td id="tx'+k+'"></td>');
+            td3.append(ide);
+            td3.append(ilu);
+            var td4 = $('<td style="font-size:11px;">'+im.url_status+'</td>');
+            var td5 = $('<td style="font-size:11px;">'+im.v_date+'</td>');
+            tro.append(td1);
+            tro.append(td2);
+            tro.append(td3);
+            tro.append(td4);
+            tro.append(td5);
+            tbx.append(tro);
+
+        }
+        $("#metDiv").append(tbx);
+    }
+}
+
+var editInspLink = function(o) {
+    var k = o.id.substr(2);
+    var guid = gInspectResults[k].guid;
+    var glx = '#ib'+k;
+    var xlx = $(glx);
+    var xl = xlx.text();
+    if ( xl.length > 50 ) {
+        var ibw = '50';
+    } else {
+        var ibw = xl.length.toString().trim();
+    }
+    
+    xlx.hide();
+    var nb = $('<input id="ix'+k+'" type="text" size="'+ibw+'" value="'+xl+'">');
+    var zx = '#tx'+k;
+    $(zx).append(nb);
+    $(o).attr('onclick','edLConfirm(this)'); 
+    $(o).attr('class','fas fa-save'); 
+}
+
+function edLConfirm(o) {
+    var k = o.id.substr(2);
+    var guid = gInspectResults[k].guid;
+    var elix = '#ix'+k;
+    var evl = $(elix).val();
+    var glx = '#ib'+k;
+    var edl = '#ie'+k;
+
+    if (confirm('Do you want to save link edit ' + evl + ' ?'))  {
+        edLSave(o);
+    } else {
+        // cancel
+        $(elix).remove();
+        $(glx).show();
+        $(edl).attr('onclick','editInspLink(this)'); 
+        $(edl).attr('class','fas fa-edit'); 
+        console.log('Dont save')
+    } 
+}
+
+function edLSave(o) {
+    var k = o.id.substr(2);
+    var guid = gInspectResults[k].guid;
+    var rid = gInspectResults[k].rid;
+
+    var guid = o.id.substr(2);
+
+    var elix =  '#ix'+k;
+    var newl = $(elix);
+    console.log('this '+newl.id);
+    var newlt = newl.val();
+    var uNewlLt = encodeURIComponent(newlt);
+   
+    console.log('saving edit '+rid + ' ' + newlt);
+
+    var hUrl = '/action/saveInspectionLinkEdit?r='+rid+'&uri='+uNewlLt;
+    var jqxhr = $.get(hUrl, function() {
+        console.log( "Save insp link edit" );
+    })
+    .done(function(data) { 
+        if (typeof(data) == "object" ) {
+            var dres = data;
+        } else {
+            var dres = JSON.parse(data);
+        }
+        var glx = '#ib'+k;
+        var edl = '#ie'+k;
+        if ( data ) {
+            $(glx).text(newl.val());
+        } else {
+            $(glx).text('Link edit Save error');
+        }
+        $(glx).show();
+        newl.remove();
+        $(edl).attr('onclick','editInspLink(this)'); 
+        $(edl).attr('class','fas fa-edit');    
+    });
+}
+
+var showLinks = function(o) {
+    $("#slTab").remove();
+    $("#ilTab").remove();
+    if (gInspectLinks ) {
+        var tbx =  $('<table id="slTab" style="bgcolor:light-gray; width: 80%"></table>');
+        var tho = $('<tr>');
+        var td1 = $('<th style="width"80px;">Guid</th>');
+        var td2 = $('<th>Url</th>');
+        var td3 = $('<th style="width"300px;">Endpoint URL</th>');
+        tho.append(td1);
+        tho.append(td2);
+        tho.append(td3);
+        tbx.append(tho);
+
+        for (k in gInspectLinks) {
+            var im = gInspectLinks[k];
+            var tro = $('<tr>');
+            var td1 = $('<td style="font-size:11px;">'+im.identifier+'</td>');
+            var lu = '<a href="'+im.lurl+'" target="_blank">'+im.lurl+'</a>';
+            var td2 = $('<td style="font-size:11px;">'+lu+'</td>');
+            var slu = '<a href="'+im.sel_url+'" target="_blank">'+im.sel_url+'</a>';
+            var td3 = $('<td style="font-size:11px;">'+slu+'</td>');
+            tro.append(td1);
+            tro.append(td2);
+            tro.append(td3);
+            tbx.append(tro);
+        }
+        $("#metDiv").append(tbx);
+    }
+
+}
+
+var gInspLog = [];
+
+var showInspectLog = function(o) { 
+
+    var tbx =  $('<table id="ilTab" style="bgcolor:light-gray; width: 80%"></table>');
+    var tho = $('<tr>');
+    var td1 = $('<th>Date</th>');
+    var td2 = $('<th>Total</th>');
+    var td3 = $('<th>HTTP Good</th>');
+    var td4 = $('<th>HTTP Error</th>');
+
+    tho.append(td1);
+    tho.append(td2);
+    tho.append(td3);
+    tho.append(td4);
+    tbx.append(tho);
+    $("#editFrame").append(tbx);
+
+}
+
+var inspectMap = function(o) {
+
+    $("#ilTab").remove();
+    $("#imTab").remove();
+
+    var nBtn =  $('<i id="" class="fas fa-plus" ></i>')
+                            .css("font-size", "12px")
+                            .attr('onclick','newIM(this);');
+
+    var tbx =  $('<table id="imTab" style="bgcolor:light-gray; width: 80%"></table>');
+    var tho = $('<tr>');
+    var td1a = $('<th style="width"40px;"></th>');
+    var td1 = $('<th style="width"80px;"></th>');
+   
+    td1.append(nBtn);
+
+    var td2 = $('<th>Type</th>');
+    var td3 = $('<th style="width"300px;">URL</th>');
+    //var td4 = $('<th>Lookup Url</th>');
+    var td5 = $('<th style="width"100px;">HTML</th>');
+    //var td6 = $('<th>Object</th>');
+
+    tho.append(td1);
+    
+    tho.append(td2);
+    tho.append(td3);
+    //tho.append(td4);
+    tho.append(td5);
+    //tho.append(td6);
+    tbx.append(tho);
+
+    var hUrl = '/action/getInspectionMap';
+    var jqxhr = $.get(hUrl, function() {
+            console.log( "inspection Map List" );
+    })
+    .done(function(data) { 
+    
+        if (typeof(data) == "object" ) {
+            var dres = data;
+        } else {
+            var dres = JSON.parse(data);
+        }
+        gInspectMap = dres.rows;
+        for (k in gInspectMap) {
+            var im = gInspectMap[k];
+
+            var tro = $('<tr>');
+            var td1a = $('<td id="im1a-'+im.rimid+'"></td>');
+            var td1 = $('<td id="im1-'+im.rimid+'"></td>');
+
+            var sBox = $('<input class="cbox" type="checkbox" id="cb-'+k+'" name="ruleBox" onclick="selCB(this)" value="'+im.rimid+'">')
+                            .css('display',"inline-blick")
+                            .css("background-color", "#0971b2");
+            if ( im.proctype !== 'base' ) {
+            var eBtn =  $('<i id="ed-'+k+'" class="fas fa-edit" ></i>')
+                            .css("font-size", "11px")
+                            .css("margin", "1px 3px")
+                            .css("color", "#0971b2")
+                            .attr('onclick','editIM(this);');
+
+            var dBtn =  $('<i id="dl-'+im.rimid+'" class="fas fa-trash-alt" ></i>')
+                            .css("font-size", "11px")
+                            .css("margin", "3px 1px")
+                            .css("color", "#0971b2")
+                            .attr('onclick','deleteIM(this);');
+            }
+
+            var ustr =  '<b>Base</b>: <i>'+ im.bas_url + '</i></br><b>Endpoint</b>: <i>' +  im.sel_path+'</i>'; 
+            var tstr = '<b>Find element</b>: <i>' + xs(im.elem_lookup,'ui') + '</i>'
+                        + '</br><b>Return attribute</b>: <i>' +xs(im.elem_text,'ui') + '</i>';
+            
+            var td2 =  $('<td id="im2-'+im.rimid+'" style="font-size:11px;">'+ im.proctype + '</td>');
+            var td3 =  $('<td id="im3-'+im.rimid+'" style="font-size:11px;">'+ustr+'</td>');
+            //var td4 =  $('<td id="im4-'+im.rimid+'" style="font-size:11px;">'+ im.sel_path + '</td>');
+            var td5 =  $('<td id="im5-'+im.rimid+'" style="font-size:11px;">'+ tstr + '</td>');
+            //var td6 =  $('<td id="im6-'+im.rimid+'" style="font-size:11px;">'+ im.elem_lookup + '</td>');
+
+            td1a.append(sBox);
+            if ( im.proctype !== 'base' ) {
+                td1.append(eBtn);
+                td1.append(dBtn);
+            }
+
+            tro.append(td1a);
+            tro.append(td1);
+            tro.append(td2);
+            tro.append(td3);
+            //tro.append(td4);
+            tro.append(td5);
+            //tro.append(td6);
+            tbx.append(tro);
+        }
+        $("#editFrame").append(tbx);
+    });
+}
+
+var selCB = function(o) {
+
+    $("#metDiv").remove();
+    if ( $(o).prop("checked") == true ) {
+        $.each($("input[name='ruleBox']:checked"), function(){
+            $(this).prop("checked", false);
+        });
+        $(o).prop("checked",true);
+        gSelRuleId = $(o).val();
+    }
+
+}
+
+var editIM = function(o) {
+    var k = o.id.split('-')[1];
+    var rid = gInspectMap[k].rimid;
+
+    var td1 = $("#im1-"+rid);
+    var td2 = $("#im2-"+rid);
+    var td3 = $("#im3-"+rid);
+    //var td4 = $("#im4-"+rid);
+    var td5 = $("#im5-"+rid);
+    //var td6 = $("#im6-"+rid);
+
+    var sBtn =  $('<i id="savebtn-'+rid+'" class="fas fa-save" ></i>')
+                    .css("font-size", "11px")
+                    .css("margin", "1px 3px")
+                    .css("color", "#9933ff")
+                    .attr('onclick','saveUpdateIM(this);');
+
+    var cBtn =  $('<i id="cancelbtn-'+rid+'" class="fas fa-trash-alt" ></i>')
+                    .css("font-size", "11px")
+                    .css("margin", "3px 1px")
+                    .css("color", "#9933ff")
+                    .attr('onclick','cancelUpdateIM(this);');
+    td1.empty();
+    td1.append(sBtn);
+    td1.append(cBtn);
+
+    var sType = $('<select id="updateImType">');
+    if ( td2.text() == 'catalog' ) {
+        var stC = $('<option value="catalog" selected>catalog</option>');
+        var stL = $('<option value="link">link</option>');
+        var stW = $('<option value="crawl">crawl</option>');
+    } else if( td2.text() == 'link' ) {
+        var stC = $('<option value="catalog">catalog</option>');
+        var stL = $('<option value="link" selected>link</option>');
+        var stW = $('<option value="crawl">crawl</option>');
+    } else {
+        var stC = $('<option value="catalog">catalog</option>');
+        var stL = $('<option value="link">link</option>');
+        var stW = $('<option value="crawl" selected>crawl</option>');
+    }
+    sType.append(stC);
+    sType.append(stL);
+    sType.append(stW);
+    td2.empty();
+    td2.append(sType);
+
+    var bu =  $('<input id="updateBurl" type="text" size="35" value="'+gInspectMap[k].bas_url+'">');
+    td3.empty();
+
+    td3.append('<label for="updateBurl">Base </label>');
+    td3.append(bu);
+    td3.append('</br>');
+    var sp =  $('<input id="updateSelPath" type="text" size="35" value="'+gInspectMap[k].sel_path+'">');
+    //td4.empty();
+    td3.append('<label for="updateSelPath">End </label>');
+    td3.append(sp);
+
+    var el =  $('<input id="updateEL" type="text" size="15" value="'
+                + xs(gInspectMap[k].elem_lookup,'ui')+'">');
+
+    var te =  $('<input id="updateTE" type="text" size="15" value="'
+                +xs(gInspectMap[k].elem_text,'ui')+'">');
+    td5.empty();
+    td5.append('<label for="updateEL">Find Element </label>');
+    td5.append(el);
+    td5.append('<label for="updateTE">Return Attribute</label>');
+    td5.append(te);
+    td5.append('</br>');
+
+   // td6.empty();
+   
+    
+
+}
+
+var saveUpdateIM = function(o) {
+    var rid = o.id.split('-')[1];
+    var t = $("#updateImType").val();
+    var b = encodeURIComponent($("#updateBurl").val());
+    var s = encodeURIComponent($("#updateSelPath").val());
+    var e =  encodeURIComponent(xs($("#updateTE").val(),'db'));
+    var l =  encodeURIComponent(xs($("#updateEL").val(),'db'));
+
+    if ( rid ) {
+
+        var hUrl = '/action/updateInspectionMapItem?r='+rid+'&t='+t+'&b='+b+'&s='+s+'&e='+e+'&l='+l;
+        var jqxhr = $.get(hUrl, function() {
+            console.log( "update inspection " );
+        })
+        .done(function(data) { 
+            if (typeof(data) == "object" ) {
+                var dres = data;
+            } else {
+                var dres = JSON.parse(data);
+            }
+            if ( dres ) {
+                inspectMap();
+            }
+        });
+    }
+}
+
+var cancelUpdateIM = function(o) {
+    inspectMap();
+}
+
+var newIM = function(o) {
+
+    var tro = $('<tr id="newIMForm">');
+    var td1a = $('<td></td>');
+    var td1 = $('<td></td>');
+
+    var sBtn =  $('<i id="save-btn" class="fas fa-save" ></i>')
+                    .css("font-size", "11px")
+                    .css("margin", "1px 3px")
+                    .css("color", "#9933ff")
+                    .attr('onclick','saveIM(this);');
+
+    var cBtn =  $('<i id="cancel-btn" class="fas fa-trash-alt" ></i>')
+                    .css("font-size", "11px")
+                    .css("margin", "3px 1px")
+                    .css("color", "#9933ff")
+                    .attr('onclick','cancelNewIM(this);');
+
+    td1.append(sBtn);
+    td1.append(cBtn);
+    
+    var td2 =  $('<td id="newIMType" ></td>');
+    var sType = $('<select id="newImType">');
+    var stC = $('<option value="catalog" selected>catalog</option>');
+    var stL = $('<option value="link">link</option>');
+    var stW = $('<option value="crawl">crawl</option>');
+
+    sType.append(stC);
+    sType.append(stL);
+    sType.append(stW);
+    td2.append(sType);
+   
+    var td3 =  $('<td id="newBU"></td>');
+    var bu =  $('<input id="newBurl" type="text" size="35" placeholder="Base Url...">');
+    //td3.append('<label for="newBurl">Base</label>');
+    td3.append(bu);
+    td3.append('</br>');
+    //var td4 =  $('<td id="newIM-sp" ></td>');
+    var sp =  $('<input id="newSelPath" type="text" size="35" placeholder="Endpoint Url...">');
+    //td3.append('<label for="newSelPath">Endpoint</label>');
+    td3.append(sp);
+
+    var td5 =  $('<td id="newTL" ></td>');
+    var el =  $('<input id="newEL" type="text" size="15" placeholder="Find Element">');
+    var te =  $('<input id="newTE" type="text" size="15" placeholder="Return Attribute">');
+    
+    //td5.append('<label for="newTE">Text</label>');
+    td5.append(el);
+    td5.append('</br>');
+    //var td6 =  $('<td id="new-el" ></td>');
+   
+    //td5.append('<label for="newEL">Type</label>');
+    td5.append(te)
+    
+    tro.append(td1a);
+    tro.append(td1);
+    tro.append(td2);
+    tro.append(td3);
+    //tro.append(td4);
+    tro.append(td5);
+    //tro.append(td6);
+    $("#imTab").append(tro);
+
+}
+
+var xs = function (str, dir ) {
+    var rs = '';
+    if (dir == 'db') {
+        rs = str.replace(/'/g, "A39"); 
+    } else if ( dir == 'ui') {
+        if ( str ) {
+            rs = str.replaceAll("A39", "\'");
+        }
+        
+    }
+    return rs;
+}
+
+var saveIM = function(o) {
+
+    //var t = $("#newIMType").options[$("#newIMType").selectedIndex].value;
+    var t = $("#newImType").val();
+    var b = encodeURIComponent($("#newBurl").val());
+    var s = encodeURIComponent($("#newSelPath").val());
+    var e =  xs($("#newTE").val(),'db');
+    var l =  xs($("#newEL").val(),'db');
+
+    var hUrl = '/action/saveInspectionMapItem?t='+t+'&b='+b+'&s='+s+'&e='+e+'&l='+l;
+
+    var jqxhr = $.get(hUrl, function() {
+            console.log( "save inspection " );
+    })
+    .done(function(data) { 
+    
+        if (typeof(data) == "object" ) {
+            var dres = data;
+        } else {
+            var dres = JSON.parse(data);
+        }
+        if ( dres ) {
+            var nr = {};
+            nr.rimid = dres.rows[0].rimid;
+            nr.proctype = t;
+            nr.bas_url = b;
+            nr.sel_path = s;
+            nr.elem_text = e;
+            nr.elem_lookup = l;
+            gInspectMap.push(nr);
+            inspectMap();
+        }
+    });
+}
+
+var deleteIM = function(o) {
+    var rid = o.id.split('-')[1];
+    if ( rid ) {
+        var hUrl = '/action/deleteInspectionMapItem?rid='+rid;
+        var jqxhr = $.get(hUrl, function() {
+            console.log( "delete im item" );
+        })
+        .done(function(data) { 
+            if (typeof(data) == "object" ) {
+                var dres = data;
+            } else {
+                var dres = JSON.parse(data);
+            }
+            if ( dres ) {
+                inspectMap();
+            }
+        });
+    }
+}
+
+var cancelNewIM = function(o) {
+    $("#newIMForm").remove();
+}
 
 var gSrcTemplate = {"set_id" :  "0", 
                     "set_name" : "", 
@@ -186,6 +1092,7 @@ var lC = function(o) {
 return co;
 }
 
+/* Harvester Functions */
 var harvestSourceList = function() {
     $("#hrvSrc").empty(); 
     $("#hrvSrc").append('<span >Create New Harvest Source</span>');
@@ -242,14 +1149,16 @@ var harvestSourceList = function() {
                         .css("font-size", "11px")
                         .css("margin", "3px 1px 1px 3px;")
                         .css("padding","3px 3px")
-                      
+                        //.css("display","inline:block")
+                        //.css("width","100px")
                         .css("background-color", "#2191c2")
                         .attr('onclick','harvJobMan(this);');
             var eBtn =  $('<a id="hedt-' + hid + '" class="res-tag" >Edit</a>')
                         .css("font-size", "11px")
                         .css("margin", "3px 1px 1px 3px;")
                         .css("padding","3px 3px")
-                        
+                        //.css("display","inline:block")
+                        //.css("width","100px")
                         .css("background-color", "#2191c2")
                         .attr('onclick','harvSrcEdit(this);');
             tda.append(eBtn);
@@ -271,6 +1180,205 @@ var harvestSourceList = function() {
     });
 
   }	
+
+  var harvSrcEdit = function(o) {
+    
+    var hsid = o.id.split('-')[1];
+    var vtop = $(o).position().top +'px';
+    var vl = $(o).position().left + 70 + 'px';
+
+
+}
+
+  var harvJobMan = function(o) {
+    var hsid = o.id.split('-')[1];
+    var hUrl = '/action/harvestJobs?setid='+hsid;
+
+    var jqxhr = $.get(hUrl, function() {
+            console.log( "harvest jobs" );
+        })
+        .done(function(data) { 
+
+            if (typeof(data) == "object" ) {
+                var dres = data;
+            } else {
+                var dres = JSON.parse(data);
+            }
+            gHJ = dres.rows;
+            hjTemplate(o,gHJ)
+        });
+
+  }
+
+  var hjTemplate = function(o, d) {
+    var hsid = o.id.split('-')[1];
+    var vtop = $(o).position().top +'px';
+    var vl = $(o).position().left + 70 + 'px';
+
+    var c = $("#rightEdit");
+
+    var hd = $('<div id="hjMan">')
+            .css("position","absolute")
+            .css("display","block")
+            .css("margin", "7px 7px 7px 7px;")
+            .css("padding","5px 5px")
+            .css("top",vtop)
+            .css("left",vl)
+            .css("opacity","1")
+            .css("background-color","#ffffff")
+            .css("border","2px solid #2191c2")
+            .css("height","350px")
+            .css("width","350px");
+
+    var cBtn =  $('<a id="hjClose" class="res-tag" >Close</a>')
+            .css("font-size", "11px")
+            .css("margin", "1px 1px 1px 1px;")
+            .css("padding","2px 2px")
+            .css("display","inline:block")
+            .css("width","80px")
+            .css("background-color", "#2191c2")
+            .attr('onclick','hjClose(this);');
+
+    var xBtn =  $('<a id="hx-'+hsid+'" class="res-tag" >Run</a>')
+            .css("font-size", "11px")
+            .css("margin", "1px 1px 1px 7px;")
+            .css("padding","2px 2px")
+            .css("display","inline:block")
+            .css("width","80px")
+            .css("background-color", "#2191c2")
+            .attr('onclick','hjExec(this);');
+    
+    var dBtn =  $('<a id="hd-'+hsid+'" class="res-tag" >Clear</a>')
+            .css("font-size", "11px")
+            .css("margin", "1px 1px 1px 7px;")
+            .css("padding","2px 2px")
+            .css("display","inline:block")
+            .css("width","80px")
+            .css("background-color", "#2191c2")
+            .attr('onclick','harvestClear(this);');
+
+    var selHtype = $('<select id="selHType" name="selHtype"></select>')
+            .css("font-family","Arial")
+            .css("font-size","11px")
+            .css("font-color","#888888")
+            .css("border-color","#888888")
+            .css("width","150px");
+    var ca = $('<option value="full-harvest">Full</option>');
+    var co = $('<option value="New">New Only</option>');
+    var cl = $('<option value="local-saved">Local Selection Set</option>');
+
+    selHtype.append(ca);
+    selHtype.append(co);
+    selHtype.append(cl);
+
+    var selHPtype = $('<select id="selHPType" name="selHPtype"></select>')
+        .css("font-family","Arial")
+        .css("font-size","11px")
+        .css("font-color","#888888")
+        .css("border-color","#888888")
+        .css("width","150px");
+    var pa = $('<option value="full-harvest">Overwrite</option>');
+    var po = $('<option value="New">Reconcile</option>');
+
+    selHPtype.append(pa);
+    selHPtype.append(po);
+
+    vh = $('<span >Harvest Jobs</span>')
+                .css("font-size", "14px")
+                .css("font-weight", "bold")
+                .css("font-family","Arial");
+
+    hd.append(vh);  
+    
+    hd.append(cBtn);
+    hd.append('</br>');
+    var spt = $('<span>Harvest Type</span>').css("font-size", "11px")
+                    .css("font-family","Arial")
+                    .css("width","100px");
+    hd.append(spt);                
+    hd.append(selHtype);
+    hd.append('</br>');
+    var spa = $('<span>Harvest Action</span>').css("font-size", "11px")
+                    .css("font-family","Arial")
+                    .css("width","100px");
+    
+    hd.append(spa);                  
+    hd.append(selHPtype);
+    hd.append('</br>');
+    hd.append(xBtn);
+    hd.append(dBtn);
+    hd.append('</br>');
+    var sph = $('<span >History</span>')
+        .css("font-size", "12px")
+        .css("font-weight", "bold")
+        .css("font-family","Arial");
+    hd.append(sph); 
+    hd.append('</br>');
+
+    var vrtab = $('<table width="90%">');
+    var vr = $('<tr>');   
+    var va = $('<td> Action </td>').css("font-size", "12px").css("font-weight", "bold");
+    var vb = $('<td> Date </td>').css("font-size", "12px").css("font-weight", "bold");
+    var vc = $('<td> Status </td>').css("font-size", "12px").css("font-weight", "bold");
+    var vd = $('<td> Records </td>').css("font-size", "12px").css("font-weight", "bold");
+    vr.append(va);
+    vr.append(vb);
+    vr.append(vc);
+    vr.append(vd);
+    vrtab.append(vr);
+    for (k in d ) {
+      var vr = $('<tr>');   
+      var va = $('<td>'+d[k].activity_name+'</td>').css("font-size", "11px");
+      var vb = $('<td>'+d[k].action_date.substr(0,10)+'</td>').css("font-size", "11px");
+      var vc = $('<td>'+d[k].status+'</td>').css("font-size", "11px");
+      var vd = $('<td>'+d[k].count+'</td>').css("font-size", "11px");
+      vr.append(va);
+      vr.append(vb);
+      vr.append(vc);
+      vr.append(vd);
+      vrtab.append(vr);
+
+    }
+
+    hd.append(vrtab);
+    c.append(hd);
+  }
+
+  var hjExec = function(o) {
+    var hsid = o.id.split('-')[1];
+    var htype = $("#selHtype option:selected").val();
+    var ptype = $("#selHPtype option:selected").val();
+
+    var hUrl = '/csw/harvestJob?setid='+hs+'&ad=1&ht='+htype+'&pt='+ptype;
+  	  var jqxhr = $.get(hUrl, function() {
+        console.log( "success - 1" );
+      })
+      .done(function(data) { 
+          alert('Harvest Job started');
+        	//console.log( JSON.stringify(data) );	
+      });
+  }
+
+  var harvestClear = function(o) {
+    // delete all records in harvest source
+    var hsid = o.id.split('-')[1];
+    var hUrl = '/collectionClear?setid='+hsid+'&action=1';
+      var jqxhr = $.get(hUrl, function() {
+        console.log( "success - 1" );
+      })
+      .done(function(data) { 
+        console.log( JSON.stringify(data) );  
+      });
+  }
+
+  var hjClose = function(o) {
+
+    if ( $("#hjMan").length ) {
+        $("#hjMan").remove();
+    }
+
+  }
+
 
 /* END -- Harvest functions */
 
@@ -366,7 +1474,7 @@ var userMan = function(o) {
         }
 
         $("#editFrame").append(tbx);
-       
+        //console.log(JSON.stringify(dres.rows));
     });
 
 }
@@ -475,12 +1583,27 @@ var validate = function(o) {
         .css("background-color", "#2191c2")
         .attr('onclick','processValidation(this);');
 
+    //$("#editFrame").append('<span>Select Collection Type: </span>');
+    //$("#editFrame").append(selCtype);
+    //$("#editFrame").append('</br>');
+    //$("#editFrame").append('<span>Select a specific collection: </span>');
+    //$("#editFrame").append(selVCol);
+    //$("#editFrame").append('</br>');
+    //$("#editFrame").append('<span>Select a schema: </span>');
+    //$("#editFrame").append(selVScm);
+    //$("#editFrame").append('<span>How many ?</span>');
+    //$("#editFrame").append(selVCnt);
+    //$("#editFrame").append('</br>');
     $("#editFrame").append(tb);
     $("#editFrame").append(vBtn);
-    getSchemaList(selVScm); 
+    getSchemaList(selVScm);
+
+    //$("#editFrame").append('<h4>Metdata Quality Check</h4>');
 
     $("#editFrame").append('<div id="mdvalcol"></div>');
-
+    //$("#editFrame").append('<h4>Resource Link Check</h4>');
+    //$("#editFrame").append('<p>Check the quality of resource links found in the collection</p>');
+    //$("#editFrame").append('<div id="rlvalcol"></div>');
 
 }
 
@@ -517,13 +1640,14 @@ var applySchemaList = function(selSchema) {
         }
         var so = $('<option value="'+sid+'">' + stxt + '</option>');
         if ( gSchemas[i].auth_source == 'ngds') {
-           
+            //var so = $('<option value="'+sid+'">' + stxt + '</option>');
+            //fedSchema.append(so);
         } else {
             var so = $('<option value="'+sid+'">' + stxt + sc + '</option>');
             selSchema.append(so);
         }
     }
-
+    //sDetFed(10);
     
 }
 
@@ -649,7 +1773,25 @@ var newEditConstructor = function(o) {
     // this will allow db driven schemas' - static for now
     var sFmt = $("#selFormat option:selected").text();
     var sType = $("#selType option:selected").text();
-    
+    /*
+    var p = $('<p>JUST TEST </p>');
+    $("#editFrame").append(p);
+
+    $("#editFrame").append('</br>');
+
+    var rt = $('<label class="md-label">Select Field</label><select id="batchFld"></select>');
+    var rto =  $("<option>").attr('value','Url').text('Url');
+    rt.append(rto);
+
+    var rta =  $("<option>").attr('value','abstract').text('abstract');
+    rt.append(rta);
+
+    var rd = $('<label class="md-label">Query String</label><input id="bfqry" type="text" size="40" placeholder="Search for">');
+
+    $("#editFrame").append(rt);
+    $("#editFrame").append(rd);
+    $("#editFrame").append('</br>');
+    */
 
 
 }
@@ -662,7 +1804,9 @@ var pickEdit = function(o) {
 
     var selCol = $(o).children("option:selected").text();
     var setid = $(o).children("option:selected").val();
-  
+    //var selCol = $("#selCol option:selected").text();
+    //var setid = $("#selCol option:selected").val();
+
     console.log(' selected ' + selCol + setid);
     batchMD(o,setid);
     
@@ -842,7 +1986,7 @@ var sDetFed = function(sid) {
                 gFSD.som.push(zx[i]);
             }
         }
-      
+        //gFSD.map = dres.rows;
     });
 }
 
@@ -915,7 +2059,7 @@ var newSchemaForm = function(sid) {
     $("#schemResult").append('</br>');  
     $("#schemResult").append(sBtn);
     $("#schemResult").append('</br>');      
-    
+    //schemaTemplate(sid);
 }
 
 var saveNewSchema = function(o) {
@@ -1116,7 +2260,7 @@ var addNewElem = function (o) {
     trx.append(td3);
     trx.append(td4);
     $("#srTab tr:first").after(trx);
- 
+    // tbx.prepend(trx);
 
 }
 
@@ -1146,10 +2290,17 @@ var saveNewElement = function(o) {
         }
 
         var zx = dres.rows;
-       
+        /* get insert reults and add 
+        var irx = zx[0].scmap_insert;
+        var ne = {};
+        gCSD.map
+        OR JUST RELOAD SCHEMA details
+        */
         $("#schemResult").empty();
         schemaDetail(gCSD.sid,'edit');
-       
+        //schemaTemplate()
+        // swap out form elems for text here...
+       // $("#anr-"+eid).remove();
     });
     console.log(eid + nfe + sty + vt + mp);
    
@@ -1195,9 +2346,36 @@ var editSI = function(o) {
                 gEdBuf.valid = $("#rs-"+ sid).text();
                 gEdBuf.mpath = $("#mp-"+ sid).text();
 
-             
+                //var tdf = $("#fe-"+ sid).empty();
+                //var tdty = $("#st-"+ sid).empty();
                 var tdv = $("#rs-"+ sid).empty();
                 var tdm = $("#mp-"+ sid).empty();
+
+                //var zap = $('<select id="edFel" >');
+                //var st = gCSD.map[k].moid;
+
+               // if ( st == 0 ) {
+                //    for (i in gFSD.smap ) {
+                //        var aco =  $("<option>")
+                //                .attr('value',gFSD.smap[i].fed_elem)
+                //                .text(gFSD.smap[i].fed_elem);
+                //            zap.append(aco);
+                //    }
+                //} else {
+                //    for (i in gFSD.som ) {
+                //        var aco =  $("<option>")
+                //                .attr('value',gFSD.som[i].fed_elem)
+                 //               .text(gFSD.som[i].fed_elem);
+                //        zap.append(aco);
+                //    }
+                //}
+
+                //var tsi = $('<select id="edType" >');
+               // var to1 =  $("<option>").attr('value','end').text('end');
+                //var to2 =  $("<option>").attr('value','object').text('object');
+                //tsi.append(to1);
+                //tsi.append(to2);
+
                 var tsv = $('<select id="valType" >');
                 var tv1 =  $("<option>").attr('value','12').text('required');
                 var tv2 =  $("<option>").attr('value','13').text('recommended');
@@ -1210,6 +2388,8 @@ var editSI = function(o) {
                     .css("border-width","1px")
                     .css("border-color","#888888").val(gCSD.map[k].map_path);
 
+                //tdf.append(zap);
+                //tdty.append(tsi);
                 tdv.append(tsv);
                 tdm.append(rd);    
             }
@@ -1330,7 +2510,8 @@ var batchMD = function(o,s) {
                 gPkEd.replFld = atz[1];
                 fld = gCoLst[k].sname.split('-')[0]; 
                 qstr  = gCoLst[k].sname.split('-')[1];           
-              
+                //htxt = htxt + ' Collection Created: ' + gCoLst[k].sdate;
+
                 $("#beht").text(htxt);
                 $("#batchAction").val(act).prop('selected',true);
                 $("#batchFld").val(fld).prop('selected',true);
@@ -1455,6 +2636,9 @@ var batchMD = function(o,s) {
     }
 
 
+    //var qd = $('<div id="batchRes"></div>');
+
+    //$("#editFrame").append(qd);
 
 }
 
@@ -1597,6 +2781,14 @@ var getBatchQry = function(o) {
         .css("background-color", "#2191c2")
         .attr('onclick','selectAll(this);');
 
+        var shBtn =   $('<a id="rSelHBtn" class="res-tag" >+100</a>')
+        .css("font-size", "11px")
+        .css("margin", "5px 5px")
+        .css("padding","2px 2px")
+        .css("color", "#ffffff")
+        .css("background-color", "#2191c2")
+        .attr('onclick','selectH(this);');
+
         var caBtn =   $('<a id="rclrAllBtn" class="res-tag" >Clear All</a>')
         .css("font-size", "11px")
         .css("margin", "5px 5px")
@@ -1610,15 +2802,39 @@ var getBatchQry = function(o) {
         $("#resHdr").append(uBtn);
         $("#resHdr").append('</br >');
         $("#resHdr").append(saBtn);
+        $("#resHdr").append(shBtn);
         $("#resHdr").append(caBtn);
- 
+        /*
+        $("#editFrame").append(aBtn);
+        $("#editFrame").append(sBtn);
+        $("#editFrame").append(uBtn);
+        $("#editFrame").append('</br >');
+        $("#editFrame").append(saBtn);
+        $("#editFrame").append(caBtn);
+        */
         var qd = $('<div id="batchRes"></div>');
         $("#editFrame").append(qd);
 
+        //var tbx =  $('<table id="brTab" style="bgcolor:light-gray; width: 100%"></table>');
         gBD = dres.rows;
         bldSelTab(gBD);
         
-       
+        /*
+        for (k in dres.rows) {
+            var ro = dres.rows[k];
+            var to = $('<tr>');
+            var tri = $('<td><input class="bqrsel" type="checkbox" id="'+ro.node_id+ '" name="'+ro.version_id+'" value="'+ ro.mpath+'" checked></td>');
+            //var trg = $('<td ><span style="font-size:10px;">' + ro.guid + '</span></td>');
+            var trt = $('<td ><span style="font-size:11px; bgcolor:light-gray;">' + ro.citation_title + '</span></td>');
+            var trv = $('<td ><span style="font-size:11px; bgcolor:light-gray;">' + ro.node_value + '</span></td>');
+            to.append(tri);
+            //to.append(trg);
+            to.append(trt);
+            to.append(trv);
+            tbx.append(to);
+        }
+        $("#batchRes").append(tbx);
+        */
 
     });
 
@@ -1631,7 +2847,7 @@ var bldSelTab = function (gso) {
 
     for (k in gso) {
         var z = gso[k].mpath.replace(/["']/g, "");
-        gso[k].mpath = z; 
+        gso[k].mpath = z; //.replace(/["']/g, ""); //replace(/'/g, "");
         var ro = gso[k];
 
         var to = $('<tr>');
@@ -1653,11 +2869,13 @@ var bldSelTab = function (gso) {
         }
         tri.append(trcb);
 
-      
+        //var tri = $('<td><input class="bqrsel" onclick="cbAction(this)" type="checkbox" id="'+ro.node_id+ '" name="'+ro.version_id+'" value="'+ ro.mpath+'" '+cbs+'></td>');
+        //var trg = $('<td ><span style="font-size:10px;">' + ro.guid + '</span></td>');
        
         var trt = $('<td ><span style="font-size:11px; bgcolor:light-gray;">' + ro.citation_title + '</span></td>');
         var trv = $('<td ><span style="font-size:11px; bgcolor:light-gray;">' + ro.node_value + '</span></td>');
         to.append(tri);
+        //to.append(trg);
         to.append(trt);
         to.append(trv);
         tbx.append(to);
@@ -1695,7 +2913,7 @@ var getCollectionList = function(selCol, cType ) {
           c.sdesc = dx[i].set_description;
           c.sdate = dx[i].create_date;
           var mo = c.sdesc + '<br>Create date :'+c.sdate;
-        
+          //gCoLst.push(c);
           colA.push(c);
           var co = $('<option value="'+c.sid+'" title="'+mo+'">' + c.sname + '</option>');
           $("#"+selCol).append(co);
@@ -1744,6 +2962,32 @@ var selectAll = function(o) {
     }
 }
 
+var selectH = function(o) {
+    /*
+    $(".bqrsel").prop("checked", true );
+    $(".bqrsel").each(function(){
+        $(this).closest('tr').find('td').css('background-color', '#ddeeff')
+    });
+    */
+    var rk = 0;
+    for (k in gBD) {
+        if (rk < 100) {
+            if ( gBD[k].checked == false ) {
+                gBD[k].checked = true;
+                var nid = '#'+gBD[k].node_id;
+                var o = $(nid);
+                $(o).prop("checked", true );
+                $(o).closest('tr').find('td').css('background-color', '#ddeeff')
+                rk++;
+            }
+        } else {
+            break;
+        } 
+    }
+    //bldSelTab(gBD);
+
+}
+
 var batchApply = function(o) {
     var bfn = $("#batchAction").val();
     if ( !bfn ) { bfn = 'text-replace'; }
@@ -1755,31 +2999,32 @@ var batchApply = function(o) {
     gBforUndo = JSON.stringify(gBD);
     
     for (k in gBD) {
+        if ( gBD[k].checked ) {
+            if ( bfn == 'text-replace') {
+                
+                var nv = gBD[k].node_value.toLowerCase();
+                var onv = gBD[k].node_value;
+                //var hazit = nv.search(fs);
+                var hazit = nv.includes(fs);
 
-        if ( bfn == 'text-replace') {
-            var nv = gBD[k].node_value.toLowerCase();
-            var onv = gBD[k].node_value;
-           
-            var hazit = nv.includes(fs);
+                //var inset = gBD[k].checked;
+                //if ( hazit > -1  && inset ) {
+                if ( hazit ) {
+                    var startpos = nv.indexOf(fs);
+                    var ags = onv.substr(0,startpos) + rs + onv.substr(fs.length+startpos);
+                    //var ags = onv.substr(0,hazit) + rs + onv.substr(fs.length+hazit);
+                    if ( k < 10 ) { console.log('replaced ' + onv + ' with ' + ags); }
+                    gBD[k].node_value = ags;
+                }
 
-            var inset = gBD[k].checked;
-           
-            if ( hazit && inset ) {
-                var startpos = nv.indexOf(fs);
-                var ags = onv.substr(0,startpos) + rs + onv.substr(fs.length+startpos);
-               
-                if ( k < 10 ) { console.log('replaced ' + onv + ' with ' + ags); }
-                gBD[k].node_value = ags;
-            }
-        } else if ( bfn == 'field-replace') {
-            if ( gBD[k].checked ) {
-                gBD[k].node_value = rs;
+            } else if ( bfn == 'field-replace') {
+                gBD[k].node_value = rs;    
             }
         }
     }
 
     bldSelTab(gBD);
-
+    //$(".bqrsel").prop("checked", true );
 
 }
 
@@ -1803,14 +3048,15 @@ var batchSave = function(o) {
     batObj.search_text =  $("#bfsfind").val();
     batObj.replace_text = $("#bfreplace").val();
 
-    batObj.collection = JSON.parse(JSON.stringify(gBD));
-
-    // send only the ones that will change
-    for (k = batObj.collection.length-1; k >=0; k--) {
-        if ( batObj.collection[k].checked == false ) {
-            batObj.collection.splice(k,1);
+    //batObj.collection = JSON.parse(JSON.stringify(gBD));
+    batObj.collection = [];
+    for (k in gBD) {
+        if ( gBD[k].checked == true ) {
+            gBD[k].citation_title ="";
+            batObj.collection.push(gBD[k]);
         }
     }
+    
  
     $.ajax({ 
         type: 'POST',
