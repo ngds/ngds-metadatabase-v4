@@ -312,7 +312,11 @@ function searchData(yorn) {
       sPage = page;
 
       var gSp = page*pgSize;
-      var sTerms = $("#gSearchBox").val();
+      //var sTerms = $("#gSearchBox").val();
+      // search term bug fix 5/5/22 -GH
+      var sTerm = $("#gSearchBox").val();
+      var sTerms = sTerm.replace(/&/g," ").trim();
+	  
       gSearchType = 'text';
 
       if (  gSearchHistory.indexOf(sTerms.trim()) == -1 ){
