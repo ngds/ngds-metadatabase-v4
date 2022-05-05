@@ -47,20 +47,25 @@ The mapping and spatial search process utilize:
 Startup Commands
 
 1 - sudo service postgresql start
+
     Postgres - database includes 2 schemas pycsw and geothermal 
     
 2 - sudo docker container start pycsw
+
     Dockerized version of pycsw - provides standard OGC interface
 
 3 - systemctl start ngds-pg-pool 
+
     node.js middleware implmentation provides high performance pooling
     to the geothermal database
 
 4 - systemctl start ngds-pysearch
+
     node.js middleware implmentation provides high perf pooling
     to the pycsw database
  
 5 - systemctl start ngds-app-ssl
+
     node.js user interface and api front end
 
 
