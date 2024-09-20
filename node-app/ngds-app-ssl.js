@@ -1,8 +1,6 @@
 /* NGDS Front End  App V1.2
-   G. Hudman
-   
-   sept 15 2020 
-   
+   G. Hudman - Sept 15 2020 
+   Updated 5/10/23 - Lets Encrypt
 */  
 
 require('dotenv').config();
@@ -11,9 +9,8 @@ const port = 443;
 var  fs = require("fs");
 
 var https = require("https");
-const cert = fs.readFileSync('../ssl/__geothermaldata_org_cert.cer');
-const ca = fs.readFileSync('../ssl/__geothermaldata_org.cer');
-const key = fs.readFileSync('../ssl/myserver.key');
+const cert = fs.readFileSync('/etc/letsencrypt/live/data.geothermaldata.org/fullchain.pem');
+const key = fs.readFileSync('/etc/letsencrypt/live/data.geothermaldata.org/privkey.pem');
 
 var credentials = { key: key,
                     cert: cert };
@@ -30,8 +27,7 @@ const xml2js = require('xml2js');
 var csw = require('csw-client');
 var options = { "outputSchema" :"http://www.isotc211.org/2005/gmd" };
 
-//options.schema = 'iso';
-//options.compat
+
 options.typeName = 'gmd:MD_Metadata';
 options.outputSchema = 'http://www.isotc211.org/2005/gmd';
 options.outputFormat = 'application/xml';
@@ -142,8 +138,8 @@ app.get('/' , function(req,res) {
      res.sendFile(Path+lp);
 } );
 
-app.get('/maptest' , function(req,res) {
-	var lp = '/public/maptest.htm';
+app.get('/help' , function(req,res) {
+	var lp = '/public/ngds-help.htm';
 	routelog(req, lp);
 	res.sendFile(Path+lp);
 } );
@@ -915,8 +911,6 @@ app.post('/createHarvestSource', function(request,response) {
     			+ 'values (\''+hName+'\',\'harvest\',\'active\','
     			+ 'current_timestamp,null,1,1,\''+hsUrl+'\',\''+sDesc+'\','+sid+')';
 
-
-
   	client.query(sqlStr, (err, res) => {
   		if ( typeof(res) !== "unedfined" ) {	 
 		
@@ -945,5 +939,4 @@ app.get('/url_status', function(req, res) {
 	
 });	
 
-
-httpsServer.listen(port,'10.208.3.120')
+httpsServer.listen(port,'###')
