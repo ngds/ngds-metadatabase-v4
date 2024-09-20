@@ -115,7 +115,6 @@
         var isSearch = false;
 
         $("#gSearchBox").val("");
-        //$("#gSearchBox").disableAutofill();
         
 		if (query) {
 			var params = query.split('&');
@@ -143,7 +142,7 @@
         if ( sh ) {
             gSearchHistory = sh.split('|');
         }
-        //$("#sortBtn").text(gSortTypes[gSortOrder]);
+
         $("#sortBtn").text("Modified Date");
 
         mapInit();
