@@ -1,5 +1,6 @@
 /* G. Hudman - Search and MD record view UI tools
    dev on data.geothermaldata.org
+
 */
   var gTemplate = { "title": { "value": "Title", "path" : "", "nodeid": "" }, 
                     "abstract" : { "value": "", "path" : "", "nodeid": "" }, 
@@ -312,11 +313,11 @@ function searchData(yorn) {
       sPage = page;
 
       var gSp = page*pgSize;
-      //var sTerms = $("#gSearchBox").val();
+
       // search term bug fix 5/5/22 -GH
       var sTerm = $("#gSearchBox").val();
-      var sTerms = sTerm.replace(/&/g," ").trim();
-	  
+      // trap colon character 
+      var sTerms = sTerm.replace(/&/g," ").replace(/:/g," ").trim();
       gSearchType = 'text';
 
       if (  gSearchHistory.indexOf(sTerms.trim()) == -1 ){
@@ -576,6 +577,9 @@ function searchData(yorn) {
         showCM(5);
         $("#gSearchBox").val(sTerms);
 
+      })
+      .fail(function(data) {
+        console.log('Find records error'+data);
       });
 
   }
