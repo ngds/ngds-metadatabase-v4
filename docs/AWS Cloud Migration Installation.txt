@@ -1,0 +1,296 @@
+# NGDS System Ported to AWS Cloud Server 
+Installed Configuration
+Date: December 2024
+G. Hudman
+
+#Version Info
+
+This provides detailed version and configuration info for the server.
+
+Server: AL 2023
+Postgresql: 15.8
+Node: v20.18.0
+     https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-up-node-on-ec2-instance.html
+Docker: 25.0.5
+PyCSW: geopython/pycsw:2.4.2  
+   -- Note: Current versions of pyCSW are incompatable with NGDS due to changes in pycsw database schema.
+
+##AL2023 Packages installed
+
+AL2023 Package List
+
+Ths link is the Amazon catalog listing
+
+https://docs.aws.amazon.com/linux/al2023/release-notes/all-packages-AL2023.6.html
+
+Packages added with dnf 
+
+##Postgresql
+
+postgresql15-0:15.8-1.amzn2023.0.1.x86_64
+postgresql15-contrib-0:15.8-1.amzn2023.0.1.x86_64
+postgresql15-plpython3-0:15.8-1.amzn2023.0.1.x86_64
+postgresql15-server-0:15.8-1.amzn2023.0.1.x86_64
+postgresql15-server-devel-0:15.8-1.amzn2023.0.1.x86_64
+
+postgresql15-private-devel
+postgresql15-private-libs
+postgresql15-static
+
+For Postgis Build
+
+libxml12
+libxml12-devel
+sqlite-devel
+sqlite-libs
+sqlite-tools
+libtiff
+libtiff-devel
+libcurl
+libcurl-devel
+
+##Postgresql Extensions
+ltree: 1.2
+pg_trgm: 1.6
+plpgsql: 1.0
+plython3u: 1.0
+postgres_fdw: 1.1
+tablefunc: 1.0
+postgis: Custom build, not available in AL2023 environment. See Postgis Build Notes document.
+
+##Docker
+
+docker-0:25.0.6-1.amzn2023.0.2.x86_64
+
+##PyCSW
+sudo docker pull geopython/pycsw:2.4.2
+
+Version info can be found at:
+
+https://hub.docker.com/r/geopython/pycsw/tags
+
+
+##NODE JS Packages
+
+crypto: 1.0.1
+csw-client: 0.18.3
+dotenv: 16.4.5
+express: 4.21.1
+fs: 0.0.1-security
+https: 1.0.0
+scraper.js: 1.2.0
+util: 0.,12.5
+
+pg
+xml
+xmldoc
+url
+url-exists
+request
+body-parser
+node-json2html
+xml2js
+
+
+#INSTALLATION
+
+Installation for AWS cloud server
+
+Entry for /etc/hosts
+
+IP			DNS
+x.x.x.x    	data.geothermaldata.org
+
+
+##DATABASE
+
+1 - create postgis user.
+
+sudo postgresql-setup --initdb
+
+sudo systemctl enable postgresql
+
+sudo systemctl start postgresql
+
+Configuration
+
+Modified
+- pg_hba.conf 
+
+- postgresql.conf
+  1 -changed listener setting
+  2 - add library path 
+
+	dynamic_library_path = '/usr/local/lib64:$libdir'
+
+   3 - database tuning for pooling - no changed required
+
+##Database Build
+
+	createuser ngdsdb;
+	createdb geothermal -O ngdsdb;
+	createdb pycsw -O ngdsdb;
+	alter user ngdsdb with password 'xxx';
+
+	CREATE USER py_fdw WITH password 'xxx';
+	GRANT CONNECT ON DATABASE pycsw to py_fdw;
+	
+##Import data from production
+
+pg_dump --file "geothermal.sql" --host "10.208.3.120" --port "5432" --username "ngdsdb" --no-password --verbose --format=p  --create "geothermal"
+
+pg_dump --file "pycsw.sql" --host "10.208.3.120" --port "5432" --username "ngdsdb" --no-password --verbose --format=p  --create "pycsw"
+
+Then import to new:
+
+psql -U postgres -d geothermal < /home/ec2-user/database/geothermal.sql
+
+psql -U postgres -d pycsw < /home/ec2-user/database/pycsw.sql
+
+##Refreshing Materialized Views
+
+For performance, materialized views are used extensively, and should be refreshed when new data is harvested
+
+REFRESH MATERIALIZED VIEW <viewname>;
+
+AUTHOR_CACHE
+AUTHOR_FACET
+AUTHOR_REGISTER
+CATEGORY_FACET
+CM_REGISTER
+GISLINK_UPDATE
+INSPECTION
+KEYWORD_TAA
+
+
+#NODE JS installation
+
+Node app directory located in
+/opt/ngds/node-app
+
+All logs are posted in:
+
+/opt/ngds/nodeapp/log
+
+Node installation via the AWS link:
+
+https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-up-node-on-ec2-instance.html
+
+nvm install --lts
+
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+In the app directory, install required modules
+
+npm install express
+npm install dotenv
+npm install body-parser
+
+npm install bson-ext
+npm install fsw
+npm install fs
+npm install fsnode-json2html
+npm install node-json2html
+npm install pg
+npm install request
+npm install url-exists
+npm install url-exists-async-awaits
+npm install xml
+npm install xml2js
+npm install xmldoc
+npm install csw-client
+npm install scraperjs
+npm install util
+npm install crypto
+npm audit fix
+npm audit fix --force
+
+After installing client/server source, install node services.
+
+##Node JS Services
+
+The systemctl services control files are located in:
+
+/etc/systemd/system
+
+One service has been removed (the ssl version), since the ssl is handled in the amazon load balancer, requests on the host appear at port 80.
+
+Primary interface
+Web user interface and UI API calls.
+Port: 80
+/opt/ngds/node-app/ngds-app.js
+
+Postgresql Pooling
+Provides efficient middle-ware connection from front end to the geothermal database.
+Port: 8082
+
+/opt/ngds/node-app/ngds-pg-pool.js
+
+PyCSW Interface
+postgresql pool interface for pyCSW api commands
+Port: 8080
+
+/opt/ngds/node-app/ngds-pysearch.js
+
+Backend Services
+Provides additional admin functions
+
+Port: 3001
+
+/opt/ngds/node-app/ngds-server-v2.js
+
+Only run when needed (harvesting, editing).
+
+After Docker/PyCSW service is running, for each node service:
+
+sudo systemctl enable <service-name>
+sudo systemctl start <service-name>
+
+#DOCKER & PyCSW
+
+sudo dnf install docker
+sudo systemctl start docker
+
+PyCSW
+Port: 8000
+
+For this version, pyCSW documentation can be found at:
+
+https://docs.pycsw.org/en/2.6.1/index.html
+
+sudo docker pull geopython/pycsw:2.4.2
+
+Note: Current pyCSW uses a modified database schema and is not compatable with NGDS.
+
+sudo docker container run  -detach -p 8000:8000 geopython/pycsw:2.4.2
+
+1- Within the docker container, edit the /etc/pycsw/pycsw.yml file.
+
+comment out the default sqllite and add the postgresql connection string:
+
+database: 'postgresql://ngdsdb:<password>@10.221.154.98/pycsw2'
+
+Add identifying info for contact, organization, etc as desired. Whebn complete:
+
+sudo docker cp pycsw.yml <container id>:/etc/pycsw
+
+2 - apiso issues is a known bug -
+
+https://github.com/geopython/pycsw/issues/576
+
+In order to correct, use the apiso.py found in the NGDS github. Other versions will not 
+function correctly. Without correction, the display XML functions display "invalid XML" errors.
+
+sudo docker cp apiso.py <container id>:/etc/pycsw/pycsw/pycsw/plugins/profiles/apiso.py 
+
+Then restart container, monitor the docker container logs to verify correct functioning. 
+
+To complete, perform command line test:
+
+http://127.0.0.1:8000
+
+This will return a Summary GetCapabilities in XML format. Check for errors.
+
+Verify command success in the docker logs which are found at:
+
+/var/lib/containers/<container-id>/<container-id>-json.logs
