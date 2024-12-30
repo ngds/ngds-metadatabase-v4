@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NGDS Admin</title>
+
+<link rel="stylesheet" href="/css/ngds.css" />
+<link rel="stylesheet" href="/css/dds.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="shortcut icon" href="/img/nico.ico" />
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script src="/js/ngdsUI.js"></script>
+<script src="/js/ngds-admin.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/json2html/1.2.0/json2html.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.json2html/1.2.0/jquery.json2html.min.js"></script>
+<link href="/css/spin.css" type="text/css" rel="stylesheet" />
+<script src="/js/spin.js"></script>
+<script>
+
+  var sSrchUrl = "";
+	var sPage = 0;
+	var sType ="";
+  var sOff = 0;
+  var pgSize = 25;
+  var curID = "";
+
+  var harvestAction='Preview';
+
+    var sR;
+
+    $(document).ready(function(){
+    	$("#GetPreview").click(function() {
+    	 	sPage = 0;
+            var og = $("#srcCollection");
+            if ( og[0] ) { og = og[0] }
+    	 	show_preview(og)
+    	 });
+
+    	$("#RunHarvest").click(function() {
+    	    var og = $("#srcCollection");
+            if ( og[0] ) { og = og[0] }
+            var so = og.options[og.selectedIndex].value;
+    	 	execHarvest(so);
+    	 });
+
+      $("#hsGetInfo").click(function() {
+            var og = $("#srcCollection");
+            if ( og[0] ) { og = og[0] }
+            harvestSourceInfo(og);
+       });
+      
+        $("#HarvestHistory").click(function() {
+            show_harvest_history();
+        });
+
+        $("#pagePrev").click(function() {
+            if ( sPage > 0) {
+                sPage--;
+                sOff = sOff - pgSize;
+            }
+            $("#PageCnt").html("Page " + sPage);
+            if ( harvestAction == 'Preview') {
+                var og = $("#srcCollection");
+                if ( og[0] ) { og = og[0] }
+                show_preview(og);
+            }
+
+            if ( harvestAction == 'History') {
+                show_harvest_history(sPage);
+            }
+            console.log('prev' + sPage);
+        });
+
+        $("#pageNext").click(function() {
+			      sPage++;
+            sOff = sOff + pgSize;
+			      $("#PageCnt").html("Page " + sPage);
+            if ( harvestAction == 'Preview') {
+                var og = $("#srcCollection");
+                if ( og[0] ) { og = og[0] }
+                show_preview(og);
+            }
+            if ( harvestAction == 'History') {
+                show_harvest_history(sPage);
+            }
+
+    	 	console.log('next' + sPage);
+    	 });
+       
+       $("#adminLogin").click(function() {
+           logmein(this, adminMenu);
+       });
+	 
+    });
+	
+  var appInit = function() {
+    gAuth.adminLogin = function() { }
+    harvestView();
+
+  } 
+
+	
+</script>
+
+</head>
+<body  onload="appInit()">
+
+    <div class="g-app" id="app">
+    <nav class="navbar navbar-inverse">
+    
+	  <ul class="nav navbar-nav" style="float: left; width: 600px;">
+		<li class="nav-item">
+		  <img src="/img/ngds-logo.png" height="48px">
+		</li>
+		
+      <li class="nav-item">
+        <a class="nav-link" href="#harvest" onclick="harvestView();" >Harvest</a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="#harvest" onclick="schemaView();" >Schemas</a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" onclick="collectionView();" >Collections</a>
+      </li>
+
+        <li class="nav-item">
+            <a class="nav-link" onclick="processView();" >Automation</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link"onclick="helpView();" >Help</a>
+        </li>
+    </ul> 
+    <div class="g-tools pull-right" style="width: 70px;">
+         <span class="nav navbar-nav">
+            <a class="navbar-text" id="loginBtn" href="#loginPanel" style="color:#dcdcdc" onclick="toggleLogin(this, adminMenu);" >Login</a> 
+            <span class="nav navbar-nav" id="laname"></span>
+        </span>
+    </div>
+	</nav>
+	</div>
+
+	<div id="leftHarvest" class="g-search-pane-left" >
+    <span class="dijitTitlePaneTextNode">Harvest Source</span></br>
+    <select id="srcCollection" onchange="harvestSourceInfo(this)" style="width:250px;"  >
+    </select>
+    <button class="action-button" id="hsGetInfo" >Info</button></br>
+    <div style="border:1px solid silver; margin: 2px; border-radius: 4px;">
+    	<button class="action-button" id="GetPreview" >Remote Preview</button></br>
+         <input type="radio" name="pFilter" value="latest" checked>By Date<br>
+         <input type="radio" name="pFilter" value="since">Since Last Harvest<br>
+         <input type="radio" name="pFilter" value="query">Search By Query<br>
+         <input type="text" id="preQuery" size="25px"><br>
+        <button class="arrow-button" id="pagePrev" > < </button>
+        <span id="PageCnt">Page 0</span>
+        <button class="arrow-button" id="pageNext" > > </button></br>
+    </div>
+    <button class="action-button" id="HarvestHistory" >Source History</button></br>
+    <div id="harvest-ops" style="border:1px solid silver; margin: 2px; border-radius: 4px;">
+      <button class="action-button" id="RunHarvest" >Run Harvest</button></br>
+      <input type="radio" name="hType" value="selection" checked>On Selection<br>
+      <input type="radio" name="hType" value="full">Full Source Collection<br>
+      <span>Process Options</span></br>
+       <input type="radio" name="hProcOpt" value="all" checked>Overwrite All<br>
+       <input type="radio" name="hProcOpt" value="newer">Overwrite New<br>
+       <input type="radio" name="hProcOpt" value="newer">Reconcile<br>
+      <button class="action-button" id="HarvestStop" onclick="harvestStop()" >Stop</button>
+      <button class="action-button" id="HarvestClear" onclick="harvestClear()" >Clear</button></br>
+      <button class="action-button" id="HarvestSchedule" onclick="harvestSchedule()" >Schedule</button></br>
+      <button class="action-button" id="HarvestNew" onclick="harvestNewSource()" >Create New Source</button></br>
+      <button class="action-button" id="HarvestAdmin" >Configure</button>
+    </div>
+
+  </div>
+
+  <div id="leftProcess" class="g-search-pane-left" style="display: none;">
+    <span class="dijitTitlePaneTextNode">Process Automation & Scheduling</span></br>
+    <select id="srcProcess" onchange="pdView(this)" style="padding=20px; width:250px;"  >
+     <option value="1">Standard harvest</option>
+    </select></p>
+    <button class="action-button" id="GetProcess" >Edit</button></br>
+    <button class="action-button" id="ProcessHistory" >View History</button></br>
+    <button class="action-button" id="execProcess" >Run on Collection</button></br>
+    <button class="action-button" id="ProcessNew" onclick="processNew()" >Create New Process</button></br>
+    <button class="action-button" id="HarvestAdmin" >Configure</button></br>
+   
+  </div>
+
+  <div id="leftCollections" class="g-search-pane-left" style="display: none;">
+    <span class="dijitTitlePaneTextNode">Collections </span></br>
+  </div>
+
+  <div id="leftSchema" class="g-search-pane-left" style="display: none;">
+    <span class="dijitTitlePaneTextNode">Schema Manager</span></br>
+  </div>
+
+  <div id="leftHelp" class="g-search-pane-left" style="display: none;">
+    <span class="dijitTitlePaneTextNode">NGDS Admin Tool Help</span></br>
+
+  </div>
+
+  <div id="cb" class="g-search-pane-right" style="margin:5px;">
+       <span id="cb-title" style="margin:5px;">NGDS Harvest Manager</span>
+       <div id="rec-results" style="background-color: white; margin:5px;" ></div>
+  </div>
+
+    <div id="process-rp" class="g-search-pane-right" style="margin:5px;">
+        <span id="cb-title" style="margin:5px;">Automation </span>
+        <div id="process-results" style="background-color: white; margin:5px;" ></div>
+    </div>
+
+  <div id="collections-rp" class="g-search-pane-right" style="display: none;">
+       <span id="widget-title" class="dijitTitlePaneTextNode">Collections </span>
+       <div id="collections-view"></div>
+  </div>
+
+  <div id="schemas-rp" class="g-search-pane-right" style="display: none;">
+    <span id="widget-title" class="dijitTitlePaneTextNode">Schema </span>
+    <div id="schema-view"></div>
+</div>
+
+  <div id="help-rp" class="g-search-pane-right" style="display: none;">
+    <span id="widget-title" class="dijitTitlePaneTextNode">Help  </span>
+    <div id="help-view"></div>
+</div>
+
+<div id="loginDiv" style="position: absolute; top: 75px; left: 600px; margin: 10px; height: 180px; width: 220px; background-color: #c2d2e0; border-radius: 5px; display: none;">
+    <div style="margin:5px;"> 
+    <span style="margin:10px; font-family: Helvetica Neue Light, Helvetica Neue, Helvetica, Arial; font-size: 14px; font-weight: bold">Login</span>
+    </div>
+    <div style="margin:15px 15px;">
+    <input class="form-control" placeholder="Username" id="luser"></br>
+    <input  id="lpass" class="form-control" placeholder="Password" type="password">
+    </br>
+    <label class="checkbox" for="field-remember">
+    <input id="field-remember" type="checkbox" name="remember" value="63072000" checked="" style="margin:8px; font-family: Arial, Helvetica">
+        Remember me
+    </label>
+    <button class="action-button" id="adminLogin" >Login</button>
+</div>
+
+
+
+</body>
+</html>
+

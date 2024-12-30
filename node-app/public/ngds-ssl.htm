@@ -2,6 +2,7 @@
 <html>
 <head>
 <title>NGDS Search</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <script src='https://api.tiles.mapbox.com/mapbox.js/v2.2.4/mapbox.js'></script>
 <link href='https://api.tiles.mapbox.com/mapbox.js/v2.2.4/mapbox.css' rel='stylesheet' />
 <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.3/leaflet.draw.css' rel='stylesheet' />
@@ -115,6 +116,7 @@
         var isSearch = false;
 
         $("#gSearchBox").val("");
+        //$("#gSearchBox").disableAutofill();
         
 		if (query) {
 			var params = query.split('&');
@@ -142,7 +144,7 @@
         if ( sh ) {
             gSearchHistory = sh.split('|');
         }
-
+        //$("#sortBtn").text(gSortTypes[gSortOrder]);
         $("#sortBtn").text("Modified Date");
 
         mapInit();
@@ -162,6 +164,7 @@
 		}
 
         $("#app").on('mouseover',function(){
+            //console.log('cb mouse over');
             $("#SearchHistory").css("display","none");      
         });
 
@@ -203,6 +206,8 @@
             var ssu = 'sb mouseoout';
            
         }).on("keyup", function(e) {
+            //console.log(' key ' + gTAK + ' ' + gTApre + ' ' + e.key);
+
             if (e.keyCode == 32 || e.keyCode == 13) {
                 gTApre='';
                 $(".ta item").each(function() { $(this).remove() })
@@ -219,7 +224,7 @@
                     showSeaHis();
                 }
             }
-
+            //console.log(' pre len ' + gTApre.length);
             if ( gTApre.length > 2 ) {
                 console.log(' pre len ' + gTApre.length);
                 if ( e.keyCode > 47 && e.keyCode < 91 ) {
@@ -236,6 +241,7 @@
                 if ( gTAK > 0 ) { gTAK--; }
 
                 $(".sh-item").each(function() {
+                    //console.log( ' id ' +  $(this).attr("id") );
 
                     if ( $(this).attr("id") == 'sh-'+gTAK ) {
                         $(this).css("font-weight","bold");
@@ -280,6 +286,7 @@
                 if ( gTAK > kl ) { gTAK = 0 } else { gTAK ++; }
 
                 $(".sh-item").each(function() {
+                   // console.log(' down arrow ' + $(this).attr("id") + gTAK);
                     if ( $(this).attr("id") == 'sh-'+gTAK ) {
                         $(this).css("font-weight","bold");
                         $(this).css("font-size","14px");
@@ -290,6 +297,7 @@
                 });
 
                 $(".ta-item").each(function() {
+                    //console.log(' down arrow ' + $(this).attr("id") + gTAK);
                     if ( $(this).attr("id") == 'ta-'+gTAK ) {
                         $(this).css("font-weight","bold");
                         $(this).css("font-size","14px");
@@ -303,7 +311,7 @@
 
             if (e.keyCode == 13) {
                 gTApre='';
-                
+                //console.log('Search box enter');
                 $("#SearchHistory").css("display","none");
                 findRecords(0);   
             }
@@ -313,27 +321,73 @@
         });
 
         $("#SearchHistory").on('mouseover',function() {
-
+            //console.log('SH mouseover');
               mous = 1;
         }).on('mouseout',function() { 
              mous = 0;
-
+             //console.log('sh mouseout');
+            // $("#SearchHistory").css("display","none");
         });
 
+        //showCM();
+        //showDataTypes();
+        
     }
 
-    function  mapInit() {
-       
-		$("#showMap").show(); 
-        map = L.map('showMap', { minZoom: 1 }); 
+    function mapInit() {
+    
+    var size = {
+      width: window.innerWidth || document.body.clientWidth,
+      height: window.innerHeight || document.body.clientHeight
+    }
+    //console.log(size);
+    $("#leftSearch").css({'margin-left': '2px'});
+    $("#leftSearch").css({'position': 'absolute'});
+    if ( size.width < 1070 ) {
+	 $("#showMap").hide();
+      $("#searchMap").hide();
+      $("#accordion").hide();
+      $("#leftCollection").hide();
+      $("#leftMDRecord").hide();
+      $("#cb").css({'width': '90%'});
+      $("#cb").css({'margin-left': '5px'});
+      $("#cb").css({'margin-top': '25px'});
+      $("#cb").css({'position': 'absolute'});
+      $("#cb").css({'top': '100px'});
+      $("#widget-box").css({'width': '90%'});
+      $("#widget-box").css({'margin-left': '5px'});
+      $("#widget-box").css({'margin-top': '25px'});
+      $("#widget-box").css({'position': 'absolute'});
+      $("#widget-box").css({'top': '100px'});
+
+      $("#leftSearch").css({'height': '60px'});
+      $("#loginBtn").hide();
+      $("#helpBtn").hide();
+    } else {
+       $("#showMap").show();
+       $("#searchMap").show();
+       $("#accordion").show();
+       $("#cb").css({'width': '70%'});
+       $("#cb").css({'margin-left': '300px'});
+       $("#cb").css({'margin-top': '5px'});
+       $("#cb").css({'position': 'sticky'});
+       $("#widget-box").css({'margin-left': '300px'});
+       $("#widget-box").css({'margin-top': '5px'});
+       $("#widget-box").css({'position': 'sticky'});
+       $("#leftSearch").css({'height': '103px'});
+       $("#loginBtn").show();
+      $("#helpBtn").show();
+    }
+    
+        map = L.map('showMap', { minZoom: 1 }); //.setView([42, -100.09], 6);
         L.esri.basemapLayer('Streets').addTo(map);
 
         map.on('ready',function() { 
             setTimeout(function(){ 
                 map.invalidateSize();
-                
+                //map.fitBounds(initExtent);
             }, 200);
-        
+            //console.log('ready map')
         });
 
         map.on('click', function() {
@@ -342,24 +396,29 @@
 
     }
 
+  function appResize() {
+    mapInit();
+  }
+  
 </script>
 </head>
-<body  onload="appInit()">
+<body  onload="appInit()" onresize="appResize()" >
         <div class="g-app" id="app" style="position: sticky;">
             <nav class="navbar navbar-inverse"> 
-                <ul class="nav navbar-nav" style="float: left; width: 600px">
+                <ul class="nav navbar-nav" style="float: left; width: 800px">
                     <li class="nav-item">
                     <img src="/img/ngds-logo.png" height="48px">
                     </li> 
                     <li class="nav-item">
-                       
-                        <a class="nav-link" href="http://geothermaldata.org"  >National Geothermal Data System</a>
+                        <!--a class="nav-link" href="#searchPanel" onclick="searchData();" >National Geothermal Data System</a-->
+                        <a class="nav-link" href="https://data.geothermaldata.org"  >National Geothermal Data System</a>
                     </li>
-                    <li class="nav-item">
+                    <!--li class="nav-item">
                             <a class="nav-link" onclick="searchData();" >Search</a>
-                    </li>
+                    </li-->
                     <li class="nav-item">
-                        <a class="nav-link"  onclick="dataMapView();" >Map</a>
+                        <a class="nav-link"  href="https://zenodo.org/record/7502105#.Y7xHSuzML0o" 
+                        target = "_blank" >AASG Geothermal Dataset</a>
                     </li>
                     <li id="Cex" class="nav-item" style="display: none;">
                         <a class="nav-link"  onclick="edView(this);" >Admin</a>
@@ -368,7 +427,8 @@
 
                 <div class="g-tools pull-right" style="width: 150px;">
                     <span class="nav navbar-nav">
-                        <a class="navbar-text" href="http://geothermaldata.org/help" style="color:#dcdcdc"  >Help</a> 
+                        <a id="helpBtn" class="navbar-text" href="https://data.geothermaldata.org/help" 
+                        style="color:#dcdcdc" target="_blank"  >Help</a> 
                     </span>
                    
                      <span class="nav navbar-nav"> 
@@ -435,7 +495,8 @@
         </div>
 
         <div id="SearchHistory" style="height:300px; width: 240px; background: #eeeeee; border: 1px; position: absolute; top: 105px; left: 15px; overflow-x: hidden; overflow-y: scroll; display: none;">
-
+            <!--span style="font-size: 12px; font-weight:bold; font-family: calibri;  margin: 5px 5px; background-color: #e8e8e8; ">Sort </span>
+            <a id="sortBtn" onclick="sortPick(this)" class="tag" ></a></br-->
             <span id="shTitle" style="font-size: 12px; font-weight:bold; font-family: calibri;  margin: 5px 5px; background-color: #e8e8e8; ">Search History</span>
             <div id="sHistoryItems" class="g-search-pane-left" stype="margin:5px;"></div> 
         </div> 
@@ -444,17 +505,17 @@
             <span id="cb-title" style="margin:5px; font-size: 14px; font-weight: bold">NGDS Search Results</span>
             <span id="cb-page" style="display:none"></span>
             <div id="rec-results" style="background-color: white; margin:5px;" ></div>
-
+            <!--div id="rec-results" style="background-color: white; margin:5px; width: 800px; height: 700px; overflow-y: scroll" ></div-->
         </div>
              
-        <div id="widget-box" class="g-search-pane-right" style="display: none;">
+        <div id="widget-box" class="g-search-pane-right" style="display: none; margin-left: 2px;">
             <a href="http://geothermaldata.org" ><i class="fa fa-home" style="font-size: 20px; color: #196fa6"></i></a>
             <span id="widget-title" class="dijitTitlePaneTextNode"  style="margin:2px; font-size: 16px;"> / Dataset</span>
             <button id="goSearchBtn" class="arrow-button" onclick="bactoSearch(this)">Return to Search</button>
             <button id="mdEditBtn" class="arrow-button" onclick="edState(this)" style="display:none;">Edit</button>
             <button id="mdValBtn" class="arrow-button" onclick="mdValidate(this)" style="display:none;">Validate</button>
 			<button id="mdCancelBtn" class="arrow-button" onclick="edCancel(this)" style="display:none;">Cancel</button></br>
-            <div id="widget-view"></div>
+            <div id="widget-view" style="width: 800px;"></div>
         </div>
         
         <div id="leftCollection" class="g-search-pane-left" stype="margin:5px;display:none;">
@@ -471,6 +532,7 @@
                 <button id="mapSaveBtn" class="arrow-button" onclick="saveMap(this)">Save Map</button>
                 <button id="mapClrBtn" class="arrow-button" onclick="clearMap(this)">Clear</button>
                 <label class="lablX" for="map-lyr-list">Active Map Layers</label>
+                <!--datalist id="mapLayers"></!--datalist-->
                 <select id="map-lyr-select" onchange="pickLayer(this)" style="width: 420px;" ></select>
 
                 <i class="fa fa-search-plus" id="zoomLayerBtn" onclick="zoomToLayer(this)" style="font-size:16px; color: #0971B2;"></i>
@@ -510,10 +572,16 @@
             <input class="form-control" placeholder="Username" id="luser"></br>
             <input  id="lpass" class="form-control" placeholder="Password" type="password">
             </br>
+            <!--label class="checkbox" for="field-remember">
+            <input id="field-remember" type="checkbox" name="remember" value="63072000" checked="" style="margin:4px;  font-family: Arial, Helvetica">
+                Remember me
+            </label-->
         </div>
         <div style="margin:5px 15px;">
             <a id="userLoginBtn" class="tag" type="submit" style="margin:4px;">Login</a>
             <a class="tag" type="submit"  onclick="toggleLogin();"  style="margin:4px;">Cancel</a>
         </div>
-        </div>           
+        </div>
+          
+            
 </body>

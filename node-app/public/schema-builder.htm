@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <title>NGDS Schema</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script src="js/schematran.js"></script>
+<script src="js/ngds-nav-menu.js"></script>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="https://d3js.org/d3-hierarchy.v1.min.js"></script>
+<link rel="stylesheet" href="/css/style.css" />
+<link rel="stylesheet" href="/css/ngds.css" />
+<link rel="stylesheet" href="/css/dds.css" />
+<script>
+
+var gSchemaObject = {},
+    gFedScMap = {},
+    svgReady = false;
+
+$(document).ready(function() {
+
+  $.ajax({
+      type: 'GET',
+      url: '/get_schema',
+      dataType: "json",
+      contentType: "application/json",
+      success: function(data) {
+        var schem = JSON.parse(data.schema);
+
+        schem.forEach(function(k) {
+          var mr = k;
+          $("#srcSchema").append($('<option>', {
+                value: mr.schema_id,
+                text: mr.schema_name
+              }));
+        });
+
+        //$("#cb").html(JSON.stringify(data));
+        
+      }
+    });
+
+  fedsmap();
+
+  $("#SavePack").click(function() {
+      //var testx = tx();
+      //$("#cb").html(JSON.stringify(testx));
+      if ( gUI_Schema ) {
+       var w = window.open();
+        $(w.document.body).html(JSON.stringify(gUI_Schema));
+      }
+  
+  });
+
+
+  $("#EditMode").click(function() {
+
+      //var testx = tx();
+      $("#cb").hide();
+      $("#ed").show();
+    
+  
+  });
+
+    $("#GetPreview").click(function() {
+    
+      //var testx = tx();
+      $("#cb").show();
+      $("#ed").hide();
+
+      schema_view();
+
+    
+  
+  });
+
+
+  $("#SaveEdit").click(function() {
+      //var testx = tx();
+      var inx = $("#pack_text").val();
+      var ned = JSON.parse(inx);
+      var pbody = {}; //{ 'name' : 'TestX' , 'version' : '1', 'source' : 'sourcetest', 'FedId' : '0', 'mdbody' : 'this' };
+      pbody.schema_name = 'Test-html';
+      pbody.version = '1';
+      pbody.source = 'testsource';
+      pbody.FedID = '0';
+      pbody.mdbody = ned; //{ 'MD_Metdata' : 'Test Data'};
+      var pa = JSON.stringify(pbody);
+      var pb = JSON.parse(pa);
+      //console.log(' this '+pb);
+       $.ajax({ 
+          type: 'POST',
+          url: '/create_schema',
+          processData: false,
+          data: pa,
+          //dataType: "json",
+          contentType: "application/json",  
+          success: function(data,jqXHR) {   
+               var x = data;
+               console.log(' length ' + x.length);
+           },
+          error: function (jqXHR, status, err) { 
+            console.log('Re Schema Error : ' + status + ' ' + err)
+          }
+
+        });
+  
+  });
+
+
+/*
+  $("#GetPreview").click(function() {
+    var gD3_Schema = "/get_schema?schema_id=6";
+
+    d3.json(gD3_Schema, function(data) {
+      console.log(data);
+      var rym = { "node_id" : 0, "schema_id" : 6, "version_id" : 4, "parent_id" : "", "node_name" : "root", "mpath" : "", "node_val": "", "lvl" : 0 };
+      data.unshift(rym);
+      var noot = d3.stratify()
+          .id(function(d) 
+            { return d.node_id; })
+          .parentId(function(d) 
+            { return d.parent_id; })
+          (data);
+
+      console.log('debug me');
+     // var wig = d3.hierarchy
+      //$("#cb").html(JSON.stringify(noot));
+     var error = {};
+     visa(error,noot);
+
+    });
+    //schema_view();
+ 
+  });
+*/
+
+  $(".soButton").click(function(argument) {
+    console.log('so button');
+  });
+
+    $("#ShowUp").click(function() {
+      var bx = $("#ShowUp").html();
+      if ( bx == '( + )' ) {
+          $("#cb").show();
+          $("#ed").show();
+          $("#ShowUp").text('( - )');
+      } else {
+          $("#cb").hide();
+          $("#ed").hide();      
+          $("#ShowUp").text('( + )');
+      }
+  });
+
+  $("#SearchPack").click(function() {
+    cinergi_rec();
+  });
+
+  $("#GetSrc").click(function() {
+    schem_src();
+  });
+
+
+});
+
+var gD3_Schema = "/jsonSchemas/ngds-schema.json", 
+    svgReady = false,
+    gUI_Schema = {},
+    gCin_edit = { 'dateTime' : 'Now', 'editedBy' : 'me', 'changes' : [] },
+    maxId =0;
+  
+</script>
+<script src="js/ngds-d3jsonTree.js"></script>
+<script src="/js/ngds-d3-context-menu.js"></script>
+
+<script type="text/javascript">
+
+Array.prototype.contains = function(obj) {
+    var i = this.length;
+    while (i--) {
+        if (this[i] == obj) {
+            return true;
+        }
+    }
+    return false;
+}
+
+var listEditStack = function() {
+  return true;
+}
+
+var schema_view = function() {
+
+    var sid = $('#srcSchema').find(":selected").val();
+    console.log(' get '+sid)
+    $.ajax({
+      type: 'GET',
+      url: '/get_schema?schema_id='+sid,
+      dataType: "json",
+      contentType: "application/json",
+      success: function(data) {
+        gSchemaObject = data;
+
+        schemaDefLoad();
+        /*
+        var src_schema = data;
+        var sdef = gSchemaObject.def;
+        
+        var xnt = JSON.parse(sdef);
+         console.log(' type is ' + typeof(xnt) );
+        if ( typeof(sdef) !== "undefined" ) {
+           $("#sObjectList").empty();
+           var defNode = 0;
+           //sdef = JSON.parse[sde];
+           for ( var k in xnt ) {
+              var mr = xnt[k];
+             
+              if ( mr.node_name == "definitions") {
+                defNode = mr.node_id;
+                var defItem = $('<a id="sdef-' + mr.node_id + '" onclick="showSchemDef(this);"  >Main</a>')
+                    .attr('target', '_blank')                 
+                    .css("height", "20px" )
+                    .css("padding","4px 4px")
+                    .css("margin", "10px")
+                    .css("color", "#000044")
+                    .css("font-size", "16px");
+             
+                  $("#sObjectList").append(defItem);
+                  $("#sObjectList").append('</br>');
+              }
+
+              if ( defNode > 0 && defNode == mr.parent_id) {
+                  var defItem = $('<a id="sdef-' + mr.node_id + '" onclick="showSchemDef(this);"  >' + mr.node_name + '</a>')
+                    .attr('target', '_blank')                 
+                    .css("height", "20px" )
+                    .css("padding","4px 4px")
+                    .css("margin", "10px")
+                    .css("color", "#000044")
+                    .css("font-size", "14px");
+             
+                  $("#sObjectList").append(defItem);
+                  $("#sObjectList").append('</br>');
+
+              }
+          }
+        }
+
+        var mpstr = gSchemaObject.map;
+        var mapElem = JSON.parse(mpstr);
+
+        $("#cb").html(JSON.stringify(src_schema));
+        */
+          
+      }
+      
+      
+    });
+
+}
+
+
+var schemaDefLoad = function() {
+
+        //var src_schema = data;
+        // Object Definitions
+
+        var sdef = gSchemaObject.def;
+        
+        var xnt = JSON.parse(sdef);
+         console.log(' type is ' + typeof(xnt) );
+        if ( typeof(sdef) !== "undefined" ) {
+           $("#sObjectList").empty();
+           var defNode = 0;
+           //sdef = JSON.parse[sde];
+           for ( var k in xnt ) {
+              var mr = xnt[k];
+             
+              if ( mr.node_name == "definitions") {
+                defNode = mr.node_id;
+                var defItem = $('<a id="sdef-' + mr.node_id + '" onclick="showSchemDef(this);"  >Main</a>')
+                    .attr('target', '_blank')                 
+                    .css("height", "20px" )
+                    .css("padding","4px 4px")
+                    .css("margin", "10px")
+                    .css("color", "#000044")
+                    .css("font-size", "16px");
+             
+                  $("#sObjectList").append(defItem);
+                  $("#sObjectList").append('</br>');
+              }
+
+              if ( defNode > 0 && defNode == mr.parent_id) {
+                  var defItem = $('<a id="sdef-' + mr.node_id + '" onclick="showSchemDef(this);"  >' + mr.node_name + '</a>')
+                    .attr('target', '_blank')                 
+                    .css("height", "20px" )
+                    .css("padding","4px 4px")
+                    .css("margin", "10px")
+                    .css("color", "#000044")
+                    .css("font-size", "14px");
+             
+                  $("#sObjectList").append(defItem);
+                  $("#sObjectList").append('</br>');
+
+              }
+          }
+        }
+
+        // Mapped elements
+        var mpstr = gSchemaObject.map;
+        var mapElem = JSON.parse(mpstr);
+
+
+        // Schema
+
+        var scStr = gSchemaObject.schema;
+        var scObj = JSON.parse(scStr);        
+
+        visualize(scObj);
+
+
+      //$("#cb").html(JSON.stringify(gSchemaObject));
+
+}
+
+
+var visualize = function(mso){
+
+   // this is incase more than 1 root
+
+   /*var pc = 0;
+   for each (var k in mso) {
+      if ( mso[k].parent_id == "0" ) { pc++}
+   }
+ */
+
+   var noot = d3.stratify()
+          .id(function(d) 
+            { 
+                d.name = d.node_name;
+            //  d.value = d.node_val;
+            //  d.ref = d.mpath;
+            //  d.datatype = d.node_datatype;
+              if ( d.parent_id == "-1") {
+                 console.log(d.node_id);  
+                 d.parent_id = null;
+              }
+              
+              return d.node_id;
+             })
+          .parentId(function(d) 
+            { 
+              return d.parent_id; })
+          (mso);
+   
+  var erro = {};
+  visu(erro, noot);
+
+  
+
+     // $("#cb").html(JSON.stringify(mso));
+}
+
+
+var visud3 = function(tdata){
+
+
+
+}
+
+
+var showSchemDef = function(o) {
+    var oid = o.id;
+    console.log(oid);
+
+}
+/*
+var schema_map_view = function() {
+
+    var sid = $('#srcSchema').find(":selected").val();
+    console.log(' get '+sid)
+    $.ajax({
+      type: 'GET',
+      url: 'http://localhost:3000/get_schema_map?schema_id='+sid,
+      dataType: "json",
+      contentType: "application/json",
+      success: function(data) {
+
+        $("#cb").html(JSON.stringify(data));
+        
+      }
+    });
+
+}
+*/
+
+var schem_src = function() {
+  var v = $("#ed");
+  var inx = $("#pack_text").val();
+   try {
+      var ned = JSON.parse(inx);
+      var treeData = schemaBuild( ned );
+      gUI_Schema = treeData;
+      //console.log( JSON.stringify(treeData[0]) );
+      //$("#cb").html("JSON Build success - " + JSON.stringify(treeData) + '...' );   
+      $("#cb").html("JSON Build success - " + JSON.stringify(treeData).substring(1,50) + '...' );   
+       svgReady= true; 
+       d3.selectAll("svg").remove();
+       d3.selectAll('.d3-context-menu').remove();
+       var error = {};
+       visu(error, treeData);
+      $("#cb").hide();
+      $("#ed").hide();
+   } catch(e) {
+       console.log(e);
+       $("#cb").html("JSONS Parsing Error " +  e );   
+   }
+  
+
+}
+
+var fedsmap = function() {
+
+ var fsql = '/getData?tbn=vocabulary_record&qfld=vc_id&qv=1';
+
+  $.ajax({
+      type: 'GET',
+      url: fsql,
+      dataType: "json",
+      contentType: "application/json",
+      success: function(data) {
+        gFedScMap = data.data;
+        //$("#cb").html(JSON.stringify(data));
+        for ( var k in gFedScMap ) {
+              var mr = gFedScMap[k];
+             
+              if ( mr.status == "active") {
+                defNode = mr.node_id;
+                var defItem = $('<a id="fs-' + mr.record_id + '" onclick="showFedItem(this);"  >' + mr.value + '</a>')
+                    .attr('target', '_blank')                 
+                    .css("height", "20px" )
+                    .css("padding","4px 4px")
+                    .css("margin", "10px")
+                    .css("color", "#000044")
+                    .css("font-size", "14px");
+             
+                  $("#sMapList").append(defItem);
+                  $("#sMapList").append('</br>');
+              }   
+          }
+      }
+    });
+}
+/*
+var cinergi_rec = function() {
+// Retrieve sample source from cinergi mongo
+  $.ajax({
+    type: 'GET',
+    url: 'http://localhost:8001/getrecord?pid=48C34542A1604F74BD4B6F6EBF099D46',
+    dataType: "json",
+    contentType: "application/json",
+    success: function(data) {
+       $("#cb").html(JSON.stringify(data));
+      
+      }
+    });
+}
+*/
+
+/*
+function search_package() {
+  //var inp = $("#searchid").val();
+  //var offset = $("#searchlim").val();
+  //if (offset.length < 1 ) {
+  //  offset = 1;
+  //}
+
+  //var pData = { id : inp };
+  var id1 = '48C34542A1604F74BD4B6F6EBF099D46'; //20.5000.369/fbaf54464a8013411a24';
+  $.ajax({
+    type: 'GET',
+    url: 'http://localhost:8080/objects/'+id1,
+   // data: JSON.stringify(pData),
+    dataType: "json",
+    contentType: "application/json",
+	beforeSend: function (xhr){ 
+        xhr.setRequestHeader('Authorization', make_base_auth('admin', 'changeit')); 
+    },
+    success: function(data) {
+      res = data.result;
+      var pkg = '<h2>Search Package Results</h2>';
+      for (i = 0; i < res.results.length; i++) {
+            page_size = i + 1;
+            pkg = pkg + '<h2>Result '+ page_size + '</h2>' + JSON.stringify(res.results[i]);
+          }
+      $("#cb").html(pkg);
+      }
+  });
+ };
+*/
+ /*
+function make_base_auth(user, password) {
+  var tok = user + ':' + password;
+  var hash = btoa(tok);
+  return "Basic " + hash;
+}
+*/
+/*
+function save_fullpackage() {
+  var inp = $("#pack_text").val();
+  if ( !inp ) {
+    alert('nothing to save');
+    return;
+  }
+  inp = JSON.parse(inp);
+  $.ajax({ 
+    type: 'POST',
+    url: 'http://localhost:8080/objects/?type=Document',
+    data: JSON.stringify(inp),
+    dataType: "json",
+	username: "admin",
+	password: "changeit",
+    contentType: "application/json",  
+	beforeSend: function (xhr){ 
+        xhr.setRequestHeader('Authorization', make_base_auth('admin', 'changeit')); 
+    },
+    success: function(data) {
+        res = data.result;
+        packagelocal = res;
+        var pstack = '<h2>Save Package Response</h2>' + JSON.stringify(res,undefined,2);
+        $("#cb").html(pstack);
+
+      },
+
+    error: function (jqXHR, status, err) { 
+		alert('Save Error : ' + status + ' ' + err)
+	}
+
+  });
+}
+*/
+
+</script>
+</head>
+<body>
+    <div class="g-app" id="app">
+    <nav class="navbar navbar-inverse">
+    <ul class="nav navbar-nav">
+    <li class="nav-item">
+      <img src="/img/ngds-logo.png" height="48px"> Schema
+    </li>
+     
+      <li class="nav-item">
+        <a class="nav-link" href="#searchPanel" onclick="searchData();" >Search</a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="/admin"  >Admin</a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="#searchPanel" onclick="remoteCSW();" >Harvest</a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link" href="#workbenchPanel" onclick="harvestView();" >Schema</a>
+      </li>
+
+
+      <li class="nav-item">
+        <a class="nav-link" href="#workbenchPanel" onclick="CollectionView();" >Collections</a>
+      </li>
+
+
+      <li class="nav-item">
+        <a class="nav-link" href="#workbenchPanel" onclick="ProcessView();" >Process</a>
+      </li>
+
+
+      <li class="nav-item">
+        <a class="nav-link" href="#workbenchPanel" onclick="showHelp();" >Help</a>
+      </li>
+    </ul> 
+
+  </nav>
+  </div>
+
+<!--table width="100%">
+<tr class="tr-hdr" >
+<td class="td-hdr">Metadata Editor - Schema Builder</td>
+<td class="td-hdr">
+<button class="action-button" id="GetSrc" >Build Editor Schema</button>
+<button class="action-button" id="SavePack" >Show UI Schema JSON</button>
+<button class="action-button" id="ShowUp" >( - )</button>
+</td>
+</tr></table-->
+  <div id="leftNav" class="g-search-pane-left" >
+    <span class="dijitTitlePaneTextNode">Select Schema Source</span></br>
+    <select id="srcSchema" style="padding=20px; width:250px;"  >
+     <!--option value="6">USGIN</option-->
+    </select></p>
+    <button class="action-button" id="GetPreview">View</button></br>
+    <button class="action-button" id="EditMode" >Edit</button></br>
+    <button class="action-button" id="SaveEdit" >Save</button></br>
+    <button class="action-button" id="SaveCopy" >Copy</button></br>
+    <button class="action-button" id="NewSchema" >New</button></br>
+    <!--select id="seaSel" name="seaSel" ></select>
+    <button class="action-button" id="RunQ" >Run</button></br>
+    <button class="arrow-button" id="pagePrev" > < </button>
+    <span id="PageCnt">Page 0</span>
+    <button class="arrow-button" id="pageNext" > > </button></br-->
+    <button class="action-button" id="SchemaAdmin" >Configure</button></br>
+    <div>
+      <div id="sObjectTitle" style="margin=10px; padding=10px;" >
+          Schema Object Library</br>
+      </div>
+      <div id="sObjectList" style="margin=10px; padding=10px;" >
+          <span><a class="soButton" id="main" >Main</a></span></br> 
+      </div>
+      <div id="sMapList" style="margin=10px; padding=10px;" >
+          <span><a class="soButton" id="main" >Mapped Elements</a></span></br> 
+      </div>
+    </div>        
+   
+  </div>
+
+ <div id="right-pane" class="g-schema-pane-right">
+    <div id="cp-title">
+      Schema Name         
+    </div>
+    <!--table><tr><td-->
+      <div id="ed" style="display: none;">
+          <input type="text" class="form-control" id="gSchemaName" placeholder="Schema Name" size="40" /></br>
+          <input type="text" class="form-control" id="gSourceUrl" placeholder="Url" size="40" /></br>
+            Copy and Paste a JSON Schema</br>
+            <textarea id="pack_text" rows=10 cols=80 ></textarea>
+        </div>
+      <!--/td><td-->
+
+      <div id="cb" style="display: none;">
+        
+             
+      </div>
+      <!--/td></tr-->
+      <!--tr><td colspan=2-->
+        <div id="tree-container" >
+          <div id="showData" style="display: none;"></div>
+        </div>
+      <!--/td></tr>
+      </table-->
+</div>
+</body>

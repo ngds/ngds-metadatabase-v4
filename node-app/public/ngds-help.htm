@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NGDS Help</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://kit-free.fontawesome.com/releases/latest/css/free.min.css" media="all">
+<link rel="stylesheet" href="/css/ngds.css" />
+<link rel="stylesheet" href="/css/dds.css" />
+<link rel="shortcut icon" href="/img/nico.ico" />
+
+
+<script src="/js/jquery.min.js"></script>
+<script src="/js/ngdsUI.js"></script>
+
+<style>
+
+    .helpTxt  {
+      font-family:Arial, Helvetica, sans-serif;
+      font-size:14px;
+      color:#196fa6;
+    }
+
+</style>
+<script>
+
+    function showText(o) {
+        var idv = '#'+o.id + 'x';
+        $('.hlpText').hide();
+        $(idv).show();
+    }
+
+</script>
+
+</head>
+<body   >
+    <div class="g-app" id="app" style="position: sticky;">
+        <nav class="navbar navbar-inverse"> 
+            <ul class="nav navbar-nav" style="float: left; width: 600px">
+                <li class="nav-item">
+                <img src="/img/ngds-logo.png" height="48px">
+                </li> 
+                <li class="nav-item">
+                    <a class="nav-link" href="https://data.geothermaldata.org"  >National Geothermal Data System</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link"  href="https://zenodo.org/record/7502105#.Y7xHSuzML0o" 
+                    target = "_blank" >AASG Geothermal Dataset</a>
+                </li>        
+            </ul>       
+        </nav>
+    </div>
+    <div id="leftSearch" class="g-search-pane-left" style="margin:5px; position:absolute;" > 
+        <span style="font-size: 24px; font-weight:bold; font-family: calibri;  
+            margin: 10px 10px; color: #8888a8; background-color: #ffffff; ">Topics
+        </span></br></br>
+        <a class="arrow-button" id="srtool" onclick="showText(this)" style="font-size: 16px; font-weight:normal ; font-family: calibri;  
+                    margin: 10px 10px; color:#ffffff; ">Search Tool
+        </a></br></br>
+        
+        <a class="arrow-button" id="srMap" onclick="showText(this)" style="font-size: 16px; font-weight: normal; font-family: calibri;  
+                    margin: 3px 10px; color: #ffffff;  ">Using the Search Map
+            
+        </a></br></br>
+
+        <a class="arrow-button" id="facets" onclick="showText(this)" style="font-size: 16px; font-weight: normal; font-family: calibri;  
+                    margin: 3px 10px; color: #ffffff; ">Facets - Search Topics
+            
+        </a></br></br>
+        <a class="arrow-button" id="srRec" onclick="showText(this)" style="font-size: 16px; font-weight: normal; font-family: calibri;  
+                    margin: 3px 10px; color: #ffffff;  ">Search Results
+        </a></br></br>
+ 
+        <a class="arrow-button" id="srDet" onclick="showText(this)" style="font-size: 16px; font-weight: normal; font-family: calibri;  
+                    margin: 3px 10px; color: #ffffff; ">Search Record Detail Display
+        </a></br>
+    </div>
+
+    <div id="cb" class="g-search-pane-right" style="margin:5px 5px 5px 300px; position: sticky">
+            
+        <div id="leftCollection" class="g-search-pane-left" style="margin:5px; width: 70%;">
+            <span id="help-title" class="nav navbar-nav" 
+                style="font-family: calibri; font-size: 30px; font-weight: bold; height:60px; width: 70%;">NGDS Help</span>
+        </div>
+        </br>
+        <div id="rec-results" style="background-color: white; margin:5px; width: 70%;" >
+            <div class="hlpText"id="top" style="display :block">
+            On this page you will find additional information to help you use the site features to access data through 
+            the National Geothermal Data System (NGDS)
+            </div>
+            <div class="hlpText" id="srtoolx" style="display :none">
+                <b>Search Tool</b></br></br>
+                The NGDS text search tool is the primary method for finding specific metadata records.
+                A full text search of NGDS metadata is performed for each search. </br>
+                <img src="img/SearhBox.PNG">
+            </br></br>
+                <b>Search TextBox Functions</b></br></br>
+                <b>Type Ahead</b> - After entering 3rd character in the search textbox, typeahead terms will appear, allowing for autocomplete, 
+                using NGDS keywords as source. </br></br>
+                <b>Search History</b> - when the search textbox is in focus, the search history listbox appears with previous entered search terms (saved locally).</br>
+                Note: Individual terms may be removed from the search history list by click on the "x" button in front of the term.</br></br>
+                <b>Doubleclick</b> - clears textbox contents.</br></br>
+                <b>Return</b> - is the same as clicking the search button.</br></br>
+                <b>Sort</b> - by Modified Date, Relevance, Name ascending, Name descending</br></br>
+                <b>Clear</b> - button will clear your search history</br></br>
+                <b>Saved</b> - Show saved records</br>
+            </div>
+
+            <div id="srMapx" class="hlpText" style="display :none">
+                <b>Search Map Tool</b></br></br>
+                The Search map provides location data for those records with location data included in the metadata 
+                and allows users to search records by location.</br></br>
+                <img src="img/SearchMap.PNG" height="200px"></br></br>
+                <b>Viewing search results location data</b> - when a text search is performed, any records on the currently selected page 
+                with location info will appear in the map as a marker. Click on the location marker to display the Title, 
+                clicking on the title will show the record detail page.</br></br>
+
+                When mousing over search result records, each record will be highlighted in the map as it moused over.</br></br>
+
+                <b>Searching with the Map</b> - Using map pan and zoom zoom functions, set the extent and center 
+                of the search area location 
+                of interest, then click on "Search using Map Extent" button to return results. Note: This returns only
+                records that have location info included in the metadata record.
+    
+            </div>
+            <div id="srHisx" class="hlpText" style="display :none">
+                
+            </div>
+            <div id="facetsx" class="hlpText" style="display :none">
+                <b>Facets - are preselected Search Topics</b></br></br>
+                For each category only the item with the top 5 hits will appear in display,
+                except for catalogs, which displays all.</br></br>
+                Facets selections appear for the current selected search results, if 
+                searches have been run, facets appear for all data.</br></br>
+
+                <b>Authors</b> - Filter results by publication Author</br></br>
+
+                <b>Data Types</b> - Filter results by the data type of associated dataset.</br></br>
+
+                <b>Catalogs</b> - Filter results by the originating collections for NGDS metadata records.</br></br>
+                
+                <b>Content Models</b> - are defined data formats for those records that include 
+                geospatial data. </br></br>
+                The full set of downloadable NGDS geospatial datasets can be found by clicking on the
+                AASG Geothermal Dataset button at the top of the home page. The definition of each content
+                model is provided. These models were defined during the NGDS design process and include: </br></br>
+                Abandoned Mines</br>
+                Active Fault/Quaternary Fault</br>
+                Aqueous Chemistry</br>
+                Borehole Lithology Intercepts</br>
+                Borehole Lithology Interval Feature</br>
+                Borehole Temperature Observation</br>
+                Contour Lines</br>
+                Direct Use Feature</br>
+                Drill Stem Test Observations (deprecated)</br>
+                Fault Feature / Shear Displacement Structure</br>
+                Fluid Flux Injection and Disposal</br>
+                Geologic Contact Feature</br>
+                Geologic Fault Feature / Shear Displacement Structure</br>
+                Geologic Reservoir</br>
+                Geologic Units</br>
+                Geothermal Area</br>
+                Geothermal Fluid Production (deprecated)</br>
+                Geothermal Metadata Compilation</br>
+                Geothermal Power Plant Facility</br>
+                Gravity Stations</br>
+                Heat Flow</br>
+                Heat Pump Facility</br>
+                Hydraulic Properties</br>
+                Mineral Recovery Brines</br>
+                Physical Sample</br>
+                Powell and Cumming Geothermometry</br>
+                Powell Cummings Geothermometry</br>
+                Power Plant Production</br>
+                Radiogenic Heat Production</br>
+                Rock Chemistry</br>
+                Seismic Event Hypocenter</br>
+                Thermal Conductivity Observation</br>
+                Thermal/Hot Spring Feature</br>
+                Volcanic Vents</br>
+                Well Fluid Production</br>
+                Well Header Observation</br>
+                Well Log Observation</br>
+                Well Tests</br>
+
+            </div>
+            <div id="srDetx" class="hlpText" style="display :none; width: 900px;">
+                <div style="display: inline-block; width: 500px">
+                <b>Search Record Detail Page</b></br></br>
+                Displays all relevant data contained in the metadata record.</br>
+                <b>Title</b> - Publication Title</br></br>
+                <b>Desciption</b> - publication abstract</br></br>
+                <b>Data Links</b> - clickable links that take you to the data. The system performs a 
+            health check on the link, green indicating healthy, working link. Certain data types
+            are color coded for convience.</br></br>
+                <b>View XML/Json buttons</b> - display the full metadata record in selected format in a new tab.</br></br>
+                <b>Keywords</b> - clickable keywords included in the record. When clicked, performs a new search 
+                using the selected keyword.</br></br>
+                <b>Author(s)</b> of the publication, and additional details about the author.</br></br>
+                <b>Extent</b> - geographic outline coordinates of the record, also displays the extent in the 
+                search map.</br></br>
+                <b>Metadata</b> - additional properties of the metadata record.</br></br>
+                <b>Versions</b> - If the publication metadata has been modified, indicates the version display.
+                </div>
+                <!--div style="display: inline-block; width: 320px; vertical-align: top; "-->
+                <!--img style="margin: 10px;" src="img/SearchDetail.PNG" -->
+                </br></br>
+            </div>
+
+            <div id="srRecx" class="hlpText" style="display :none">
+                <b>Search Result Records</b> </br></br>
+                Search terms and record count are provided at top. Use page arrows to browse through pages.
+                Records are displayed 10 records per page, showing metadata title, description, 
+                and any links to data resources.</br>
+                </br>
+                <img src="img/searchResults.PNG" style="background-color:#8888a8"></br></br>
+                <b>Click</b> on the record Title will display the record detail page.</br></br>
+                <b>Select a link</b> will open the target link in a new tab.</br></br>
+                <b>Mouse over a record</b> will highlight location on map (if included in metadata).</br></br> 
+                <b>Save</b> will save the record locally, you can view your saved records by clicking the Saved 
+                button underneath the search textbox. You can remove the saved record from your list by clicking 
+                the Clear button for the record. 
+                
+            </div>
+        </div>
+
+
+    </div>
+          
+            
+</body>
