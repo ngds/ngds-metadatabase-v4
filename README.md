@@ -1,33 +1,34 @@
 ﻿# NGDS-Metadatabase-v4
 
+Hosted on AWS Cloud 
 The National Geothermal Data System (NGDS) supports the storage and search of information resources relevant to the discovery, understanding, and utilization of geothermal energy. It is a network of data providers supplying data and metadata, with an aggregating feature that provides a single entry point for searching resources available through the system
 
 Production build for https://data.geothermaldata.org
 
 ##Requirements
-- Ubuntu 20.04
-- Postgres 12
--Nodejs 8.11.3 	
-- Docker
-	pyCsw - docker pull geopython/pycsw
-
+- Ubuntu AL2023
+- Postgres 15.8
+-Nodejs v20.18.0 	
+Docker: 25.0.5
+PyCSW: geopython/pycsw:2.4.2
+	
 Refer to Installation Notes in /docs for requirement details
 
 ##Node Applications
 
 4 nodejs applications provide web services
 
-- ngds-app-ssl  - primary user interface
-- ngds-app      - http/https redirector
+- ngds-app      - primary user interface
 - ngds-pool     - database middle ware for high throughput
 - ngds-pysearch - database middle ware for pycsw
+- ngds-server-v2 - admin fucntions
 
 ## Database
 
 This system  uses 2 postgres databases. 
 
 - geothermal 
-- pycsw 
+- pycsw2
 
 
 DOCKER
@@ -64,7 +65,7 @@ Startup Commands
     node.js middleware implmentation provides high perf pooling
     to the pycsw database
  
-5 - systemctl start ngds-app-ssl
+5 - systemctl start ngds-app
 
     node.js user interface and api front end
 
