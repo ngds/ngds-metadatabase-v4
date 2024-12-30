@@ -1,0 +1,144 @@
+# NGDS System Ported to AWS Cloud Server 
+POSTGIS Build Notes
+Date: December 2024
+G. Hudman
+
+In the AWS AL2023 environment, the postGIS extension is not available as a download for Postgresql 15.8. So this describes the custom version compiled and installed per the following link:
+
+https://postgis.net/docs/postgis_installation.html
+
+
+#Build Instructions
+
+Additional postgresql development libraries and modules install via dnf required 
+
+$Versions Control
+
+https://trac.osgeo.org/postgis/wiki/UsersWikiPostgreSQLPostGIS
+
+
+Note: This compiled version does not include the GDAL library, in the PyCSW documentation, does not use vector search and listed GDAL as optional. 
+
+#Dependent Libraries
+
+##CMAKE
+wget https://cmake.org/files/v3.18/cmake-3.18.0.tar.gz
+tar -xvzf cmake-3.18.0.tar.gz
+cd cmake-3.18.0/
+./bootstrap
+gmake
+sudo gmake install
+cmake
+
+##GEOS
+
+wget https://download.osgeo.org/geos/geos-3.12.2.tar.bz2
+tar xvfj geos-3.12.2.tar.bz2
+cd geos-3.12.2/
+mkdir _build
+cd _build
+cmake     -DCMAKE_BUILD_TYPE=Release     -DCMAKE_INSTALL_PREFIX=/usr/local     ..
+
+##LIBXML12
+wget https://gitlab.gnome.org/GNOME/libxml2/-/archive/v2.13.4/libxml2-v2.13.4.tar.gz
+
+Better
+ sudo dnf install libxml2
+sudo dnf install libxml2-devel
+./configure
+
+##PROJ LIBRARY
+
+wget https://download.osgeo.org/proj/proj-data-1.19.tar.gz
+export PROJ_DATA=/home/ec2-user/proj-data
+
+wget https://download.osgeo.org/proj/proj-9.5.0.tar.gz
+tar -xvzf ./proj-9.5.0.tar.gz
+
+Sqlite is a required library even though its not used.
+
+sudo dnf install sqlite.x86_64
+sudo dnf install sqlite-devel
+sudo dnf install sqlite-libs
+sudo dnf install sqlite-tools
+
+cmake -DSQLITE3_INCLUDE_DIR=/usr/include -DSQLITE3_LIBRARY=/usr/lib64
+
+sudo dnf install libtiff
+
+sudo dnf install libtiff-devel
+
+sudo dnf install libcurl
+sudo dnf install libcurl-devel
+
+cmake -DSQLITE3_INCLUDE_DIR=/usr/include -DSQLITE3_LIBRARY=/usr/lib64
+
+in build directory
+
+cmake ..
+
+cmake -v --build .
+
+Had to chmod several directories for write permission
+
+cmake --build . --target install
+
+##JSON-C
+
+$ git clone https://github.com/json-c/json-c.git
+$ mkdir json-c-build
+$ cd json-c-build
+$ cmake ../json-c   # See CMake section below for custom arguments
+
+$ make
+$ make test
+$ sudo make install          # it could be necessary to execute make install
+
+##POSTGIS
+
+wget https://postgis.net/stuff/postgis-3.5.1dev.tar.gz
+ tar -xvzf postgis-3.5.1dev.tar.gz
+cd postgis-3.5.1dev/
+
+./configure --with-geosconfig=/usr/local/bin/geos-config --without-protobuf --without-raster
+make
+make comments
+make install
+
+Configure postgresql to make the extension visible
+
+/usr/share/pgsql/contrib/postgis-3.5/postgis.sql
+
+/usr/lib64/pgsql/libgeos_c.so.1
+/usr/local/lib64/libproj.so.25
+
+libdir - /usr/lib64/pgsql
+
+ /usr/local/lib64/
+
+Changed postgresql.conf to add 
+
+dynamic_library_path = '/usr/local/lib64:$libdir'
+
+reload
+
+Edit the ld file in /etc/ld.so.conf.d/dyninst
+
+/etc/ld.so.conf.d/dyninst-x86_64.conf
+
+Added
+/usr/local/lib64
+
+Then to reindex
+ldconfig -v 
+
+Then login as postgres
+
+psql -c "LOAD 'libgeos_c.so.1';"
+
+psql
+\c geothermal
+Create extension postgis;
+
+Repeat for the pycsw2 database.
+
