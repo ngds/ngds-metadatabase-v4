@@ -205,7 +205,37 @@ npm install crypto
 npm audit fix
 npm audit fix --force
 
+##NodeJS Client javascript libraries
+
+/js/ngdsUI.js
+/js/ngdsEdit.js
+/js/ngdsEdit.js
+/css/ngds.css
+/js/ngdsDataMap.js
+
+The following libraries are installed locally /public/js for reliability and performance, but not included in github.
+
+/css/leaflet.css
+/js/jquery.min.js
+/js/esri-leaflet.js
+/js/spin.js
+
+Other dependencies
+
+https://cdnjs.cloudflare.com/ajax/libs/json2html/1.2.0/json2html.min.js
+https://cdnjs.cloudflare.com/ajax/libs/jquery.json2html/1.2.0/jquery.json2html.min.js
+https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css
+https://kit-free.fontawesome.com/releases/latest/css/free.min.css" media="all
+
+Mapping
+https://api.tiles.mapbox.com/mapbox.js/v2.2.4/mapbox.js
+https://unpkg.com/esri-leaflet-renderers@2.0.6
+https://api.mapbox.com/mapbox.js/plugins/leaflet-draw/v0.2.3/leaflet.draw.js
+https://api.tiles.mapbox.com/mapbox.js/v2.2.4/mapbox.js
+https://api.tiles.mapbox.com/mapbox.js/v2.2.4/mapbox.css
+
 After installing client/server source, install node services.
+
 
 ##Node JS Services
 
