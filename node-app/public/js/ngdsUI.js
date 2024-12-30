@@ -1,5 +1,6 @@
 /* G. Hudman - Search and MD record view UI tools
    dev on data.geothermaldata.org
+   12/30/2024 - Cloud version
 
 */
   var gTemplate = { "title": { "value": "Title", "path" : "", "nodeid": "" }, 
@@ -3259,7 +3260,6 @@ var previewer = function(o) {
 
   } 
 
-
 }
 
 function logmein(o, cb) {
@@ -3297,7 +3297,6 @@ function logmein(o, cb) {
 		}
       });
 }
-
 
 var showLogin = function() {
 
