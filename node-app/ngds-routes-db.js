@@ -17,14 +17,15 @@ var scraperjs = require('scraperjs');
 
 const pyUrl = 'http://data.geothermaldata.org:8000/';
 
-const connectionString = 'postgres://u:p@localhost:5432/geothermal';
+
+const connectionString = 'postgres://ngdsdb:xxxxxxx@localhost:5432/geothermal';
+
 const client = new pg.Client(connectionString);
 
-const pyCon = 'postgres://u:p@localhost:5432/pycsw';
-
+const pyCon = 'postgres://ngdsdb:xxxxxx@localhost:5432/pycsw';
 
 var gKeystack = [];
-var gNACL = 'xxxx';
+var gNACL = '5d097fe1065645c8';
 
 var gTasks = [];
 
@@ -46,7 +47,7 @@ var sha512 = function(password, salt){
 
 function saltHashPassword(userpassword) {
     var salt = genRandomString(16); /** Gives us salt of length 16 */
-    var salt = 'xxx';
+    var salt = '5d097fe1065645c8';
     var passwordData = sha512(userpassword, salt);
     console.log('UserPassword = '+userpassword);
     console.log('Passwordhash = '+passwordData.passwordHash);
@@ -170,18 +171,6 @@ function batchRecordQuery(fld, qry, guids) {
 			resolve(body);
 		});		 
 	});
-	/*
-	return new Promise(function(resolve, reject){
-		client.query(sqlStr, (err, res) => {
-			  if ( typeof(res) !== "undefined" ) {
-			  	resolve(JSON.stringify(res));
-			  } else {
-				reject("batch query error");	  	
-			  }
-		});
-		     
-	});
-	*/
 
 }
 
@@ -440,19 +429,6 @@ function record_show(qry, vid ) {
 		});		 
 	});
 
-	//console.log('record show guid ' + sqlStr);
-	/*
-	return new Promise(function(resolve, reject){
-		client.query(sqlStr, (err, res) => {
-			  if ( typeof(res) !== "undefined" ) {
-			  	//console.log('record show success');//JSON.stringify(res));
-			  	resolve(JSON.stringify(res));
-			  } else {
-				reject("error noodle");	  	
-			  }
-		});     
-	});
-	*/
 
 }
 
@@ -498,18 +474,6 @@ function categories(climit, qry) {
 			resolve(body);
 		});		 
 	});
-
-	/*
-	return new Promise(function(resolve, reject){
-		client.query(sqlStr, (err, res) => {
-			  if ( typeof(res) !== "undefined" ) {
-			  	resolve(JSON.stringify(res));
-			  } else {
-				reject("error in categories");	  	
-			  }
-		});	     
-	});
-	*/
 
 
 }
@@ -632,7 +596,6 @@ function dataTypeFacets(climit, qry) {
 		+ ' group by ext order by 2 desc limit ' + climit;
 	}
 		
-	//console.log('data types facet ' + sqlStr);
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
@@ -644,22 +607,33 @@ function dataTypeFacets(climit, qry) {
 	});
 }
 
-function fetchTypeAhead(lim,qry) {
+async function fetchTypeAhead(lim,qry) {
 
-  var tSql = 'select distinct(rex) from ( select identifier, lower(unnest(string_to_array(keywords,\',\'))) as rex '
+  try {
+      var tSql = 'select distinct(rex) from ( select identifier, lower(unnest(string_to_array(keywords,\',\'))) as rex '
            + ' from public.records ) z where rex iLike (\'' + qry + '%\') order by rex asc limit + ' + lim;
   
-  tSql = 'select zex as rex from keyword_ta where zex like \'' + qry + '%\' limit ' + lim;
+     tSql = 'select zex as rex from keyword_ta where zex like \'' + qry + '%\' limit ' + lim;
+ 
+  console.log(tSql);
+  
   return new Promise(function(resolve, reject){
-		client.query(tSql, (err, res) => {
+     try {
+		  client.query(tSql, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
 			  	resolve(JSON.stringify(res));
 			  } else {
 				  reject("error in typeahead query ");	  	
 			  }
-		});	     
+		  });	
+    } catch(err) {
+       reject(err);
+    }      
 	});
-
+ } catch (err) {
+   console.log(err);
+   reject("error in typeahead query ");	
+ }
 }
 
 function fetchInspection(lim,off, guid) {
@@ -700,7 +674,7 @@ function fetchMapServers() {
 				 + '		or lurl ilike \'%wfs%\' or lurl ilike \'%wms%\' '
 				 + '		or lurl ilike \'%mapserver%\') z '
 				 + ' group by dmm order by dmm';
-    //console.log('map s ' + sqlStr);
+   
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 				if ( typeof(res) !== "undefined" ) {
@@ -999,13 +973,7 @@ function execInspectionUpdate(r,ctype) {
 	});
 
 	function lucheck(u) {
-        /*
-	    if ( u.ctype == 'catalog' || u.ctype == 'link' || u.ctype == 'crawl' ) {
-			var hurl = u.ident_url;
-		} else if ( u.ctype == 'base') {
-			var hurl = u.orig_url;
-		}
-		*/
+
 		var hurl = u.lurl;
 		
 		var rex = require('request');
@@ -2887,7 +2855,13 @@ router.get('/typeAhead', async function(req, res) {
 	var lp = '/typeAhead';
 	routelog(req, lp);
 	var qry = req.query.q;
-    var ta = await fetchTypeAhead(10,qry);
+  console.log('typa-1');
+    try {
+      var ta = await fetchTypeAhead(10,qry);
+    } catch(err) {
+      console.log('exception '+err);
+    }
+    console.log('typa-2');
     if ( ta ) {
     	res.send(ta);	
     } else {

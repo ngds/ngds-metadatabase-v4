@@ -1,5 +1,5 @@
 /* Supports spatial operations 
-    data.geothermaldata
+    test.geothermaldata
     May 14 2020
 
 */
@@ -13,7 +13,7 @@ var xmldoc = require('xmldoc');
 var  Path = process.env.NODE_PATH;
 const pg = require('pg');
 
-const connectionString = 'xxxx';
+const connectionString = 'postgres://ngdsdb:xxxxxx@localhost:5432/geothermal';
 const client = new pg.Client(connectionString);
 client.connect();
 
@@ -61,6 +61,7 @@ function XMLtoJ(data) {
     var aj = {};
     
 	 var parser = new xml2js.Parser({explicitArray: false, ignoreAttrs: false, mergeAttrs: false });
+     //console.log(' xml Parser ' + data.length + ' XX ' + data.substr(0,30));
      var td = data.trim();
 
 	 parser.parseString(data, function (err, result) {
@@ -90,7 +91,9 @@ function fetchContentModels() {
                 if ( typeof(res) !== "undefined" ) {
                     resolve(JSON.stringify(res));
                 } else {
-					reject("cm list query error ");	  	
+                
+                //console.log(' cml err ' + err);
+                reject("cm list query error ");	  	
                 }
         });	     
     });
@@ -104,14 +107,14 @@ function fetchMapServers() {
 				 + '		or lurl ilike \'%wfs%\' or lurl ilike \'%wms%\' '
 				 + '		or lurl ilike \'%mapserver%\') z '
 				 + ' group by dmm order by dmm';
-
+    //console.log('spatial map server ' + sqlStr);
 
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 				if ( typeof(res) !== "undefined" ) {
 					resolve(JSON.stringify(res));
 				} else {
-				
+				//console.log(' ms err ' + err);
 				reject("error in map server query ");	  	
 				}
 		});	     
@@ -127,7 +130,7 @@ function fetchServiceList(cm, repo) {
 				if ( typeof(res) !== "undefined" ) {
 					resolve(JSON.stringify(res));
 				} else {
-				
+				//console.log(' ms err ' + err);
 				reject("error in query ");	  	
 				}
 		});	     
@@ -138,7 +141,7 @@ function fetchServiceList(cm, repo) {
 function fetchResourceList(t, cm, repo, b, f) {
     var ba, bbox, dt, bbssql, rpsql, cmsql, mf;
 
-
+    //console.log(' start resource fetch' + t + cm + repo + b + f);
 
     if ( f ) { mf= 'contains' }
     else { mf = 'intersects'}
@@ -166,7 +169,7 @@ function fetchResourceList(t, cm, repo, b, f) {
 
    
     if ( t && t == 'ESRI-F' ) {
-       
+        //dt = ' ( ltype = \'ESRI\' )';
         dt = ' ( lurl ilike \'%wfs%\')  AND (lurl iLIKE \'%mapserver%\')';
     } else if (  t && t == 'ESRI-M' ) { 
         dt = ' ( lurl ilike \'%wms%\')  AND (lurl iLIKE \'%mapserver%\')';
@@ -180,12 +183,19 @@ function fetchResourceList(t, cm, repo, b, f) {
         dt =  dt + ' AND ( lurl ilike \'%' + repo + '%\')';
     } 
     
+    /*
     var sqlStr = 'with ' + cmsql + ',' + bbsql + ' select r.identifier, l.title, ldesc, lparams, lurl, wkt_geometry '
             + ' from resource_links r, loca l '
             + 'where r.identifier = l.identifier  '
             + ' AND ' + dt + ' order by title asc';
-    
- 
+    */
+    var sqlStr = 'with ' + cmsql + ',' + bbsql + ' select r.identifier, l.title, ldesc, '
+            + ' translate(lparams,\'\\\',\'\') as lparams, lurl, wkt_geometry '
+            + ' from resource_links r, loca l '
+            + 'where r.identifier = l.identifier  '
+            + ' AND ' + dt + ' order by title asc';
+
+    //console.log(sqlStr);
     return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 				if ( typeof(res) !== "undefined" ) {
@@ -208,7 +218,7 @@ router.get('/',(req, res) => {
 router.get('/getMapServers', async function(req, res) {
     var lp = '/getMapServers';
 	routelog(req, lp);
-   
+    //console.log(' get map server ');
     
     var fms = await fetchMapServers();
     if ( fms ) {
@@ -222,7 +232,11 @@ router.get('/getMapServers', async function(req, res) {
 router.get('/getContentModels', async function(req, res) {
     var lp = '/getContentModels';
 	routelog(req, lp);
-
+	//var qry = req.query.q;
+	//var lid = req.query.lid;
+	//var so = req.query.sortby;
+	//console.log(' sort by ' + so );
+	//if ( !so ) { so = 1 }
     var cms = await fetchContentModels();
     if ( cms ) {
     	res.send(cms);	
@@ -257,7 +271,7 @@ router.get('/getResourceList', async function(req, res) {
     var b = req.query.bbox;
     var f = req.query.filter;
 
-   
+    //console.log('get resource list ' + t + cm + repo + b + f);
 
     var rl = await fetchResourceList(t, cm, repo, b, f);
     if ( rl ) {
@@ -273,7 +287,7 @@ router.get('/getGeoserverFeature', async function(req, res) {
 	routelog(req, lp);
     var urlp = req.query.url;
     var uri = decodeURIComponent(urlp);
-   
+    //console.log('get Geoserver Feature WFS '+ uri);
     var r = require('request');
     var body;
     r.get(uri)
@@ -283,11 +297,13 @@ router.get('/getGeoserverFeature', async function(req, res) {
         body += chunk;
         })
         .on ('end', function() {
+            //console.log(body);
 
+            //console.log('1 - JSON ' + body.indexOf('{') );
             if ( body.indexOf('{') > 0 ) {
                 body = body.substr(body.indexOf('{'))
             }
-           
+            //console.log('JSON returned ' + body.indexOf('{') );
             res.json(body); 
         });
 });
@@ -307,9 +323,11 @@ router.get('/getGeoserverCapabilities', async function(req, res) {
         body += chunk;
         })
         .on ('end', function() {
-            
+            //var xd = new xmldoc.XmlDocument(body);
+            //var boy = body.replace("<?xml version='1.0' encoding='UTF-8'?>", "");
             var boy = body.substr(body.indexOf('?>')+2);
-           
+            console.log('2 - Returns type length -  ' + typeof(boy) + ' ' + boy.substr(0,15));
+            //var xd = new xmldoc.XmlDocument(body);
             var xmlToJson = XMLtoJ(boy);
 
             if ( typeof(xmlToJson["WFS_Capabilities"]) !== "undefined" &&  xmlToJson["WFS_Capabilities"]["FeatureTypeList"]  !== "undefined"  ) {
@@ -328,13 +346,12 @@ router.get('/getGeoserverCapabilities', async function(req, res) {
                 var flist = {"Capabilities": "Error" };
                 res.json(fList);
             }
-	    
+		    
         });
    
 });
 
 router.get('/previewMap',(req, res) => {
-	// test route
     var lp = '/previewMap';
 	routelog(req, lp);
 
@@ -346,12 +363,16 @@ router.get('/previewMap',(req, res) => {
 	var bb = req.query.bbox;
 	var srs = req.query.srs;
 
+	//var hurl = request.query.hurl;
+	//var hurl = 'https://gdr.openei.org/csw?request=GetRecords&service=CSW&version=2.0.2&resultType=results&typeName=csw:Record&maxRecords=50&elementSetName=summary&outputFormat=json';
 	var smurl = 'http://geothermal.smu.edu:9000/geoserver/gtda/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=gtda:wells&maxFeatures=50&outputFormat=application%2Fjson';
 	
 	var murl = 'http://search.geothermaldata.org/geoserver-srv/WaterQuality-REWJ/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=WaterQuality-REWJ:WaterQuality&maxFeatures=50&outputFormat=application/json';
 	
-	var hurl = 'http://search.geothermaldata.org/geoserver-srv/WaterQuality-REWJ/ows?service=WFS&version=1.0.0&request=GetFeature';
+	hurl = 'http://search.geothermaldata.org/geoserver-srv/WaterQuality-REWJ/ows?service=WFS&version=1.0.0&request=GetFeature';
 	hurl= hurl + tn+mf+srs+bb+opf;
+
+	//hurl=hurl+'&startPosition='+offset;
 
 	var r = require('request');
     var body = '';
@@ -364,7 +385,9 @@ router.get('/previewMap',(req, res) => {
         })
         .on ('end', function() {
             var xlj = XMLtoJ(body);
-         
+            
+			//var xlj = XMLtoJ(body);
+			//var rb=xlj['csw:GetRecordsResponse'];
             res.send(body); 			    
      });
 	

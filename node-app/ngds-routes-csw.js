@@ -1,5 +1,5 @@
 /*
-  data.geothermaldata 
+  cloud geothermaldata 
   pyCSW interface
   May 14, 2020
 
@@ -21,8 +21,8 @@ var  Path = process.env.NODE_PATH;
 const pg = require('pg'),
 	xmldoc = require('xmldoc');
 
-const connectionString = 'xxxxx'; 
-const pyUrl = 'xxxxx';
+const connectionString = 'postgres://ngdsdb:geonewton@localhost:5432/geothermal'; 
+const pyUrl = 'http://10.221.154.98:8000/';
 let afMap = new Map();
 class autoFunction {
   constructor(n) {
@@ -364,8 +364,8 @@ router.get('/', (request, response) => {
     pStr = pStr + '&' + k + '=' + params[k];
   }
   
-  var purl = 'http://10.208.3.120:8000/?' + pStr
-  //console.log(purl);
+  var purl = 'http://10.221.154.98:8000/?' + pStr
+  console.log('CSW root '+purl);
   
    var pyRequest = require('request');
    var pyResponse = function(err, httpResponse, body) {
@@ -405,7 +405,7 @@ router.post('/pypost-old', (request, response) => {
   var xmlBody = request.body;
   //console.log('>>> CSW request object ' + JSON.stringify(request));
   //var xml = fs.readFileSync(Path+'/transaction-insert.xml', 'utf8');
-   var hurl = 'http://10.208.3.120:8000/?service=CSW&version=2.0.2&request=Transaction&TransactionSchemas=';
+   var hurl = 'http://10.221.154.98:8000/?service=CSW&version=2.0.2&request=Transaction&TransactionSchemas=';
    hurl = hurl + 'http://www.isotc211.org/2005/gmi';
   
   var bl = xmlBody.length;
@@ -469,14 +469,15 @@ router.get('/getRecordById', async function(request, response) {
 	var burl =  request.query.hurl;
     var oft = 'application/xml';
 
+	//var burl = 'http://catalog.usgin.org/geothermal/csw';
 	var bServ = '?service=CSW&version=2.0.2&request=GetRecordById';
 	var bOpts = '&outputFormat=' + oft + '&elementsetname=' + hAction + '&outputschema=http://www.isotc211.org/2005/gmd';
 	var bId  = '&id='+rGuid;
 	var hUrl = burl+bServ+bId+bOpts;
-
+  console.log('CSW RecordID '+hUrl);
 	var hr = require('request');
 	var body = '';
-
+	//console.log('remote call ' + hUrl);
 	
 	hr.get(hUrl)
        .on ('response',function(response) {           		
@@ -485,7 +486,7 @@ router.get('/getRecordById', async function(request, response) {
           body += chunk;
         })
         .on ('end', function() {
-			
+			//console.log('body ' + body);
             var xd = new xmldoc.XmlDocument(body);
             var oiw;
             xd.eachChild(function(d){
@@ -521,7 +522,7 @@ router.get('/getRecords', async function(req, res) {
   var pAction = req.query.action;
   var cSql = 'select * from collections where set_id = ' + cid;
   var hRec = await dbquery(cSql);
-
+  //console.log('DB ' + JSON.stringify(hRec));
   var hurl = hRec.rows[0].source_url;
    
   cswGetRecords(hurl);
@@ -535,11 +536,11 @@ router.get('/record_search', async function(req, res) {
 	var qry = req.query.qry;
 	if ( typeof(req.query.start) !== "undefined")  { var offset = req.query.start; } else { var offset = 0;  } 
 	if ( typeof(req.query.page) !== "undefined") {  var lim = req.query.page; } else { var lim = 25; } 
-
+	//console.log(' >>> record search '+qry)
  
     if ( qry.length ) {
     	var rcd = await find_records(qry,offset, lim);
-    	
+    	//console.log(' search >>'+qry+' '+rcd.rows.length);
     	
     	res.send(rcd);	
     } else {
@@ -552,7 +553,7 @@ router.get('/record_show', async function(req, res) {
 	var lp = '/record_show';
 	routelog(request, lp);
 	var rid = req.query.id;
-	
+	//console.log(' >>> record show '+rid)
  
     if ( rid.length ) {
     	var rcd = await record_show(rid);
@@ -567,10 +568,10 @@ router.get('/getCategories', async function(req, res) {
 	var lp = '/getCategories';
 	routelog(request, lp);
 	var lid = req.query.lid;
-	
+	//console.log(' >>> categoruesrecord show '+lid)
     var cats = await categories(lid);
     if ( cats ) {
-    	
+    	//var rcd = await record_show(rid);
     	res.send(cats);	
     } else {
 		routelog(request,lp+' Missing categories', 'err');
@@ -591,7 +592,7 @@ router.get('/getData', (request, response) => {
 	client.query(sqlStr, (err, res) => {
 	  if ( typeof(res) !== "undefined" ) {
 		 
-		 
+		  //console.log(err, res)
 		  if ( res.hasOwnProperty('rows') ) {
 			var rta = res.rows;
 			  var stack = "Data Request: ";
@@ -600,7 +601,7 @@ router.get('/getData', (request, response) => {
 				  Object.keys(nx).forEach(function(key) {
 					  stack = stack + 'Key : ' + key + ', Value : ' + nx[key];
 				  })
-				  
+				  //stack = stack + ' ' + nx;
 			  }
 			  response.json("Data :" + stack);  
 		  } else {
@@ -623,7 +624,7 @@ router.get('/harvestJob', (request, response) => {
 	var directive = 'now';
 
 	var sqlStr = 'Select * from new_collection_activity(' + setid + ',\'' + action + '\',\'' + directive + '\',null)';
-
+	//console.log('new hj ' + sqlStr);
 	
 	client.query(sqlStr, (err, res) => {
 		 if ( typeof(res) !== "undefined" ) {
@@ -676,6 +677,8 @@ router.get('/harvest', (request, response) => {
            	 
        }
 
+       //console.log( ' return json --> ', JSON.stringify(rsp) );
+
 	}
 
 	fw();
@@ -702,6 +705,7 @@ router.get('/harvestSourceInfo', (request, response) => {
 							+ '		c.set_type = \'harvest\' and' 
 							+ '		c.status = \'active\' and c.set_id = ' + hsid;
 
+    //console.log('sql ' + sqlStr);
 
     client.query(sqlStr, (err, res) => {
 
@@ -718,7 +722,7 @@ router.get('/harvestSourceInfo', (request, response) => {
  });
 
 router.get('/harvestSourceList', (request, response) => {
-	// retrieve list of harvest sources
+	// retrie list of harvest sources
 	var lp = '/harvestSourceList';
 	routelog(request, lp);
     var sqlStr = 'Select set_id, set_name, source_url from collections where status = \'active\' and set_type = \'harvest\'';

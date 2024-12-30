@@ -8,12 +8,12 @@ const pool = new Pool({
 	user: 'ngdsdb',
 	host: 'localhost',
 	database: 'geothermal',
-	password: '',
+	password: 'xxxxxxx',
 	port: 5432,
 	max: 25
   });
 
-const  connectionString = 'xxx';
+const  connectionString = 'postgres://ngdsdb:xxxxxx@localhost:5432/geothermal';
 
 pool.on('error', (err, client) => {
 	console.error('Unexpected error on idle client', err)

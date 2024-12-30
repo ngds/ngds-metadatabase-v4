@@ -8,7 +8,7 @@ const pool = new Pool({
 	user: 'ngdsdb',
 	host: 'localhost',
 	database: 'pycsw',
-	password: '',
+	password: 'xxxxxx',
 	port: 5432,
 	max: 25
   });
@@ -17,7 +17,6 @@ const pool = new Pool({
 	console.error('Unexpected error on idle client', err)
 	process.exit(-1)
   })
-
 
 require('dotenv').config();
 const port = 8080;
@@ -59,6 +58,7 @@ async function qS(qry, so, lim, ofs) {
 				})
 			});
 	});
+
 
 }
 
