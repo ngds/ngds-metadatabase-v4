@@ -1,5 +1,5 @@
 [Unit]
-Description=NGDS HTTP Redirector
+Description=NGDS HTTP Web service
 After=network.target
 
 [Service]
@@ -11,9 +11,9 @@ RestartSec=500ms
 StartLimitInterval=0
 KillSignal=SIGQUIT
 WorkingDirectory=/opt/ngds/node-app
-ExecStart=/snap/bin/node /opt/ngds/node-app/ngds-app-rdr.js
-StandardOutput=append:/opt/ngds/node-app/log/ngds-app-rdr.log
-StandardError=append:/opt/ngds/node-app/log/ngds-error-rdr.log
+ExecStart=/home/ec2-user/.nvm/versions/node/v20.18.0/bin/node /opt/ngds/node-app/ngds-app.js
+StandardOutput=append:/opt/ngds/node-app/log/ngds-app.log
+StandardError=append:/opt/ngds/node-app/log/ngds-error.log
 
 [Install]
 WantedBy=multi-user.target

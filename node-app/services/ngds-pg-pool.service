@@ -1,9 +1,9 @@
 [Unit]
-Description=NGDS HTTP geothermal db PG pool 
+Description=NGDS HTTP geothermal db PG pool
 After=network.target
 
 [Service]
-
+ExecStartPre=-/bin/sleep 5
 User=root
 Group=root
 Restart=always
@@ -11,7 +11,7 @@ RestartSec=500ms
 StartLimitInterval=0
 KillSignal=SIGQUIT
 WorkingDirectory=/opt/ngds/node-app
-ExecStart=/snap/bin/node /opt/ngds/node-app/ngds-pg-pool.js
+ExecStart=/home/ec2-user/.nvm/versions/node/v20.18.0/bin/node /opt/ngds/node-app/ngds-pg-pool.js
 StandardOutput=append:/opt/ngds/node-app/log/ngds-pg-pool.log
 StandardError=append:/opt/ngds/node-app/log/ngds-pg-pool-error.log
 
