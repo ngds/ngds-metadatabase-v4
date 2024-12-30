@@ -7,13 +7,14 @@
 */
 
 var pg = require('pg'),
-    connectionString = '',
+    connectionString = 'postgres://ngdsdb:xxxxxxx@localhost:5432/geothermal',
+   
     pgClient;
 
 require('dotenv').config();
 const port = 3001;
 const Path = process.env.NODE_PATH;
-
+//console.log('Start .. '+ Path + ' ' + port + ' ' + connectionString);
 const xmldoc = require('xmldoc');
 const xml2js = require('xml2js');
 var express = require('express'),
@@ -40,6 +41,7 @@ pgClient = new pg.Client( connectionString );
 pgClient.connect();
 
 initialize();
+//getActivities();
 
 pgClient.query('LISTEN jobmsg');
 pgClient.on('notification', async function (data) {
@@ -128,9 +130,9 @@ async function linkValidate(o) {
 			rex(u.lurl, {method: 'HEAD'}, function (err, rsp, body){
 				
 				if ( typeof(rsp) !== "undefined" && typeof(rsp.statusCode) !== "undefined") {
-					
+					//var zx = 'Response Status: ' + rsp.statusCode + ' headers: ' + JSON.stringify(rsp.headers);
 					var zx = 'Response : ' + u.lurl + ' status: ' + rsp.statusCode;
-					
+					//console.log(zx);
 					u.rsp = rsp;
 					saveCheck(u);
 				} else if ( typeof(err) !== "undefined" ) {
@@ -191,7 +193,7 @@ async function linkValidate(o) {
 					+ ' values (\''+ guid + '\',null,\'' + o.lurl + '\',\''+ coty
 					+ '\',current_timestamp,\''+cmd + '\',\''+sc
 					+ '\','+ coln + ',current_timestamp)';
-		
+		//console.log('xxx' + iSql);
 
 		return new Promise(function(resolve, reject){
 			pgClient.query(iSql, (err, res) => {
@@ -211,8 +213,11 @@ async function linkValidate(o) {
     function initialize() {
     	console.log('Initializing .. ');
     	getActivities();
-    	execStack();
 
+    	//setTimeout(function() {
+    	execStack();
+    	//}, 5000);
+    	//execStack();
     }
     // manages the job stack - dispatcher in oldspeak
 
@@ -220,18 +225,18 @@ async function linkValidate(o) {
         jCnt++;
     	
     	setTimeout(function() {
-    		
+    		//console.log('exec Stack count -- ' + jCnt);
     		for ( var i in curActProcs ) {
     			// waiting on next proc
-    			
+    			//console.log('EXEC stack ' + i + curActProcs[i].process_call + ' ' + curActProcs[i].pjstatus);
 				// if its running and wd is curent
 				if ( curActProcs[i].pjstatus == 'running') {
-					
+					//console.log('===>>> Process id ' + curActProcs[i].pjq_id );
 					var p = curActProcs[i].complete;
 					if ( typeof(p) !== "undefined" && p !== null && p.length > 3 ) {
 						var caTime = new Date(p);
 						var runAge = new Date() - caTime;
-						
+						//console.log('Timestamp - Current ' + p + ' age  ' + runAge.toString())
 						// want to trap timeout
 					
 					} else {
@@ -242,20 +247,21 @@ async function linkValidate(o) {
 					}
 
                 
-					
+					//console.log('Process running ' + curActProcs[i].process_call);
 					break;
     			}
 
-    			
+    			//if ( curActProcs[i].pjstatus == 'new' || curActProcs[i].pjstatus == 'running' ) {
 				if ( curActProcs[i].pjstatus == 'new'  ) {
 					var o = curActProcs[i];
 					console.log('STARTING PROCESS -- ' + i + curActProcs[i].process_call + ' ' + curActProcs[i].pjstatus);
     				var af = autoFinder(curActProcs[i].process_call);
 					if ( af !== null ) {
-						
+						//dbUpdateProcStatus(o,'running');
+						//console.log('execStack - ' + JSON.stringify(o));
 						var gf = eP(o, af);
 					
-			
+						//dbUpdateProcStatus(o,'complete');
 						
 						break;
 					}
@@ -294,7 +300,7 @@ async function linkValidate(o) {
 	}
 
     // top level job tracking - returns the list of pending CA tasks
-     
+    // 
 	function getActivities( caid ) {
 		
 		var cSql = 'select * from collection_activity where status <> \'complete\'';
@@ -340,7 +346,8 @@ async function linkValidate(o) {
 					}
 				}
 			}
-			
+			//curActProcs.length = 0;
+
 			pgClient.query(qStr, (err, res) => {
 				if ( typeof(res) !== "undefined" ) {
 				  	var rowrec = res.rows;
@@ -412,7 +419,7 @@ class autoFunction {
 var autoFinder = function(n){
 
   for (let [key, value] of afMap.entries()) {
-  
+  	//console.log('finder '+ key + ' ' + value)
     if ( key == n) {
       return value;
     }
@@ -466,7 +473,7 @@ cg.exec = async function(o) {
         	p = "&startposition="+jc.start,
         	m = "&maxrecords="+jc.mx;
 
-		
+			//console.log('>>>>>  before '+p);
 			var params ='';
 			if ( jc.url_params ) {		
 				for ( k in jc.url_params) {
@@ -481,12 +488,12 @@ cg.exec = async function(o) {
 				}
 			}
 
-
+			//console.log('>>>>>>>>>> after  '+p);
         	var gUrl = b+s+r+o+t+y+e+p+m+params;
 			var hr = require('request');
 			var body = '';
 			glog.write(util.format(gUrl) + '\n');
-      		
+      		//console.log(' gather csw call ' + gUrl);
 			hr.get(gUrl)
 	       		.on ('response',function(response) {           		
 	      	})
@@ -495,32 +502,51 @@ cg.exec = async function(o) {
 	        }).on ('end', function() {
 	        	
 				var jBody =  XMLtoJ( body );   	
-				
+				//for (var k in jBody ) {
+				//	console.log('property list '+k)
+				//}
+				//console.log('>>> top prop ' + Object.keys(jBody));
+
+
 				var sStats = {};
 				
 				if ( jBody["csw:GetRecordsResponse"]) {
-					
+					//console.log('>>>> Record Response >' + JSON.stringify(jBody));
+
 					if ( jBody["csw:GetRecordsResponse"]["csw:SearchResults"] ) {
-						
+						//console.log(' searchResults ');
 						if  ( jBody['csw:GetRecordsResponse']["csw:SearchResults"]["$"] ) {
 							sStats = jBody["csw:GetRecordsResponse"]["csw:SearchResults"]["$"];
-						
+						//	console.log('as attribute ');
 						} else {
 							sStats = jBody["csw:GetRecordsResponse"]["csw:SearchResults"];
-						
+						//	console.log(' in body');
 						}
+
+						//for (var k in sStats ) {
+						//	console.log('stats list '+k);
+						//}
+
 					}
 				}
 
 	
-
+	           // var sStats = jBody["csw:GetRecordsResponse"]["csw:SearchResults"]["$"];
 				var nextR = sStats["nextRecord"];
 				var nRtn = sStats["numberOfRecordsReturned"];
 				var nbrRec = sStats["numberOfRecordsMatched"];
 				console.log('>>>>> stats - next ' + nextR + ' ' + nRtn + ' ' + nbrRec );
-	
+				//console.log('>>> body ' + JSON.stringify(sStats) );
+				/*
+				if ( sStats["gmd:MD_Metadata"] ) {
+					var sResults = sStats["gmd:MD_Metadata"];
+				} else {
+					console.log('invalid results ')
+				}
+				*/
 				var xy = jBody["csw:GetRecordsResponse"]["csw:SearchResults"]["gmd:MD_Metadata"];
-				
+				//console.log(' xy >>>> ' + Object.keys(xy));
+
 
 				if (  jBody["csw:GetRecordsResponse"]["csw:SearchResults"]["gmd:MD_Metadata"] ) {
 					var sResults = jBody["csw:GetRecordsResponse"]["csw:SearchResults"]["gmd:MD_Metadata"];
@@ -543,15 +569,16 @@ cg.exec = async function(o) {
 	            	  var k = sResults[p];
 	            	// These paths may be schema dependent - may want parameterize ....
 					  var fid = k["gmd:fileIdentifier"]["gco:CharacterString"];
-					
+					 //console.log('got fid ' + fid);
 
 					  if ( k["gmd:dateStamp"]["gco:DateTime"] ) {
 						var dstamp= k["gmd:dateStamp"]["gco:DateTime"];	  
 					  } else {
 						var dstamp= k["gmd:dateStamp"]["gco:Date"];	  
 					  }
-					
-	            	 
+					 // console.log('got fid and date ' + fid+ ' ' + dstamp);
+	            	  //var dstamp= k["gmd:dateStamp"]["gco:DateTime"];
+	            	  //var tl = k["gmd:identificationInfo"]["gmd:MD_DataIdentification"]["gmd:citation"]["gmd:CI_Citation"]["gmd:title"]["gco:CharacterString"];
 					  try {
 						var rtn = dbGatherRecordInsert(jc,fid,dstamp);
 					  } catch(err) {
@@ -582,11 +609,13 @@ cg.exec = async function(o) {
                     + ' select  ' + jc.colactId + ',' + jc.pjqId + ',\'new\',\''+fid+'\',\'' + dstamp+'\'::timestamp '
                     + ' WHERE NOT EXISTS (  select pjq_id from cap_records where ca_id = ' +  jc.colactId
                     + ' and pjq_id = ' + jc.pjqId + ' and guid =\'' + fid + '\'  )';
-	            	
+	            		//	+ jc.colactId + ',' + jc.pjqId + ',\'new\',\''+fid+'\',\''
+	            	//		+ dstamp+'\'::timestamp)';
+			//console.log('start cap_insert ');
 	        return new Promise(function(resolve, reject){
 	            pgClient.query(iSql, (err, res) => { 
 	            	if ( typeof(res) !== "undefined" ) { 
-	            	
+	            		//jc.status = 'ok';
 	            		jc.pCount++; 
 	            		resolve(res); 
 					 } else {  
@@ -631,14 +660,14 @@ cg.exec = async function(o) {
 	return new Promise(function(resolve, reject){
 		var rlog = '/log/fetch_'+Date.now()+'.log';
 		var flog = fs.createWriteStream(__dirname + rlog, {flags : 'w'});
-      
+        //console.log('cs fetch promise - ' + JSON.stringify(o));
 		if ( jobCon.hasOwnProperty('pjqId') ){
         	if ( jobCon.pjqId !== o.pjq_id ) {
        			jobCon = {};
 				jobCon.pCount=0;
 				jobCon.mx =10;
 				jobCon.start = 0;
-				
+				//jobCon.total=jobCon.mx + 1;
 				jobCon.total=0;
 				jobCon.errCount=0;
 				jobCon.colactId = o.ca_id;
@@ -665,7 +694,10 @@ cg.exec = async function(o) {
 		async function dbGetQRecords (jc,o) {
 
 				var lim = 150;
-			
+				//var iSql = 'select * from cap_records where ca_id = ' + jc.colactId
+				//				+ ' and status = \'new\' limit  ' + lim + ' offset ' + jc.start; 
+
+				// returns cpr_id, guid, and pydate pycsw insrt or update
 				var iSql =  'with capr as ('
 						+ 'select * from cap_records where ca_id = ' + jc.colactId
 						+ ' and status = \'new\' limit ' + lim  //+ ' offset ' + jc.start
@@ -676,7 +708,9 @@ cg.exec = async function(o) {
 				console.log('cswFetch - Get queued records -  Time : ' +  new Date + ' guid count: ' + jc.guidStack.length);
 				jc.start = jc.start+lim;
 				jc.pCount = jc.guidStack.length;
-			
+				//console.log('db GetQ o  ' + JSON.stringify(o));
+				//console.log('db Get records sql ' + iSql);
+
 				return new Promise(function(resolve, reject){
 					pgClient.query(iSql, (err, res) => { 
 						if ( typeof(res) !== "undefined" ) { 
@@ -688,10 +722,11 @@ cg.exec = async function(o) {
 								if ( rta.length == 0 ) {
 									console.log('GetQ Records - NO ROWS ' + iSql);
 									jc.status = 'complete';
-									
+									//capQueStatus(jc.pjqId,'complete');
 
 								} else {
-									
+									//console.log('>>> rx')
+									//var stack = "Data Request: ";
 									
 									for ( var k in rta) {
 										var nx = rta[k];
@@ -707,6 +742,13 @@ cg.exec = async function(o) {
 										} else {
 											jc.guidStack[gdx].count++;
 										}
+
+
+										//console.log('>>> fetch record '+k);
+										//setTimeout(function () {
+										
+										//}, 300);	
+										//jc.pCount++;
 									
 									}
 									if ( rta.length < lim ) {
@@ -739,7 +781,7 @@ cg.exec = async function(o) {
 			var gUrl = b+s+rg+i+ox+e+m;
 			var hr = require('request');
 			var body = '';
-		
+			//console.log('>>fetch ' + gUrl);
 			var n = new Date();
 			flog.write(n.toISOString() + ' ' + util.format(gUrl) + '\n');
 				
@@ -764,7 +806,7 @@ cg.exec = async function(o) {
 					var gTitle = result["gmd:MD_Metadata"]["gmd:identificationInfo"]["gmd:MD_DataIdentification"]["gmd:citation"]["gmd:CI_Citation"]["gmd:title"]["gco:CharacterString"];
 				
 					jc.pCount++;
-					
+					//console.log('insert ' + r.guid + ' ' + jc.pCount);
 					dbFetchRecordInsert(r, g, o.set_id,'citid',gTitle,o.schema_id, result,oiw);
 					return('ok');
 	
@@ -783,7 +825,7 @@ cg.exec = async function(o) {
 			var gx = j.guidStack.findIndex(o => o.guid == g);
 			if ( gx !== -1 ) {
 				j.guidStack[gx].status = stat;
-			
+				//j.guidStack[gx].count++;
 				return true;
 			}
 			return false;
@@ -798,7 +840,7 @@ cg.exec = async function(o) {
 							+ mSchema + ',\'' + mb + '\'::json)';
 				var bl = mb.length;
 
-			
+				//console.log('DB INSERT >>> ' + mGuid + ' bodsize ' + mb.length );
 				return new Promise(function(resolve, reject){
 
 					pgClient.query(sqlStr, (err, res) => {
@@ -809,9 +851,9 @@ cg.exec = async function(o) {
 							for ( var k in rowrec) {
 								vid = rowrec[k]["makemdrecord"]["VersionID"];
 								vid = vid.replace(/"/g,"");
-								
+								//console.log('dbFetchRecInsert '+ mGuid + ' ' + vid);
 								dbCapUpdate( o.ca_id, mGuid, parseInt(vid), 'fetch-insert')
-							
+								//console.log('dbFRI b4 pycsw-'+ vid);
 								pyCswInsert(o.ca_id, r, vid, mGuid, xml );                        
 							}					  
 							resolve(res);
@@ -831,6 +873,8 @@ cg.exec = async function(o) {
 		} 
 
 		async function pyCswInsert (caid, r, vid, mGuid, xml) {
+
+			//console.log('pycsw insert start for  ' + xml.name );
 			var xa = xml.attr;
 
 			if ( !xa["xmlns:xsi"]) {
@@ -853,18 +897,22 @@ cg.exec = async function(o) {
 				xa["xmlns:gml"] ="http://www.opengis.net/gml";
 			}
 
-			
+			/*
+			for ( var k in xa) {
+				console.log( ' attr ' + k + ' ' + xa[k]);
+			}
+			*/
 
 			if ( r.pydate.length > 1 ) {
-				
+				//console.log('pycsw trans update for '+ r.guid)
 				var xTemplate = fs.readFileSync(Path+'/transaction-update-template.xml', 'utf8');	
 			} else {
-				
+				//console.log('pycsw trans insert for '+ r.guid)
 				xTemplate = fs.readFileSync(Path+'/transact-insert-template.xml', 'utf8');
 			}
-			
+			//var xTemplate = fs.readFileSync(Path+'/transaction-update-template.xml', 'utf8');
 			var xmlBody = xTemplate.replace('##EMBED##',xml);
-			
+			//console.log('pycsw start');
 			return new Promise(function(resolve, reject) { 
 				var hurl = 'http://10.208.3.120:8000/';
 					hurl = hurl + '?service=CSW&version=2.0.2&request=Transaction&TransactionSchemas=';
@@ -899,6 +947,7 @@ cg.exec = async function(o) {
 							console.log('pyswException ' + mGuid + ' ' + xb.valueWithPath('ows:Exception.ows:ExceptionText') );
 							pyStat = 'pycsw-error-'+'owsExceptionReport';
 
+							//pyStat = 'pycsw-error-'+xb.valueWithPath('ows:Exception.ows:ExceptionText');
 						}
 
 						if ( xb.name == "csw:TransactionResponse" ) {
@@ -910,6 +959,8 @@ cg.exec = async function(o) {
 
 						flog.write(n.toISOString() + ' pyInsert ' + mGuid + ','+ vid + ','+ pyStat + '\n');
 						dbCapUpdate( caid, mGuid, vid, pyStat);
+						//console.log('pycsw insert response ' + mGuid + ' ' + vid + ' ' + pyStat);
+
 						resolve(httpResponse);
 
 					}
@@ -929,9 +980,10 @@ cg.exec = async function(o) {
 		}
 		//async function dbCapUpdate (capid, mvid, status) {
 		async function dbCapUpdate (caid, guid, mvid, status) {
-				
+				//console.log('cap update sql ' + mvid + ' ' + status);
+
 				if ( isNaN(mvid) ) {
-				
+				//if ( mvid.length == 0 ) {
 					status = status||'-mvid-error';
 					var vid = null;
 					var sqlStr = 'update cap_records set '
@@ -947,15 +999,16 @@ cg.exec = async function(o) {
 
 
 				}
-				
+				//console.log('dbcapupdate '+ sqlStr);
 				
 				return new Promise(function(resolve, reject){
 					pgClient.query(sqlStr, (err, res) => {
-						
+						//console.log('update query return ');
 						if ( typeof(res) !== "undefined" ) {
-							
+							//console.log('dbcapu ' + JSON.stringify(res));
+							//var pic = res.rows;
 							resolve(res);
-							
+							//resolve(JSON.stringify(res));
 						} else {
 							console.log('dbcapupdate err sql ' + sqlStr);
 							reject("cap update error " + JSON.stringify(err));	  	
@@ -972,7 +1025,7 @@ cg.exec = async function(o) {
 		function gRepeater(jobCon,o) {
 			var watchDog = 0;
 
-			
+			//console.log(' gRepeater ' + JSON.stringify(o) + ' ' + JSON.stringify(jobCon)); 
 				function timedRepeat(jobCon,o) {
 					watchDog++;
 					var tsNow = new Date();
@@ -983,9 +1036,10 @@ cg.exec = async function(o) {
 						console.log('db watchdog sync ' + watchDog + ' ' + JSON.stringify(o) );	
 						dbUpdateProcStatus(o);
 					}
-					
+					//console.log(' timedRepeat >> ' + JSON.stringify(o) + ' ' + JSON.stringify(jobCon)); 
 					setTimeout(function () {
-						
+						//console.log(' set time out >> ' + JSON.stringify(o) + ' ' + JSON.stringify(jobCon)); 
+						//if ( jobCon.start == 0 ) { jobCon.start = 150; }
 						dbGetQRecords (jobCon,o);	
 						if ( jobCon.status == 'complete'  )
 						{
@@ -1006,9 +1060,11 @@ cg.exec = async function(o) {
 				timedRepeat(jobCon,o);
 			}			
 		}
- 
+
+        //console.log(' fetch gRepeater ' + JSON.stringify(o) + ' ' + JSON.stringify(jobCon)); 
 		gRepeater(jobCon,o);
 		
+ 		//dbGetQRecords (jobCon,o);
 	});
 }
 
@@ -1108,6 +1164,13 @@ app.get('/linkcheck', function(req,res) {
 	var mrv = linkValidate(p);
 
     res.send('Done');
+    //var rex = require('request');
+	//rex("http://test.geothermaldata.org", {method: 'HEAD'}, function (err, rsp, body){
+		//console.log(rsp.status);
+	//	res.send('Response Status: ' + rsp.statusCode + ' headers: ' + JSON.stringify(rsp.headers));
+		//res.send('Response ' + rsp.status + ' headers: ' + JSON.stringify(rsp.headers));
+	//});
+
 
 });
 
@@ -1228,11 +1291,13 @@ var gatherWrap = function(req, res) {
 
 
 app.get('/csw', function(req, res){
+
 	dbProcess(res);
-	
+ 		
     
 });
 
 app.listen(port, () => {
+  //console.log('App running on port ${port}.')
   console.log('Startup  ' + rd() + ' ' + Path + ':' + port);
 });
