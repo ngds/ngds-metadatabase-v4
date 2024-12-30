@@ -41,11 +41,14 @@
  width:100%;
  margin: 0;
  padding: 0;
+ float: left;
 }
+
 #accordion p span {
  cursor:pointer;
  font-size: 15px;
  font-family: calibri;
+ 
 }
 
 #q {
