@@ -17,12 +17,13 @@ var scraperjs = require('scraperjs');
 
 const pyUrl = 'http://data.geothermaldata.org:8000/';
 
-
-const connectionString = 'postgres://ngdsdb:xxxxxxx@localhost:5432/geothermal';
-
+// --const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/GEOTHERMAL';
+const connectionString = 'postgres://ngdsdb:geonewton@localhost:5432/geothermal';
+//const connectionString = 'postgres://postgres:15-cloud-post@localhost:5432/geothermal';
 const client = new pg.Client(connectionString);
 
-const pyCon = 'postgres://ngdsdb:xxxxxx@localhost:5432/pycsw';
+const pyCon = 'postgres://ngdsdb:geonewton@localhost:5432/pycsw';
+//const pyClient = new pg.Client(pyCon);
 
 var gKeystack = [];
 var gNACL = '5d097fe1065645c8';
@@ -171,6 +172,18 @@ function batchRecordQuery(fld, qry, guids) {
 			resolve(body);
 		});		 
 	});
+	/*
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+			  if ( typeof(res) !== "undefined" ) {
+			  	resolve(JSON.stringify(res));
+			  } else {
+				reject("batch query error");	  	
+			  }
+		});
+		     
+	});
+	*/
 
 }
 
@@ -429,6 +442,19 @@ function record_show(qry, vid ) {
 		});		 
 	});
 
+	//console.log('record show guid ' + sqlStr);
+	/*
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+			  if ( typeof(res) !== "undefined" ) {
+			  	//console.log('record show success');//JSON.stringify(res));
+			  	resolve(JSON.stringify(res));
+			  } else {
+				reject("error noodle");	  	
+			  }
+		});     
+	});
+	*/
 
 }
 
@@ -474,6 +500,18 @@ function categories(climit, qry) {
 			resolve(body);
 		});		 
 	});
+
+	/*
+	return new Promise(function(resolve, reject){
+		client.query(sqlStr, (err, res) => {
+			  if ( typeof(res) !== "undefined" ) {
+			  	resolve(JSON.stringify(res));
+			  } else {
+				reject("error in categories");	  	
+			  }
+		});	     
+	});
+	*/
 
 
 }
@@ -596,6 +634,7 @@ function dataTypeFacets(climit, qry) {
 		+ ' group by ext order by 2 desc limit ' + climit;
 	}
 		
+	//console.log('data types facet ' + sqlStr);
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 			  if ( typeof(res) !== "undefined" ) {
@@ -674,7 +713,7 @@ function fetchMapServers() {
 				 + '		or lurl ilike \'%wfs%\' or lurl ilike \'%wms%\' '
 				 + '		or lurl ilike \'%mapserver%\') z '
 				 + ' group by dmm order by dmm';
-   
+    //console.log('map s ' + sqlStr);
 	return new Promise(function(resolve, reject){
 		client.query(sqlStr, (err, res) => {
 				if ( typeof(res) !== "undefined" ) {
@@ -973,7 +1012,13 @@ function execInspectionUpdate(r,ctype) {
 	});
 
 	function lucheck(u) {
-
+        /*
+	    if ( u.ctype == 'catalog' || u.ctype == 'link' || u.ctype == 'crawl' ) {
+			var hurl = u.ident_url;
+		} else if ( u.ctype == 'base') {
+			var hurl = u.orig_url;
+		}
+		*/
 		var hurl = u.lurl;
 		
 		var rex = require('request');
@@ -1483,6 +1528,70 @@ function createUser(uo) {
   }); 
   
 }
+
+function EditUser(uo) {
+  
+  //var tdate = Date.now();
+  //var pwh = sha512(uo.pw,gNACL);
+  
+  var sqlStr = 'update users set name = \'' + uo.n + '\', agent_id = ' + uo.a + ', fullname = \'' + uo.fn + '\' where user_id = ' + uo.i;
+              
+  console.log(' sql ' + sqlStr);
+  return new Promise(function(resolve, reject) {
+    client.query(sqlStr, (res, err) => {
+    
+  				if ( typeof(res) !== "undefined" ) {
+            		//console.log(' resolve ' + JSON.stringify(res) );
+  					resolve(res);
+  				} else {
+  				   console.log(' edit user user ' + JSON.stringify(err));
+  				  reject(err);	  	  	
+  				}
+  		});	
+  }); 
+  
+}
+
+function deleteUser(uo) {
+  
+  var status = 'inactive';
+  var sqlStr = 'update users set state = \'' + status + '\' where user_id = ' + uo.i;
+              
+  console.log(' sql ' + sqlStr);
+  return new Promise(function(resolve, reject) {
+    client.query(sqlStr, (res, err) => {
+    
+  				if ( typeof(res) !== "undefined" ) {
+            		//console.log(' resolve ' + JSON.stringify(res) );
+  					resolve(res);
+  				} else {
+  				   console.log(' edit user user ' + JSON.stringify(err));
+  				  reject(err);	  	  	
+  				}
+  		});	
+  });  
+}
+
+function chgPass(uo) {
+  
+  var pwh = sha512(uo.p,gNACL);
+  var sqlStr = 'update users set password = \'' + pwh.passwordHash + '\' where user_id = ' + uo.i;
+              
+  console.log(' sql ' + sqlStr);
+  return new Promise(function(resolve, reject) {
+    client.query(sqlStr, (res, err) => {
+    
+  				if ( typeof(res) !== "undefined" ) {
+            		//console.log(' resolve ' + JSON.stringify(res) );
+  					resolve(res);
+  				} else {
+  				   console.log(' edit user user ' + JSON.stringify(err));
+  				  reject(err);	  	  	
+  				}
+  		});	
+  });  
+}
+
 
 async function getVersions(guid) {
 	
@@ -2442,6 +2551,74 @@ router.get('/createUser', async function(req, res ) {
 		res.send(cur);	
 	}    
   }
+  
+});
+
+router.get('/editUser', async function(req, res ) {
+	var lp = '/editUser';
+	routelog(req, lp);
+
+  var u = {};
+  u.i = req.query.i;
+  u.n = req.query.u;
+  u.token = req.query.t;
+  u.fn = req.query.fn;
+  u.a = req.query.a;
+  
+  if ( gKeystack.indexOf(u.token) > -1 ) {
+  	var cur = await EditUser(u);
+   
+  	if ( cur == null) {
+  		res.send('User Edit Success ');	
+  	} else {
+  		res.send(cur);	
+  	}    
+  } else {
+    res.send('Not Authorized');
+  } 
+  
+});
+
+router.get('/deleteUser', async function(req, res ) {
+	var lp = '/deleteUser';
+	routelog(req, lp);
+
+  var u = {};
+  u.i = req.query.i;
+  u.token = req.query.t;
+  
+  if ( gKeystack.indexOf(u.token) > -1 ) {
+  	var cur = await deleteUser(u);
+  	if ( cur == null) {
+  		res.send('Removed user Success ');	
+  	} else {
+  		res.send(cur);	
+  	}    
+  } else {
+    res.send('Not Authorized');
+  } 
+  
+});
+
+router.get('/chgPass', async function(req, res ) {
+	var lp = '/chgPass';
+	routelog(req, lp);
+
+  var u = {};
+  u.i = req.query.i;
+  u.p = req.query.p;
+  u.token = req.query.t;
+  console.log('Change pass'+u.i+' '+u.p+' '+u.token);
+  if ( gKeystack.indexOf(u.token) > -1 ) {
+  	var cur = await chgPass(u);
+  	if ( cur == null) {
+  		res.send('Change Passord Success ');	
+  	} else {
+  		res.send(cur);	
+  	}    
+  } else {
+    res.send('Not Authorized');
+  } 
   
 });
 

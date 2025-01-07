@@ -1,7 +1,5 @@
 /* G. Hudman - Search and MD record view UI tools
-   dev on data.geothermaldata.org
-   12/30/2024 - Cloud version
-
+   dev on test.geothermaldata.org
 */
   var gTemplate = { "title": { "value": "Title", "path" : "", "nodeid": "" }, 
                     "abstract" : { "value": "", "path" : "", "nodeid": "" }, 
@@ -218,7 +216,7 @@
       console.log( "typeahead success ..." );
     })
     .done(function(data) { 
-    
+      //console.log( "typeahead data ..." + JSON.stringify(data) );
       if (typeof(data) == "object" ) {
         var dres = data;
       } else {
@@ -258,7 +256,14 @@ function showSaved(o) {
               guidA.push(guid);  
           }
         }      
-        
+        /*  
+        $.each(localStorage, function(key, value){
+            if ( sTerm == value ) {
+              guid = key.substr(3);
+              guidA.push(guid);
+            }
+        })
+        */
       } else {
         for (k in keez) {
             var key = keez[k];
@@ -267,7 +272,14 @@ function showSaved(o) {
                 guidA.push(guid);  
             }
         }
-      
+        /*
+        $.each(localStorage, function(key, value){
+            if  ( key != "SearchHistory" ) {
+              guid = key.substr(3);
+              guidA.push(guid); 
+            }
+        })
+        */
       }
       if (guidA) {
         var guidStr = guidA.join(',');
@@ -314,11 +326,9 @@ function searchData(yorn) {
       sPage = page;
 
       var gSp = page*pgSize;
-
-      // search term bug fix 5/5/22 -GH
-      var sTerm = $("#gSearchBox").val();
-      // trap colon character 
-      var sTerms = sTerm.replace(/&/g," ").replace(/:/g," ").trim();
+      //var sTerms = $("#gSearchBox").val();
+	  var sTerm = $("#gSearchBox").val();
+      var sTerms = sTerm.replace(/&/g," ").trim();
       gSearchType = 'text';
 
       if (  gSearchHistory.indexOf(sTerms.trim()) == -1 ){
@@ -416,7 +426,7 @@ function searchData(yorn) {
                 var prv = $('<button class="arrow-button" id="pgPrev" onclick="pager(this)"> &lt; </button>');
                 var pcnt = $('<span class="dijitTitlePaneTextNode" style="margin:5px" id="pgCnt">Page ' + sPage + '</span>');
                 var pnxt = $('<button class="arrow-button" id="pgNext" onclick="pager(this)"> &gt; </button></br>');
-              
+                //var pSrtOrd = $('<button class="arrow-button" id="pgNext" onclick="pager(this)"> &gt; </button></br>');
                 $("#cb-page").empty().css("margin-left","40px");
                 $("#cb-page").append(prv);
                 $("#cb-page").append(pcnt);
@@ -470,6 +480,24 @@ function searchData(yorn) {
                         .css("font-size", "12px");
                   var rLL = $('<a href="'+ lurl + '" class="resource-item" target="_blank">' + lnam + '</a></br>');
 
+                  /*
+                  if ( lnk.text == 'MapServer' || lnk.text == 'WMS' || lnk.text == 'WFS') {
+                    var rLP = $('<a id="'+ gs+'" data-link="'+ lurl + '" onclick="dataMapView(this);" class="res-tag" >' + lnk.text +  '</a>')
+                    .css("width",lnk.width)
+                    .css("color",lnk.txtcolor)
+                    .css("background-color",lnk.bgcolor);
+
+                  } else { 
+                    
+                    var rLP = $('<a href="'+ lurl + '" onclick="preview(this);" class="res-tag"  target="_blank">' + lnk.text +  '</a>')
+                          .css("width",lnk.width)
+                          .css("color",lnk.txtcolor)
+                          .css("background-color",lnk.bgcolor);
+                  
+                  }
+                  */
+                 
+            
                   gLinks.append(rlab);
                   gLinks.append(rLL);
                 } else {
@@ -502,7 +530,9 @@ function searchData(yorn) {
                           .css("color",lnk.txtcolor)
                           .css("background-color",lnk.bgcolor);
                     }
+                    //var rLL = $('<a href="'+ lurl + '" class="resource-item" target="_blank">' + lnam + '</a></br>');
 
+                    //gLinks.append(rLP);
                     gLinks.append(rlab);
                     gLinks.append(drl);
 
@@ -524,6 +554,7 @@ function searchData(yorn) {
               var gCard = $('<div id ="gCard-' + xtm.guid + '" class="g-item-card" />')
                    .css("margin", "5px" )
                    .css("padding","2px 2px")
+                   //.css("border","solid")
                    .css("background-color", "white" )
 
                    .hover(function() { 
@@ -537,7 +568,7 @@ function searchData(yorn) {
                           });
                           m.setOpacity(.99);
                           m.setIcon(redeye);
-                       
+                        //console.log(' marker in '+ i + ' ' + z + ':' + mic);
                         }
                       });                       
                     }, function() { 
@@ -551,13 +582,15 @@ function searchData(yorn) {
                               });
                              m.setOpacity(.75);
                              m.setIcon(norml);
-                           
+                            //console.log(' marker out'+ i + ' ' + z + ':' + mic);
                             }   
                           });
                     });                    
               $(gCard).append(sBtn);        
               $(gCard).append(cInfo);
               $(gCard).append(cAb);
+              //$(gCard).append(cDate);
+              //$(gCard).append(cGuid);
               $(gCard).append(gLinks);
               $("#rec-results").append(gCard);           
 
@@ -571,16 +604,13 @@ function searchData(yorn) {
              
             }
            
-     
+        //if ( sTerms ) { facetClear(".nav-category"); }
         showCategories(5);
         showDataTypes(15);
         showAuthors(5);
         showCM(5);
         $("#gSearchBox").val(sTerms);
 
-      })
-      .fail(function(data) {
-        console.log('Find records error'+data);
       });
 
   }
@@ -623,7 +653,8 @@ function searchData(yorn) {
 
     gSearchType='map';
     var bh = map.getBounds();
-
+    //localStorage.SetItem("lastMap",)
+    //gBounds = map.getBounds();
 
     if ( sPage == 0 ) {
       var bounds = map.getBounds();
@@ -682,7 +713,7 @@ function searchData(yorn) {
           if ( dres['ows20:ExceptionReport'] ) {
             var errtext = dres['ows20:ExceptionReport']['ows20:Exception']['ows20:ExceptionText']['#text'];
             $("#rec-results").append('<p>Spatial search error: '+ errtext + '</p></br><p>URL: '+ sUrl + '</p>'); 
-          
+           // $("#rec-results").append(dres['ows20:ExceptionReport']); 
             return;
           }
           if ( dres['csw:GetRecordsResponse'] ) {
@@ -691,7 +722,7 @@ function searchData(yorn) {
           } else {
             var recResp =  dres['csw30:GetRecordsResponse']['csw30:SearchResults'];   
           }
-       
+          //var recResp =  dres['csw:GetRecordsResponse']['csw:SearchResults']; 
           var recMatch =  recResp['@attributes']['numberOfRecordsMatched'];      
           var recRtn =  recResp['@attributes']['numberOfRecordsReturned'];  
 
@@ -733,7 +764,7 @@ function searchData(yorn) {
               e = parseFloat(e);
               w = parseFloat(w);
 
-            
+              //var bx = [[s,w],[n,e]];
               var bc = new L.LatLng(s + (n - s)/2 ,e + (w - e)/2);
 
               var ptl = '<a id="'+gs+'" style="font-size:12px; cursor: pointer;" onclick="javascript:mdView(this);" >'+cet+'</a>';
@@ -777,7 +808,7 @@ function searchData(yorn) {
                         .css("width", "700px");
             if ( linkz ) {             
               if ( linkz['gmd:CI_OnlineResource'] ) { 
-
+                    //var lnk = linkz['gmd:MD_DigitalTransferOptions']['gmd:onLine']['gmd:CI_OnlineResource']['gmd:linkage']['gmd:URL'];
                     var lnam = linkz['gmd:CI_OnlineResource']['gmd:name']['gco:CharacterString']['#text'];
                     var lurl = linkz['gmd:CI_OnlineResource']['gmd:linkage']['gmd:URL']['#text'];
                     var lnk = linkColors(lnam, lurl);
@@ -805,7 +836,12 @@ function searchData(yorn) {
                   var lnk = linkColors(lnam, lurl);
                   var rldo = $('<option title="'+lurl+'" value="'+lurl+'">'+lnam+ ' '+ lnk.text + '</option>');
                   drl.append(rldo);
-
+                  //var rLP = $('<a href="'+ lurl + '" onclick="preview(this);" class="res-tag"  target="_blank">' + lnk.text +  '</a>')
+                  //      .css("width",lnk.width)
+                  //      .css("margin","3px")
+                  //      .css("color",lnk.txtcolor)
+                   //     .css("background-color",lnk.bgcolor);
+                  //gLinks.append(rLP);
                 }
                 gLinks.append(rlab);
                 gLinks.append(drl);
@@ -814,6 +850,7 @@ function searchData(yorn) {
             var gCard = $('<div id ="gCard-' + gs + '" class="g-item-card" />')
             .css("margin", "5px" )
             .css("padding","2px 2px")
+            //.css("border","solid")
             .css("background-color", "white" )
             .hover(function() { 
                     $(this).css("background-color", "powderblue"); 
@@ -847,9 +884,16 @@ function searchData(yorn) {
             $(gCard).append(sBtn);
             $(gCard).append(cInfo);
             $(gCard).append(cAb);
+            //$(gCard).append(cDate);
+            //$(gCard).append(cGuid);
             $(gCard).append(gLinks);
             $("#rec-results").append(gCard);             
+            //$("#rec-results").append(z+'</br>');
+            //var guid = md.children[0];
+            //var title = md.children[7].children[0].children[0].children[0].children[0].textContent;
+            //var abs = md.children[7].children[0].children[1].textContent;
 
+            //var linkage = md.children[8].children[0].children[0].children[0].children[0].children[0].children[0].textContent;
 
           }
           if ( gMarkers ) {
@@ -858,6 +902,9 @@ function searchData(yorn) {
             map.fitBounds(gBounds);
             console.log('findrecord getbound ' + JSON.stringify(gBounds));
           }
+
+
+          //$("#rec-results").append(recResp);
 
     });
   }
@@ -1340,7 +1387,7 @@ function searchData(yorn) {
 		 gVersions.length=0;
 		  
 		var jqxhr = $.get(sUrl, function() {
-     
+      //console.log( "success record view " + guid );
         var z = guid;
 		  })
 		  .done(function(data) { 
@@ -1445,11 +1492,14 @@ function searchData(yorn) {
     var ver = gT.mdversion;
 
     var sUrl = '/action/validateMDRecord?guid='+guid;   
-   
+    //if ( vers ) {
+    //  sUrl = sUrl+'&version='+vers;
+    //	    
     gVr = {};
 
     var jqxhr = $.get(sUrl, function() {
         console.log( "success record view " + guid );
+        //var z = guid;
 		  })
 		  .done(function(data) { 
 			 if (typeof(data) == "object" ) {
@@ -1647,7 +1697,7 @@ function searchData(yorn) {
 	gMd = {};
 	gMd = gCWR;
 	gMP = {};
-	
+	//gMP = gCMP;
 	gMDEdStack.eda.length = 0;
 	$("#mdCancelBtn").hide();
 	$("#widget-view").empty();
@@ -1671,7 +1721,7 @@ function searchData(yorn) {
         contentType: "application/json",  
         success: function(data) {
           console.log( JSON.stringify(data) );
-        
+          //mdVersions(gMDEdStack.guid);
           var o = { "id" : gMDEdStack.guid  };
       
           var sname =  $("#gSearchBox").val();
@@ -1755,7 +1805,7 @@ function stackApply(ero ) {
         if (  gMDEdStack.eda[k].nodeid == ero.nodeid )  {
           gMDEdStack.eda[k].value = ero.value;
           gMDEdStack.eda[k].path = ero.path;
-         
+          //gMDEdStack.eda[k].nodeid = ero.nodeid;
           gMDEdStack.eda[k].action = ero.action;
           edType = 'edit';
         }
@@ -1812,7 +1862,7 @@ function titleEdt(o) {
           "nodeid" : gT.abstract.nodeid, 
           'action' : 'edit' };
         stackApply(ero);
-       
+        //gMDEdStack.eda.push(ero);
         $("#pabs").css("color","#916e27");
         $("#pabs").text(gT.abstract.value);
 		  }
@@ -2112,7 +2162,7 @@ function resEdt(o) {
                 "nodeid" : gT.resource[k].resourceDesc.nodeid, 
                 'action' : 'edit' };
           stackApply(ero);			
-      
+         // $("#rde-"+k).text($("#rdEdit").val());
         }
         
         $("#rn-"+k).show();
@@ -2321,7 +2371,7 @@ function resEdt(o) {
 						'index': gkwid,
 						"nodeid" : gT.keywords[gkwid].nodeid, 
 						'action' : 'new' };
-       
+        //gMDEdStack.eda.push(ero);
         stackApply(ero);
 				var kwL = $('<a id="kw-'+gkwid+'" onclick="kwEdt(this)" class="tag" >' + nkw + '</a>')
                   .css("margin","5px");  
@@ -2468,7 +2518,7 @@ function resEdt(o) {
 	// first snapshot for edit cancels
 	
       gCWR = JSON.parse(JSON.stringify(ro));
-    
+      //gCMP = JSON.parse(JSON.stringify(gMP)); 
       var ed = false;
       if ( kmu(gKey) ) {
             ed = true;
@@ -2660,10 +2710,11 @@ function resEdt(o) {
 
   var urlCheck = function(urlink) {
   // Readl time asynchronous check
-   
+    //var guid = gT.guid;
     var urlString =  $(urlink).attr("href");
     var hurl = '/url_status?' + 'url='+urlString;
-   
+    //var hurl = '/action/getUrlStatusCached?guid=' + guid + '&url='+urlString ;
+    //console.log('start url check');
       $.ajax({
           type: 'GET',
           url: hurl,
@@ -2759,10 +2810,10 @@ function resEdt(o) {
             break;
           }
         }
-       
+        //var z = sa.findIndex(k => k < scal );
         if ( z < 0 ) { z = 4 }
         var center = new L.LatLng(yl, xl);
-        
+        //map.panTo(center);
         map.setView(center, z);
         var bounds = [[ gS, gW], [ gN, gE ]];
         rectangle = L.rectangle(bounds, {color: 'slateblue', weight: 1}).on('click', function (e) {
@@ -2780,12 +2831,12 @@ var showSpinner = function(o)  {
 
 var facetView = function(o) {
     if (o.id == 'Cat') {
-    
+      //console.log('cat');
       if (  $("#CatB").attr("class") == "fa fa-angle-right" ) {
         $("#CatB").attr("class","fa fa-angle-down");
       } else { $("#CatB").attr("class","fa fa-angle-right") }
       $(".nav-category").each(function() {
-      
+        //console.log('cat' +  $(this).css("display") );
           if ( $(this).css("display") == "none") { 
             $(this).css("display","block");
           } else {
@@ -2805,7 +2856,7 @@ var facetView = function(o) {
     }
 
     if (o.id == 'ContModel') {
-    
+      //console.log('cm facet toggle');
       if (  $("#cmB").attr("class") == "fa fa-angle-right" ) {
         $("#cmB").attr("class","fa fa-angle-down");
       } else { $("#cmB").attr("class","fa fa-angle-right") }
@@ -2815,7 +2866,7 @@ var facetView = function(o) {
     }
 
     if (o.id == 'DataType') {
-    
+      //console.log('dt facet toggle');
       if (  $("#dtB").attr("class") == "fa fa-angle-right" ) {
         $("#dtB").attr("class","fa fa-angle-down");
       } else { $("#dtB").attr("class","fa fa-angle-right") }
@@ -2825,7 +2876,7 @@ var facetView = function(o) {
     }
 
     if (o.id == 'repoCatalog') {
-      
+      //console.log('dt facet toggle');
       if (  $("#repoB").attr("class") == "fa fa-angle-right" ) {
         $("#repoB").attr("class","fa fa-angle-down");
       } else { $("#repoB").attr("class","fa fa-angle-right") }
@@ -2876,7 +2927,7 @@ var showCategories = function(lim) {
             }
 
             $(".nav-category").each(function() {
-             
+              //console.log('remove ' + $(this).attr('id') );
               $( this ).remove();
             })
             var dx = dres.rows;
@@ -2948,7 +2999,7 @@ var selectCategory = function(oCat) {
             }
 
             $(".nav-author").each(function() {
-            
+              //console.log('remove ' + $(this).attr('id') );
               $( this ).remove();
             })
 
@@ -3018,7 +3069,7 @@ var selectCategory = function(oCat) {
            }
 
            $(".nav-cm").each(function() {
-          
+            //console.log('remove ' + $(this).attr('id') );
             $( this ).remove();
           })
 
@@ -3089,12 +3140,12 @@ var showDataTypes = function(l) {
          }
 
          $(".nav-dt").each(function() {
-       
+          //console.log('remove ' + $(this).attr('id') );
           $( this ).remove();
         })
 
         $(".nav-rc").each(function() {
-         
+          //console.log('remove ' + $(this).attr('id') );
           $( this ).remove();
         })
 
@@ -3178,6 +3229,7 @@ var previewer = function(o) {
       L.mapbox.accessToken = 'pk.eyJ1IjoiZ2FyeWh1ZG1hbiIsImEiOiJjaW14dnV2ZzAwM2s5dXJrazlka2Q2djhjIn0.NOrl8g_NpUG0TEa6SD-MhQ';
       var Lurl = 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token='+L.mapbox.accessToken;
         L.tileLayer(Lurl, {
+           // maxZoom: 18,
             infoControl: false,
             legendControl: false,
             zoomControl: true, 
@@ -3188,7 +3240,7 @@ var previewer = function(o) {
         dpMap.on('ready',function() { 
             setTimeout(function(){ 
                 dpMap.invalidateSize();
-               
+                //map.fitBounds(initExtent);
             }, 200);
             console.log('ready map')
         });
@@ -3202,7 +3254,7 @@ var previewer = function(o) {
          } else {
             var dres = JSON.parse(data);
          }
-     
+         // console.log(data);
           var tf = {  "type": "FeatureCollection",
                       "features": [
                         {   "type": "Feature",
@@ -3253,18 +3305,23 @@ var previewer = function(o) {
           var gLayer = new L.GeoJSON();
           gLayer.addData(dres);
           dpMap.addLayer(gLayer);
-       
+          
+          //var geojsonLayer = new L.GeoJSON();
+          //geojsonLayer.addData(data); 
+          //dpMap.addLayer(geojsonLayer);
 
         });
 
 
   } 
+  //console.log('previewer: ' + dtype);
 
 }
 
 function logmein(o, cb) {
   var un = $("#luser").val();
   var pw =  $("#lpass").val();
+  //var fcp = o.id;
 
   var xUrl = '/action/getToken?q='+un+'&p='+pw;
 
@@ -3279,35 +3336,43 @@ function logmein(o, cb) {
           var dres = JSON.parse(data);
        }
       
-      
+        //for (var k in dres) {
         if ( dres.authtoken == dres.kv ) {
             gKey = {};
             gKey[dres.authtoken] = dres.kv;
 			      gKey.agentRole = dres.agentrole;
             $("#laname").text(un).css("font-size","12px")
-				.css("font-family","Arial, Lucida Grande, sans-serif");
+				      .css("font-family","Arial, Lucida Grande, sans-serif");
             $("#loginBtn").text("Logout");
-          
+            //$("#Cex").css("display","block");
             $("#loginDiv").hide();
             cb();
             return;
         } else {
-			gKey = {"x":"z","agentRole":"99"};
-			cb();
-		}
+          $("#LdTitle span").text("Login - ERROR").css("color", "red");
+    			gKey = {"x":"z","agentRole":"99"};
+    			cb();
+    		}
+      })
+      .fail(function() {
+        $("#LdTitle span").text("Login - ERROR").css("color", "red");
       });
 }
+
 
 var showLogin = function() {
 
   if (  $("#loginBtn").text() == "Logout" ) {
        gKey = { "a" : "b" };
+       $("#LdTitle span").text("Login").css("color", "white");
        $("#loginBtn").text("Login");
        $("#laname").text("");
+       
        $("#Cex").css("display","none");
   } else {
     $("#Cex").css("display","block");
-   
+    $("#LdTitle span").text("Login").css("color", "white");
+
   } 
 }
 
@@ -3316,11 +3381,18 @@ var toggleLogin = function(o, cb) {
   if (  $(o).text() == "Logout" ) {
       gKey = { "a" : "b" };
       $("#laname").text("");
+      $("#lpass").val("");
       $(o).text("Login");
-	   $("#Cex").css("display","none");
+	    $("#Cex").css("display","none");
+      $("#leftEdit").css("display","none");
+      $("#rightEdit").css("display","none");
+      $("#leftSearch").show();
+      bactoSearch();
       cb();
   } else {
     if ( $("#loginDiv").css("display") == "none") { 
+      $("#LdTitle span").text("Login").css("color", "white");
+      $("#lpass").val("");
       $("#loginDiv").css("display","block");
     
     } else {

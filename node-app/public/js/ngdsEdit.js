@@ -1420,13 +1420,13 @@ var userMan = function(o) {
             var tn = $('<td ><span style="font-size:12px; font-weight: bold; color:light-gray ;">Username</span></td>');
             var ty = $('<td ><span style="font-size:12px; font-weight: bold; color:light-gray;">Type</span></td>');
             var tf = $('<td "><span style="font-size:12px;font-weight: bold; color:light-gray;">Full name</span></td>');
-            var te = $('<td><span style="font-size:12px; font-weight: bold;color:light-gray;">Email</span></td>');
+            //var te = $('<td><span style="font-size:12px; font-weight: bold;color:light-gray;">Email</span></td>');
             var tb = $('<td><span style="font-size:12px; font-weight: bold;color:light-gray;">Action</span></td>');
 
             to.append(tn);
             to.append(ty);
             to.append(tf);
-            to.append(te);
+            //to.append(te);
             to.append(tb);
             tbx.append(to);
 
@@ -1445,7 +1445,7 @@ var userMan = function(o) {
             var tn = $('<td id="uname-'+u.user_id+'"><span style="font-size:11px; bgcolor:light-gray;">' + u.name + '</span></td>');
             var ty = $('<td id="u-type-'+u.user_id+'"><span style="font-size:11px; bgcolor:light-gray;">' +  utype + '</span></td>');
             var tf = $('<td id="u-fn-'+u.user_id+'"><span style="font-size:11px; bgcolor:light-gray;">' +  u.fullname + '</span></td>');
-            var te = $('<td id="u-em-'+u.user_id+'"><span style="font-size:11px; bgcolor:light-gray;">' +  u.email + '</span></td>');
+            //var te = $('<td id="u-em-'+u.user_id+'"><span style="font-size:11px; bgcolor:light-gray;">' +  u.email + '</span></td>');
 
             var eBtn =  $('<a id="u-ed-'+u.user_id+'" class="res-tag" >Edit</a>')
                             .css("font-size", "11px")
@@ -1460,15 +1460,23 @@ var userMan = function(o) {
                             .css("padding","2px 2px")
                             .css("background-color", "#2191c2")
                             .attr('onclick','delUser(this);');
+                            
+            var pBtn =  $('<a id="u-pw-'+u.user_id+'" class="res-tag" >Password</a>')
+                            .css("font-size", "11px")
+                            .css("margin", "2px")
+                            .css("padding","2px 2px")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','pwUser(this);');
 
             var tb = $('<td id="u-em-'+u.user_id+'">');
             tb.append(eBtn);
             tb.append(dBtn);
+            tb.append(pBtn);
 
             to.append(tn);
             to.append(ty);
             to.append(tf);
-            to.append(te);
+            //to.append(te);
             to.append(tb);
             tbx.append(to);
         }
@@ -1481,15 +1489,359 @@ var userMan = function(o) {
 
 var addUser = function(o) {
 
+  if ( $(o).text() == "Add New User" ) {
+  
+      $(o).text("Save").css("background-color","#21d291");
+      var w = $(o).position();
+          
+      var nuDiv = $('<div id="newu">');
+   
+      var nps = $('<span class="res-tag">Add A User</span></br>')
+        .css("font-family","calibri").css("font-size","12px").css("font-weight","bold");
+                         
+      var nunl = $('<span class="res-tag">User name</span></br>')
+        .css("font-family","calibri").css("font-size","12px"); 
+      
+      var nunb = $('<input id="new-un-tb" type="text" size="15" >')
+                        .css("font-family","Arial")
+                        .css("font-size","12px")
+                        .css("border-width","1px")
+                        .css("border-color","#888888").val("");
+      
+      var npwl = $('</br><span class="res-tag">Password</span></br>')
+        .css("font-family","calibri").css("font-size","12px");
+        
+      var npb = $('<input id="new-pw-tb" type="password" size="15" >')
+                        .css("font-family","Arial")
+                        .css("font-size","12px")
+                        .css("border-width","1px")
+                        .css("border-color","#888888")
+                        .val("");
+      
+      var nfnl = $('</br><span class="res-tag">Full Name</span></br>')
+            .css("font-family","calibri").css("font-size","12px");
+        
+       var nfn = $('<input id="new-fn-tb" type="text" size="20" >')
+                        .css("font-family","Arial")
+                        .css("font-size","12px")
+                        .css("border-width","1px")
+                        .css("border-color","#888888")
+                        .val("");
+      
+       var nutl = $('</br><span class="res-tag" style="font-family: calibri; font-size: 12px;">User Type</span></br>');
+       
+       var uts = $('<select id="utSel"></select>');
+       var uto1 =  $("<option>").attr('value','1').text('admin');
+       var uto2 =  $("<option>").attr('value','2').text('editor');
+       uts.append(uto1);
+       uts.append(uto2);
+       
+       var pBtn =  $('</br><a id="cancelNu" >Cancel</a>')
+                            .css("font-size", "12px")
+                            .css("margin", "2px")
+                            .css("padding","2px 2px")
+                            .css("color","white")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','cancelNew(this);');
+                                     
+      nuDiv.append(nps);
+      nuDiv.append(nunl);
+      nuDiv.append(nunb);
+      nuDiv.append(npwl);
+      nuDiv.append(npb);
+      nuDiv.append(nfnl);
+      nuDiv.append(nfn);
+      nuDiv.append(nutl);
+      nuDiv.append(uts);
+      nuDiv.append(pBtn);
+      
+      nuDiv.css("top", w.top)
+          .css("left", w.left+30)
+          .css("float","left")
+          .css("position","fixed")
+          .css("margin", "10px" )
+          .css("width", "200px")
+          .css("height", "200px")
+          .css("zIndex","1000")
+          .css("padding","10px 10px")
+          .css("border-width","2px")
+          .css("border-color","#444488")
+          .css("background-color", "#ddddee" );
+      nuDiv.appendTo('body');
+    } else {
+       // Save
+	
+        var u  = $("#new-un-tb").val();
+        var p = $("#new-pw-tb").val();
+        var t = kmu(gKey);
+        var fn = $("#new-fn-tb").val();
+        var em = 'Not-used';
+        var a = $("#utSel").val();
+        console.log('Return vals:' +  u + p + t + fn + em + a);
+	var xUrl = '/action/CreateUser?u='+u+'&p='+p+'&t='+t+'&fn='+fn+'&em='+em+'&a='+a;
+	
+	var jqxhr = $.get(xUrl, function() {
+		var ssu = 'success';
+	}).done(function(data) {
+
+
+       		$("#newu").remove();
+       		$(o).text("Add New User").css("background-color","#2191c2");
+		userMan();
+	});
+    }
+
+}
+
+var cancelNew = function(o) {
+
+  $("#newu").remove();
+  $("#addUser").text("Add New User").css("background-color","#2191c2");
+
 }
 
 var edUser = function(o) {
 
+    var sid = o.id.split('-')[2];
+    if ( $(o).text() == "Edit" ) {
+        console.log("Create Form");
+   
+        console.log('edit User - constructs edit line ' + sid);
+        
+        // Change the Buttons
+        $(o).text("Save").css("background-color","#21d291");
+        $("#u-del-"+sid).text("Cancel").css("background-color","#21d291");
+        
+        var unx = $("#uname-"+sid+" span").text();
+        
+        var utb = $('<input id="uname-tb" type="text" size="12" >')
+                        .css("font-family","Arial")
+                        .css("font-size","12px")
+                        .css("border-width","1px")
+                        .css("border-color","#888888").val(unx);
+        
+        $("#uname-"+sid).append(utb);
+        $("#uname-"+sid+" span").hide();
+        
+        var uts = $('<select id="utSel"></select>');
+        var uto1 =  $("<option>").attr('value','1').text('admin');
+        var uto2 =  $("<option>").attr('value','2').text('editor');
+        uts.append(uto1);
+        uts.append(uto2);
+        
+        console.log('selected ' + $("#u-type-"+sid+" span").text() );
+        if ( $("#u-type-"+sid+" span").text() == "admin" ) {
+           uts.val('admin');
+        } else {
+          uts.val('editor');
+        }
+        
+        $("#u-type-"+sid).append(uts);
+        $("#u-type-"+sid+" span").hide();
+        
+        var ufn = $("#u-fn-"+sid+" span").text();
+        
+        var ufb = $('<input id="ufn-tb" type="text" size="20" >')
+                        .css("font-family","Arial")
+                        .css("font-size","12px")
+                        .css("border-width","1px")
+                        .css("border-color","#888888").val(ufn);
+        
+        
+        $("#u-fn-"+sid).append(ufb);
+        $("#u-fn-"+sid+" span").hide();
+        
+    } else {
+      console.log("Save");
+      
+        var u  = $("#uname-tb").val();
+        var t = kmu(gKey);
+        var fn = $("#ufn-tb").val();
+        var a = $("#utSel").val();
+        
+        
+        var xUrl = '/action/editUser?i='+sid+'&u='+u+'&t='+t+'&fn='+fn+'&a='+a;
+        console.log(xUrl);
+        
+        var jqxhr = $.get(xUrl, function() {
+    		    var ssu = 'success';
+       	}).done(function(data) {
+        
+            $("#uname-"+sid+" span").text(u);
+            $("#uname-"+sid+" span").show();
+            $("#uname-tb").remove();
+            
+            if ( a == 1 ) {
+              $("#u-type-"+sid+" span").text('admin');
+            } else {
+              $("#u-type-"+sid+" span").text('editor');
+            }
+            //$("#u-type-"+sid+" span").text(a);
+            $("#u-type-"+sid+" span").show();
+            $("#utSel").remove();
+            
+            $("#u-fn-"+sid+" span").text(fn);
+            $("#u-fn-"+sid+" span").show();
+            $("#ufn-tb").remove();
+            
+            //$("#newu").remove();
+            $(o).text("Edit").css("background-color","#2191c2");
+            $("#u-del-"+sid).text("Remove").css("background-color","#2191c2");
+        		//userMan();
+        });    
+      
+    }
+                    
 }
 
 var delUser = function(o) {
 
+    var sid = o.id.split('-')[2];
+   if ( $(o).text() == "Remove" ) {
+      console.log("Remove the User");
+      
+      var uStr = 'Are you sure you want to delete user + ' + $("#uname-"+sid+" span").text();
+      if (confirm(uStr) == true) {
+            var xUrl = '/action/deleteUser?i='+sid+'&t='+kmu(gKey);
+            
+            var jqxhr = $.get(xUrl, function() {
+    		        var ssu = 'success';
+       	    }).done(function(data) {
+               userMan();           
+            });
+          
+        } else {
+          text = "You canceled!";
+        }
+      
+    } else {
+      console.log("Cancel");
+      
+      $(o).text("Remove").css("background-color","#2191c2");
+      $("#u-ed-"+sid).text("Edit").css("background-color","#2191c2");
+      
+      $("#uname-tb").remove();
+      $("#utSel").remove();
+      $("#ufn-tb").remove();
+      
+      $("#uname-"+sid+" span").show();
+      $("#u-type-"+sid+" span").show();
+      $("#u-fn-"+sid+" span").show();
+       
+    } 
+
 }
+
+var pwUser = function(o) {
+  //Change password
+   var sid = o.id.split('-')[2];
+  
+   if ( $(o).text() == "Password" ) {
+      console.log("Create form");
+      
+      $(o).text("Save").css("background-color","#21b271");
+      
+      var w = $(o).position();
+      
+      var pwPage = $('<div id="pwf">');
+   
+      var nps = $('<span class="res-tag">Change User Password</span></br>')
+        .css("font-family","calibri").css("font-size","12px");                 
+      var npwl = $('<span class="res-tag">New Password</span></br>')
+        .css("font-family","calibri").css("font-size","12px"); 
+      
+      var npw = $('<input id="new-pw-tb" type="password" size="15" >')
+                        .css("font-family","Arial")
+                        .css("font-size","12px")
+                        .css("border-width","1px")
+                        .css("border-color","#888888").val("");
+      
+      var npwc = $('</br><span class="res-tag">Confirm</span></br>')
+        .css("font-family","calibri").css("font-size","12px");
+        
+      var npc = $('<input id="con-pw-tb" type="password" size="15" >')
+                        .css("font-family","Arial")
+                        .css("font-size","12px")
+                        .css("border-width","1px")
+                        .css("border-color","#888888")
+                        .val("");
+      
+       var nbr = $('<span></span></br>');
+       var pBtn =  $('<a id="u-pwc-'+sid+'" >Cancel</a>')
+                            .css("font-size", "12px")
+                            .css("margin", "2px")
+                            .css("padding","2px 2px")
+                            .css("background-color", "#2191c2")
+                            .attr('onclick','cancelPW(this);');
+                            
+      var msgb = $('</br><p></p>')
+                    .css("font-family","Arial")
+                    .css("font-size","12px");
+                            
+      pwPage.append(nps);
+      pwPage.append(npwl);
+      pwPage.append(npw);
+      pwPage.append(npwc);
+      pwPage.append(npc);
+      pwPage.append(nbr);
+      pwPage.append(pBtn);
+      pwPage.append(msgb);
+      
+      //$("#editFrame").append(pwPage)
+      pwPage.css("top", w.top)
+          .css("left", w.left+60)
+          .css("float","left")
+          .css("position","fixed")
+          .css("margin", "10px" )
+          .css("width", "160px")
+          .css("height", "160px")
+          .css("zIndex","1000")
+          .css("padding","4px 4px")
+          .css("border-width","1px")
+          .css("border-color","#888888")
+          //.css("color", "#bbbbbb" )
+          .css("background-color", "#dddddd" );
+      pwPage.appendTo('body');
+  
+    } else {
+      console.log("Save");
+      // DB Save
+       
+       var pw = $("#new-pw-tb").val();
+       var cpw = $("#con-pw-tb").val();
+       
+       if ( pw != cpw ) {
+           $("#pwf > p").text("Passwords do not match");
+       } else if ( pw.length < 8 ) {
+         $("#pwf > p").text("Passwords must be at least 8 characters");
+       } else {
+           console.log("save password change");
+           var xUrl = '/action/chgPass?i='+sid+'&p='+pw+'&t='+kmu(gKey);
+            
+            var jqxhr = $.get(xUrl, function() {
+    		        var ssu = 'success';
+       	    }).done(function(data) {
+                  $(o).text("Password")
+                    .css("background-color", "#2191c2");
+                 $("#pwf > p").text("Password succesfully changed !");
+                 setTimeout(function() { $("#pwf").remove();  }, 4000); 
+                    
+            }).fail(function() {
+              $("#pwf > p").text("Server Error").css("color", "red");
+            });      
+       }
+    }
+}
+
+var cancelPW = function(o) {
+
+        var sid = o.id.split('-')[2];
+        $("#u-pw-"+sid).text("Password")
+          .css("background-color", "#2191c2");
+     
+       $("#pwf").remove();
+}
+
 
 var notifyMan = function(o) {
     console.log('notification form');

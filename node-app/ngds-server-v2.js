@@ -7,8 +7,8 @@
 */
 
 var pg = require('pg'),
-    connectionString = 'postgres://ngdsdb:xxxxxxx@localhost:5432/geothermal',
-   
+    connectionString = 'postgres://ngdsdb:geonewton@localhost:5432/geothermal',
+    //connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/GEOTHERMAL',
     pgClient;
 
 require('dotenv').config();
