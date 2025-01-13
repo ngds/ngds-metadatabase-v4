@@ -1746,37 +1746,46 @@ var pwUser = function(o) {
       var pwPage = $('<div id="pwf">');
    
       var nps = $('<span class="res-tag">Change User Password</span></br>')
-        .css("font-family","calibri").css("font-size","12px");                 
+              .css("font-family","calibri")
+              .css("font-size","12px")
+              .css("margin","10px 5px");                 
       var npwl = $('<span class="res-tag">New Password</span></br>')
-        .css("font-family","calibri").css("font-size","12px"); 
+        .css("font-family","calibri")
+        .css("font-size","12px")
+        .css("margin","10px 2px");
       
       var npw = $('<input id="new-pw-tb" type="password" size="15" >')
                         .css("font-family","Arial")
                         .css("font-size","12px")
                         .css("border-width","1px")
+                        .css("margin","10px 2px")
                         .css("border-color","#888888").val("");
       
       var npwc = $('</br><span class="res-tag">Confirm</span></br>')
-        .css("font-family","calibri").css("font-size","12px");
+        .css("font-family","calibri")
+        .css("font-size","12px")
+        .css("margin","10px 2px");
         
       var npc = $('<input id="con-pw-tb" type="password" size="15" >')
                         .css("font-family","Arial")
                         .css("font-size","12px")
                         .css("border-width","1px")
                         .css("border-color","#888888")
+                        .css("margin","10px 2px")
                         .val("");
       
        var nbr = $('<span></span></br>');
        var pBtn =  $('<a id="u-pwc-'+sid+'" >Cancel</a>')
                             .css("font-size", "12px")
-                            .css("margin", "2px")
+                            .css("margin", "20px 2px")
                             .css("padding","2px 2px")
                             .css("background-color", "#2191c2")
                             .attr('onclick','cancelPW(this);');
                             
-      var msgb = $('</br><p></p>')
+      var msgb = $('</br><p>Does not support special characters.</p>')
                     .css("font-family","Arial")
-                    .css("font-size","12px");
+                    .css("font-size","12px")
+                    .css("margin","10px 2px");
                             
       pwPage.append(nps);
       pwPage.append(npwl);
@@ -1794,7 +1803,7 @@ var pwUser = function(o) {
           .css("position","fixed")
           .css("margin", "10px" )
           .css("width", "160px")
-          .css("height", "160px")
+          .css("height", "190px")
           .css("zIndex","1000")
           .css("padding","4px 4px")
           .css("border-width","1px")
@@ -1823,8 +1832,12 @@ var pwUser = function(o) {
        	    }).done(function(data) {
                   $(o).text("Password")
                     .css("background-color", "#2191c2");
-                 $("#pwf > p").text("Password succesfully changed !");
-                 setTimeout(function() { $("#pwf").remove();  }, 4000); 
+                  if ( data == "Not Authorized" ) {
+                    $("#pwf > p").text("Password ERROR ");
+                  } else {
+                    $("#pwf > p").text("Password succesfully changed !");
+                    setTimeout(function() { $("#pwf").remove();  }, 4000);
+                  }
                     
             }).fail(function() {
               $("#pwf > p").text("Server Error").css("color", "red");

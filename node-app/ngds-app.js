@@ -6,6 +6,7 @@
 var  Path = '/opt/ngds/node-app';
 const port = 80;
 
+// var https = require("http");
 
 var express = require('express'),
     app = express(),
@@ -17,6 +18,8 @@ var express = require('express'),
     bodyParser = require('body-parser');
 
 var j2h = require('node-json2html');
+//const pg = require('pg');
+//const connectionString = 'postgres://ngdsdb:geonewton@localhost:5432/geothermal';
 
 var csw = require('csw-client');
 var options = { "outputSchema" :"http://www.isotc211.org/2005/gmd" };
@@ -47,13 +50,16 @@ app.use( bodyParser.json({limit: '50mb'}) );
 app.use('/img', express.static(__dirname + '/public/img'));
 app.use('/js', express.static(__dirname + '/public/js'));
 app.use('/css', express.static(__dirname + '/public/css'));
+// app.use('/css/images', express.static(__dirname + '/public/css/images', { maxAge: '1d' } ));
+app.use(express.static(__dirname + '/public/css/images', { maxAge: '1d'  }));
 app.use('/jsonSchemas', express.static(__dirname + '/public/jsonSchemas'));
 app.use('/action',mdapi);
 app.use('/csw',cswapi);
 app.use('/spatial',mapapi);
-
+//const client = new pg.Client(connectionString);
 
 const results = [];
+//client.connect();
 
 function XMLtoJ(data) {
 	var aj = {};
@@ -211,6 +217,15 @@ app.get('/getXML', (request, response) => {
 
         })
 });
+
+/*
+app.get('/' , function(req,res) {
+  var idx = 0;
+	console.log('ngds test - path '+Path+' '+port);
+  res.send('NGDS TEST!' + idx);
+  idx++;
+} );
+*/
 
 app.listen(port, () => {
   console.log('xxx App running on port '+port)
