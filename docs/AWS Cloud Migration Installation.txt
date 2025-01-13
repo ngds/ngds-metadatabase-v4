@@ -294,6 +294,8 @@ Note: Current pyCSW uses a modified database schema and is not compatable with N
 
 sudo docker container run  -detach -p 8000:8000 geopython/pycsw:2.4.2
 
+sudo docker update --restart=always <container_id>
+
 1- Within the docker container, edit the /etc/pycsw/pycsw.yml file.
 
 comment out the default sqllite and add the postgresql connection string:
