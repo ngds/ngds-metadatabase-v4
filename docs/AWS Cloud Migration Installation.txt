@@ -239,6 +239,10 @@ After installing client/server source, install node services.
 
 ##Node JS Services
 
+Firewall may need to be opened:
+
+sudo firewall-cmd --zone=public --add-port=80/tcp --permanent
+
 The systemctl services control files are located in:
 
 /etc/systemd/system
