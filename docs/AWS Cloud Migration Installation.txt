@@ -3,7 +3,7 @@ Installed Configuration
 Date: December 2024
 G. Hudman
 
-#Version Info
+# Version Info
 
 This provides detailed version and configuration info for the server.
 
@@ -15,7 +15,7 @@ Docker: 25.0.5
 PyCSW: geopython/pycsw:2.4.2  
    -- Note: Current versions of pyCSW are incompatable with NGDS due to changes in pycsw database schema.
 
-##AL2023 Packages installed
+## AL2023 Packages installed
 
 AL2023 Package List
 
@@ -25,7 +25,7 @@ https://docs.aws.amazon.com/linux/al2023/release-notes/all-packages-AL2023.6.htm
 
 Packages added with dnf 
 
-##Postgresql
+## Postgresql
 
 postgresql15-0:15.8-1.amzn2023.0.1.x86_64
 postgresql15-contrib-0:15.8-1.amzn2023.0.1.x86_64
@@ -49,7 +49,7 @@ libtiff-devel
 libcurl
 libcurl-devel
 
-##Postgresql Extensions
+## Postgresql Extensions
 ltree: 1.2
 pg_trgm: 1.6
 plpgsql: 1.0
@@ -58,11 +58,11 @@ postgres_fdw: 1.1
 tablefunc: 1.0
 postgis: Custom build, not available in AL2023 environment. See Postgis Build Notes document.
 
-##Docker
+## Docker
 
 docker-0:25.0.6-1.amzn2023.0.2.x86_64
 
-##PyCSW
+## PyCSW
 sudo docker pull geopython/pycsw:2.4.2
 
 Version info can be found at:
@@ -92,7 +92,7 @@ node-json2html
 xml2js
 
 
-#INSTALLATION
+# INSTALLATION
 
 Installation for AWS cloud server
 
@@ -102,7 +102,7 @@ IP			DNS
 x.x.x.x    	data.geothermaldata.org
 
 
-##DATABASE
+## DATABASE
 
 1 - create postgis user.
 

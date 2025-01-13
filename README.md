@@ -1,12 +1,15 @@
 ﻿# NGDS-Metadatabase-v4
 
-## AWS Cloud Version
-
 The National Geothermal Data System (NGDS) supports the storage and search of information resources relevant to the discovery, understanding, and utilization of geothermal energy. It is a network of data providers supplying data and metadata, with an aggregating feature that provides a single entry point for searching resources available through the system
 
 Production build for https://data.geothermaldata.org
 
+## AWS Cloud Version
+
+01/13/2025
+
 ## Requirements
+
 - AL2023
 - Postgres 15.8
 - Nodejs v20.18.0 	
@@ -26,7 +29,7 @@ Refer to AWS Cloud Migration Installation in /docs for requirement details
 
 ## Database
 
-This system  uses 2 postgres databases that are connected with the fdw extension. 
+This system uses 2 postgres databases that are connected with the fdw extension. 
 
 - geothermal 
 - pycsw2
