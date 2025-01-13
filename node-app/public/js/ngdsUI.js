@@ -328,7 +328,8 @@ function searchData(yorn) {
       var gSp = page*pgSize;
       //var sTerms = $("#gSearchBox").val();
 	  var sTerm = $("#gSearchBox").val();
-      var sTerms = sTerm.replace(/&/g," ").trim();
+      var sTerms = sTerm.replace(/&/g," ").replace(/\s+/g, ' ').trim();
+      
       gSearchType = 'text';
 
       if (  gSearchHistory.indexOf(sTerms.trim()) == -1 ){
