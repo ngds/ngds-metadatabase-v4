@@ -21,8 +21,8 @@ var  Path = process.env.NODE_PATH;
 const pg = require('pg'),
 	xmldoc = require('xmldoc');
 
-const connectionString = 'postgres://ngdsdb:geonewton@localhost:5432/geothermal'; 
-const pyUrl = 'http://10.221.154.98:8000/';
+const connectionString = 'postgres://u:p@localhost:5432/geothermal'; 
+const pyUrl = 'http://<ip>:8000/';
 let afMap = new Map();
 class autoFunction {
   constructor(n) {
@@ -364,7 +364,7 @@ router.get('/', (request, response) => {
     pStr = pStr + '&' + k + '=' + params[k];
   }
   
-  var purl = 'http://10.221.154.98:8000/?' + pStr
+  var purl = 'http://<ip>:8000/?' + pStr
   console.log('CSW root '+purl);
   
    var pyRequest = require('request');
@@ -405,7 +405,7 @@ router.post('/pypost-old', (request, response) => {
   var xmlBody = request.body;
   //console.log('>>> CSW request object ' + JSON.stringify(request));
   //var xml = fs.readFileSync(Path+'/transaction-insert.xml', 'utf8');
-   var hurl = 'http://10.221.154.98:8000/?service=CSW&version=2.0.2&request=Transaction&TransactionSchemas=';
+   var hurl = 'http://<ip>:8000/?service=CSW&version=2.0.2&request=Transaction&TransactionSchemas=';
    hurl = hurl + 'http://www.isotc211.org/2005/gmi';
   
   var bl = xmlBody.length;
