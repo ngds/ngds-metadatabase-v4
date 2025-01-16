@@ -36,6 +36,8 @@
       gCWR={},
 	    gCMP={};
 
+  var gBounds = {};
+  var searchBounds = {};
   var gMarkers = [];
   var gSortOrder = 0;
   var gSavedGuids=[];
@@ -340,6 +342,8 @@ function searchData(yorn) {
       }
 
       clearMarkers();
+      
+      //searchBounds = map.getBounds();
 
       if ( sTerms ) {
         var sUrl = '/action/record_search?qry='+sTerms+'&start='+gSp+'&sortby='+gSortOrder+'&page='+pgSize;  
@@ -602,6 +606,7 @@ function searchData(yorn) {
               gFeatureGroup = L.featureGroup( gMarkers ).addTo(map);
               map.fitBounds(gFeatureGroup.getBounds());
               gBounds = map.getBounds();
+              searchBounds = gBounds;
              
             }
            
@@ -653,15 +658,16 @@ function searchData(yorn) {
     var sTerms = $("#gSearchBox").val();
 
     gSearchType='map';
-    var bh = map.getBounds();
+    
     //localStorage.SetItem("lastMap",)
     //gBounds = map.getBounds();
 
     if ( sPage == 0 ) {
       var bounds = map.getBounds();
       gBounds = map.getBounds();
+      searchBounds = map.getBounds();
     } else {
-      var bounds = gBounds;
+      var bounds = searchBounds;
     }
     var northEast = bounds.getNorthEast(),
         southWest = bounds.getSouthWest();
@@ -681,9 +687,9 @@ function searchData(yorn) {
 
     var bndText ='BBOX [W:' + southWest.lng.toFixed(2) + ' S:' + southWest.lat.toFixed(2)  
                   + ' E:' + northEast.lng.toFixed(2)  + ' N:' + northEast.lat.toFixed(2)  + ' ]';
-    var zUrl = '/csw?service=CSW&version=3.0.0&request=GetRecords&elementSetName=summary';
+    var zUrl = '/csw?service=CSW&version=3.0.0&request=GetRecords&elementSetName=summary&sortby=dct:spatial:A';
     var zterms = '&q='+sTerms;
-    var zbox = '&bbox='+ southWest.lng + ',' + southWest.lat + ',' + northEast.lng + ',' + northEast.lat;
+    var zbox = '&BBOX='+ southWest.lng + ',' + southWest.lat + ',' + northEast.lng + ',' + northEast.lat;
     var ztime = '&time=2018/2019';
     var zPage = '&startPosition='+sp;
     var zParams = '&typeNames=csw:Record&resultType=results&outputFormat=application/xml&maxRecords=15&outputSchema=http://www.isotc211.org/2005/gmd';
@@ -1138,8 +1144,8 @@ function searchData(yorn) {
 
     }
 
-    var northEast = gBounds.getNorthEast(),
-      southWest = gBounds.getSouthWest();
+    var northEast = searchBounds.getNorthEast(),
+      southWest = searchBounds.getSouthWest();
 
     gN = parseFloat(northEast.lat); //Number(45);
     gS = parseFloat(southWest.lat); //Number(28);
