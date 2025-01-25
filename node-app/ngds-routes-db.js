@@ -22,7 +22,7 @@ const connectionString = 'postgres://ngdsdb:geonewton@localhost:5432/geothermal'
 //const connectionString = 'postgres://postgres:15-cloud-post@localhost:5432/geothermal';
 const client = new pg.Client(connectionString);
 
-const pyCon = 'postgres://ngdsdb:geonewton@localhost:5432/pycsw';
+const pyCon = 'postgres://ngdsdb:xxxxx@localhost:5432/pycsw';
 //const pyClient = new pg.Client(pyCon);
 
 var gKeystack = [];
