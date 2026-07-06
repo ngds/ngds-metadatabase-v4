@@ -348,7 +348,16 @@
     }
 
     function mapInit() {
-    
+
+	// IF THE MAP INSTANCE ALREADY EXISTS, DO NOT CREATE IT AGAIN
+    if (map !== undefined && map !== null) {
+        // If you just want to fix layout sizes on resize without crashing:
+        if (typeof map.invalidateSize === "function") {
+            map.invalidateSize();
+        }
+        return; 
+    }
+		
     var size = {
       width: window.innerWidth || document.body.clientWidth,
       height: window.innerHeight || document.body.clientHeight
